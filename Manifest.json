@@ -1,6 +1,6 @@
 {
-  "name": "Deliverance Church Int'l Riverside",
-  "short_name": "DC Riverside",
+  "name": "Riverside-connect",
+  "short_name": "Riverside-connect",
   "description": "Join the Deliverance Church Riverside community – chat, announcements & more",
   "start_url": "/index.html",
  "display": "standalone",
@@ -23,6 +23,6 @@
     }
   ],
   "scope": "/",
-  "gcm_sender_id": "103953800507",
+  "gcm_sender_id": "103953800508",
   "prefer_related_applications": false
 }

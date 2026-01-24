@@ -1,28 +1,28 @@
 {
-  "name": "Riverside-connect",
-  "short_name": "Riverside-connect",
+  "id": "/The-Riverside-Connect/",
+  "name": "Riverside Connect",
+  "short_name": "Riverside",
   "description": "Join the Deliverance Church Riverside community – chat, announcements & more",
-  "start_url": "/index.html",
- "display": "standalone",
+  "start_url": "/The-Riverside-Connect/index.html",
+  "scope": "/The-Riverside-Connect/",
+  "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "background_color": "#ffffff",
   "theme_color": "#317EFB",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "maskable_icon_x192.png",
+      "src": "/The-Riverside-Connect/maskable_icon_x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "maskable_icon_x512.png",
+      "src": "/The-Riverside-Connect/maskable_icon_x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "scope": "/",
-  "gcm_sender_id": "103953800508",
   "prefer_related_applications": false
 }

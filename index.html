@@ -757,7 +757,7 @@ html, body {
 </div>
 
  <script>
-  const scriptUrl = 'https://script.google.com/macros/s/AKfycbwwzF1yZ81PgEA8eZJzxpNA2y5CtzUfQhKTQkyUAMn2r6scYeQ5vPS-dwaYCPovDl7O/exec';
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbweZjwfI10oQ8AY1TGNnbIwXZpIK39pI80h9ZvfTpf3_zef6xteucpD5XhcevYI5PjK/exec';
 
  let userName = localStorage.getItem('userName');
 
@@ -1253,17 +1253,50 @@ async function saveEdit(timestamp) {
   return `${dayPart} • ${timePart}`;
 }
 
-function updateAnnBadge(total) {
-  const unseen = total - lastSeenAnnCount;
-  const badge = document.getElementById('ann-badge');
-  if (unseen > 0) {
-    badge.textContent = unseen > 99 ? '99+' : unseen;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-}
+async function updateAnnBadge() {
+    const badge = document.getElementById('ann-badge');
 
+    try {
+        // Primary method: get real unseen count from server
+        const res = await fetch(`${scriptUrl}?operation=getUnseenAnnCount&name=${encodeURIComponent(userName)}`);
+        const data = await res.json();
+
+        if (data.status === 'error') throw new Error(data.message || 'Server error');
+
+        const unseen = data.unseenCount || 0;
+
+        if (unseen > 0) {
+            badge.textContent = unseen > 99 ? '99+' : unseen;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+
+        // Keep localStorage in sync as fallback / offline support
+        localStorage.setItem('lastSeenAnnCount', data.seenUpTo || 0);
+
+    } catch (err) {
+        console.warn('Could not fetch unseen count → using local fallback', err);
+
+        // Fallback: old localStorage method (still works if server is down)
+        const totalResponse = await fetch(`${scriptUrl}?operation=getData`).catch(() => null);
+        let total = 0;
+        if (totalResponse?.ok) {
+            const data = await totalResponse.json();
+            total = data.announcements?.length || 0;
+        }
+
+        const lastSeen = parseInt(localStorage.getItem('lastSeenAnnCount') || '0', 10);
+        const unseen = Math.max(0, total - lastSeen);
+
+        if (unseen > 0) {
+            badge.textContent = unseen > 99 ? '99+' : unseen;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
   function startPolling() {
     if (pollingInterval) clearInterval(pollingInterval);
     pollingInterval = setInterval(() => loadComments(true), 8000);

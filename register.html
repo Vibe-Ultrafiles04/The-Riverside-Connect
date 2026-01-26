@@ -494,7 +494,7 @@ window.addEventListener('appinstalled', () => {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       // Adding { scope: './' } is the "magic fix" for GitHub Pages subfolders
-      navigator.serviceWorker.register('./sw.js', { scope: './' })
+     navigator.serviceWorker.register(new URL('sw.js', import.meta.url).href, { scope: './' })
         .then(reg => {
           console.log('✅ Service Worker Registered. Scope:', reg.scope);
         })

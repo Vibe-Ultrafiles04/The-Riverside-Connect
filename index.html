@@ -1414,7 +1414,7 @@ async function updateAnnBadge() {
     if (installBtn) installBtn.style.display = 'block';
   });
 
-  // 3. The "Yes" Button Logic
+  // 3. The "Yes" Button Logic - Updated for Bing/Edge Fallback
   document.getElementById('installYes').addEventListener('click', async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
@@ -1422,9 +1422,13 @@ async function updateAnnBadge() {
       
       if (outcome === 'accepted') {
         console.log('User accepted install');
-        if (installBtn) installBtn.style.display = 'none'; // Hide button
+        if (installBtn) installBtn.style.display = 'none';
       }
       deferredPrompt = null;
+      installModal.style.display = 'none';
+    } else {
+      // Bing/Edge Fallback: If browser doesn't support the prompt, show manual instructions
+      alert("To install: Click the '...' menu or the 'App Available' icon in your browser's address bar and select 'Install this site as an app'.");
       installModal.style.display = 'none';
     }
   });
@@ -1441,7 +1445,7 @@ async function updateAnnBadge() {
     installModal.style.display = 'none';
   });
 
-  // 6. --- NEW: Final safeguard to hide button when installation finishes ---
+  // 6. Final safeguard to hide button when installation finishes
   window.addEventListener('appinstalled', () => {
     console.log('App installed successfully');
     if (installBtn) installBtn.style.display = 'none';
@@ -1449,7 +1453,6 @@ async function updateAnnBadge() {
     deferredPrompt = null;
   });
 </script>
-
 
 </body>
 </html>

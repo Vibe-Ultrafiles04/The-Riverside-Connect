@@ -461,7 +461,8 @@ const isStandalone = window.matchMedia('(display-mode: standalone)').matches
 
 // Hide button if already installed
 if (isStandalone) {
-  installBtn.style.display = 'none';
+  installBtn.style.display = 'block'; // FORCE SHOW
+
 }
 
 // ─── Chrome / Edge / Android ───

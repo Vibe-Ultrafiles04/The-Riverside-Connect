@@ -6,7 +6,7 @@
   <title>Riverside Connect</title>
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-<link rel="manifest" href="/The-Riverside-Connect/manifest.json">
+<link rel="manifest" href="manifest.json">
 
 
  <!-- iOS Safari home screen support -->
@@ -1395,52 +1395,49 @@ async function updateAnnBadge() {
   }
 </script>
 <script>
-  // ─── PWA INSTALL SCRIPT ───────────────
-  let deferredPrompt = null;
+ let deferredPrompt; // Global variable to store the event
 
-  // DOM Elements
-  const installBtn = document.getElementById('installAppBtn'); // "Install App" button
-  const installModal = document.getElementById('installModal'); // Your custom modal
-  const installYes = document.getElementById('installYes'); // Yes button in modal
-  const installNo = document.getElementById('installNo');   // No button in modal
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent Chrome from showing the default mini-infobar
+  e.preventDefault();
+  // Stash the event so it can be triggered later.
+  deferredPrompt = e;
+  
+  // Optional: Only show your custom "Install App" button now that we know 
+  // the browser is ready to install
+  document.getElementById('installAppBtn').style.display = 'block';
+});
 
-  // 1️⃣ Listen for beforeinstallprompt event
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault(); // Stop automatic mini-infobar
-    deferredPrompt = e; // Save for later
-    installBtn.style.display = 'inline-flex'; // Show "Install App" button
-    console.log("✅ PWA install ready");
-  });
-
-  // 2️⃣ Click "Install App" → Show custom modal
-  installBtn.addEventListener('click', () => {
-    installModal.style.display = 'flex';
-  });
-
-  // 3️⃣ Click "Yes" → Trigger real install prompt
-  installYes.addEventListener('click', async () => {
-    installModal.style.display = 'none';
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt(); // Show Chrome install prompt
-    const { outcome } = await deferredPrompt.userChoice; // Wait for user decision
-    console.log(`User choice: ${outcome}`);
-
-    deferredPrompt = null; // Clear saved prompt
-    installBtn.style.display = 'none'; // Hide "Install App" button
-  });
-
-  // 4️⃣ Click "No" → Just close the modal
-  installNo.addEventListener('click', () => {
-    installModal.style.display = 'none';
-  });
-
-  // 5️⃣ Hide button if already installed
-  window.addEventListener('appinstalled', () => {
+// Logic for your "Yes" button in the modal
+document.getElementById('installYes').addEventListener('click', async () => {
+  if (deferredPrompt) {
+    // Show the browser's install prompt
+    deferredPrompt.prompt();
+    
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User response to the install prompt: ${outcome}`);
+    
+    // We've used the prompt, and can't use it again, throw it away
     deferredPrompt = null;
-    installBtn.style.display = 'none';
-    console.log("✅ App installed!");
-  });
+    
+    // Hide your custom modal
+    document.getElementById('installModal').style.display = 'none';
+  } else {
+    // If the browser hasn't fired 'beforeinstallprompt' yet
+    alert("The app is already installed or your browser isn't ready yet.");
+  }
+});
+
+// Trigger your custom modal when the header button is clicked
+document.getElementById('installAppBtn').addEventListener('click', () => {
+  document.getElementById('installModal').style.display = 'flex';
+});
+
+// Cancel button logic
+document.getElementById('installNo').addEventListener('click', () => {
+  document.getElementById('installModal').style.display = 'none';
+});
 </script>
 
 

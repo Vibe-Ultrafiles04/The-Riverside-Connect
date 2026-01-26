@@ -11,8 +11,8 @@ const STATIC_ASSETS = [
   './announce.html',
   './manifest.json',
   './maskable_icon_x192.png',
-  './maskable_icon_x512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
+  './maskable_icon_x512.png'
+  
 ];
 
 // Names of other caches we want to keep (if you ever add e.g. images cache, dynamic cache…)

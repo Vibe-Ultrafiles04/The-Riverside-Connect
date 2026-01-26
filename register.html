@@ -447,49 +447,54 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
   </script>
 <script>
-let deferredPrompt = null;
-// Matches the button ID in your HTML
-const installBtn = document.getElementById('installAppBtn'); 
-const installModal = document.getElementById('installModal');
-const installYes = document.getElementById('installYes');
-const installNo = document.getElementById('installNo');
+  let deferredPrompt;
+  const installBtn = document.getElementById('installAppBtn');
+  const installModal = document.getElementById('installModal');
 
-// 1. Listen for the browser's PWA prompt availability
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Show the "Install App" button now that we know it's possible
-  installBtn.style.display = 'block';
-  console.log("✅ PWA Install ready");
-});
+  // 1. Capture the event specifically for the live domain
+  window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('Capture: Install prompt is ready');
+    e.preventDefault();
+    deferredPrompt = e;
+    if (installBtn) installBtn.style.display = 'block';
+  });
 
-// 2. Click "Install App" -> Show your custom modal
-installBtn.addEventListener('click', () => {
-  installModal.style.display = 'flex';
-});
+  // 2. The "Yes" button logic with a fallback check
+  document.getElementById('installYes').addEventListener('click', async () => {
+    if (deferredPrompt) {
+      // Trigger the browser's native prompt
+      deferredPrompt.prompt();
+      
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response: ${outcome}`);
+      
+      deferredPrompt = null;
+      installModal.style.display = 'none';
+      if (installBtn) installBtn.style.display = 'none';
+    } else {
+      // If deferredPrompt is null, the browser lost the event 
+      // or the app is already installed.
+      alert("Installation is already pending or this browser doesn't support the trigger here.");
+      installModal.style.display = 'none';
+    }
+  });
 
-// 3. User clicks "Yes" in your modal -> Trigger REAL Chrome Prompt
-installYes.addEventListener('click', async () => {
-  installModal.style.display = 'none';
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User choice: ${outcome}`);
-    deferredPrompt = null;
-    installBtn.style.display = 'none';
+  // 3. UI Controls
+  if (installBtn) {
+    installBtn.addEventListener('click', () => {
+      installModal.style.display = 'flex';
+    });
   }
-});
 
-// 4. User clicks "Cancel"
-installNo.addEventListener('click', () => {
-  installModal.style.display = 'none';
-});
+  document.getElementById('installNo').addEventListener('click', () => {
+    installModal.style.display = 'none';
+  });
 
-// 5. Hide button if already installed
-window.addEventListener('appinstalled', () => {
-  deferredPrompt = null;
-  installBtn.style.display = 'none';
-});
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    if (installBtn) installBtn.style.display = 'none';
+    console.log('PWA installed successfully');
+  });
 </script>
 
 <script>

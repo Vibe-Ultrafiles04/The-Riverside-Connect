@@ -2,9 +2,9 @@
   "name": "Riverside Connect",
   "short_name": "Riverside",
   "description": "Join the Deliverance Church Riverside community – chat, announcements & more",
-"start_url": "./index.html",
-"id": "/The-Riverside-Connect/",
-"scope": "./",
+  "start_url": "./index.html",
+  "id": "./",
+  "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
   "background_color": "#0f2027",
@@ -42,8 +42,8 @@
       "name": "Announcements",
       "short_name": "Announcements",
       "description": "View latest church announcements",
-      "url": "announce.html",
-      "icons": [{ "src": "maskable_icon_x192.png", "sizes": "192x192" }]
+      "url": "./announce.html",
+      "icons": [{ "src": "./maskable_icon_x192.png", "sizes": "192x192" }]
     }
   ],
   "screenshots": [
@@ -52,7 +52,7 @@
       "sizes": "512x512",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Riverside Connect Home Screen"
+      "label": "Riverside Connect Chat"
     }
   ],
   "prefer_related_applications": false

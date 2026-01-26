@@ -335,6 +335,14 @@
   <span class="btn-text">Continue</span>
 </button>
 
+<button
+  type="button"
+  id="installAppBtn"
+  style="display:none; margin-top:14px; background:transparent; border:1px solid rgba(96,165,250,0.4); color:#60a5fa;"
+>
+  <i class="fas fa-download"></i> Install App
+</button>
+
     </form>
   </div>
 
@@ -438,121 +446,68 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 });
 
   </script>
-  <script>
-// ────────────────────────────────────────────────
-//     PWA Install Prompt – only for non-installed users
-// ────────────────────────────────────────────────
+<script>
+/* ────────────────────────────────────────────────
+   UNIVERSAL PWA INSTALL BUTTON (2026-safe)
+──────────────────────────────────────────────── */
 
 let deferredPrompt = null;
+const installBtn = document.getElementById('installAppBtn');
 
-// Create banner (only once)
-const installBanner = document.createElement('div');
-installBanner.id = 'install-banner';
-installBanner.style.cssText = `
-  position: fixed; bottom: 20px; left: 16px; right: 16px;
-  background: rgba(30,41,59,0.96); color: white;
-  padding: 16px 20px; border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.55);
-  z-index: 10000; display: none; flex-direction: column; gap: 14px;
-  backdrop-filter: blur(10px); border: 1px solid rgba(96,165,250,0.25);
-  font-family: inherit;
-`;
-installBanner.innerHTML = `
-  <div style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
-    <div style="flex:1;">
-      <strong style="color:#60a5fa; font-size:1.1rem;">Add to Home Screen</strong><br>
-      <small style="opacity:0.9;">Faster access • Works offline • Looks like a real app</small>
-    </div>
-    <div style="display:flex; gap:12px; white-space:nowrap;">
-      <button id="install-btn" style="
-        background: linear-gradient(90deg, #3b82f6, #60a5fa);
-        color: white; border: none; padding: 10px 22px;
-        border-radius: 12px; font-weight: 600; cursor: pointer;
-        box-shadow: 0 4px 16px rgba(59,130,246,0.4);
-      ">Install</button>
-      <button id="dismiss-install" style="
-        background: transparent; color: #94a3b8; border: none;
-        font-size: 1.4rem; line-height:1; cursor: pointer; padding:0 8px;
-      ">×</button>
-    </div>
-  </div>
-`;
-document.body.appendChild(installBanner);
+// Detect iOS
+const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+  || window.navigator.standalone === true;
 
-// ─── Helper: should we even consider showing the banner? ───
-function shouldShowInstallPrompt() {
-  // Already dismissed in the last 4 days → don't annoy
-  const dismissed = localStorage.getItem('install-dismissed');
-  if (dismissed) {
-    const daysSince = (Date.now() - Number(dismissed)) / (1000 * 60 * 60 * 24);
-    if (daysSince < 4) return false;
-  }
-
-  // Already logged in → probably returning user → skip
-  if (localStorage.getItem('userName')) return false;
-
-  // Optional: very small screens (some people find banners annoying)
-  if (window.innerWidth < 380) return false;
-
-  return true;
+// Hide button if already installed
+if (isStandalone) {
+  installBtn.style.display = 'none';
 }
 
-// ─── Capture the install event ───
+// ─── Chrome / Edge / Android ───
 window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent the automatic mini-infobar (especially on mobile Chrome)
-  e.preventDefault();
+  e.preventDefault();              // stop mini-infobar
   deferredPrompt = e;
 
-  // Only show our custom banner if conditions are good
-  if (shouldShowInstallPrompt()) {
-    installBanner.style.display = 'flex';
-  }
+  // Show install button ONLY when event fires
+  installBtn.style.display = 'block';
 });
 
-// ─── Install button clicked ───
-document.addEventListener('click', async (e) => {
-  if (e.target.id !== 'install-btn' || !deferredPrompt) return;
+// Button click → show native install dialog
+installBtn.addEventListener('click', async () => {
+  // iOS fallback
+  if (isIOS && !isStandalone) {
+    alert(
+      'To install:\n\n' +
+      '1. Tap the Share icon ⬆️\n' +
+      '2. Select "Add to Home Screen"\n' +
+      '3. Confirm'
+    );
+    return;
+  }
 
-  // Trigger native install dialog
+  if (!deferredPrompt) {
+    alert('Install is not available yet. Please use the browser menu.');
+    return;
+  }
+
   deferredPrompt.prompt();
-
   const { outcome } = await deferredPrompt.userChoice;
 
   if (outcome === 'accepted') {
-    console.log('User accepted PWA installation');
-    // Optional: track conversion
-  } else {
-    console.log('User dismissed native install prompt');
+    console.log('[PWA] User installed app');
   }
 
-  // Clean up
-  installBanner.style.display = 'none';
   deferredPrompt = null;
+  installBtn.style.display = 'none';
 });
 
-// ─── Dismiss button ───
-document.getElementById('dismiss-install')?.addEventListener('click', () => {
-  installBanner.style.display = 'none';
-  // Remember for several days
-  localStorage.setItem('install-dismissed', Date.now().toString());
-});
-
-// ─── When install actually succeeds (mostly Chrome/Android) ───
+// ─── When installation completes ───
 window.addEventListener('appinstalled', () => {
-  console.log('PWA was successfully installed');
-  installBanner.style.display = 'none';
-  // Optional: show success toast
-  // showToast("App installed! 🎉 You can now find it on your home screen.");
+  console.log('[PWA] App installed');
+  installBtn.style.display = 'none';
 });
-
-// ─── Service Worker registration (unchanged) ───
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(reg => console.log('Service Worker registered → scope:', reg.scope))
-      .catch(err => console.error('Service Worker registration failed:', err));
-  });
-}
 </script>
+
 </body>
 </html>

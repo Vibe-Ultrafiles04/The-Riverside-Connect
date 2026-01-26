@@ -6,7 +6,7 @@
   <title>Riverside Connect</title>
   
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-  <link rel="manifest" href="/manifest.json">
+ <link rel="manifest" href="manifest.json">
   <!-- iOS Safari home screen support -->
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -500,69 +500,49 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 });
 
   </script>
-
-
 <script>
 let deferredPrompt = null;
-const installBtn = document.getElementById('installAppBtn');
-const modal = document.getElementById('installModal');
-const yesBtn = document.getElementById('installYes');
-const noBtn = document.getElementById('installNo');
+// Matches the button ID in your HTML
+const installBtn = document.getElementById('installAppBtn'); 
+const installModal = document.getElementById('installModal');
+const installYes = document.getElementById('installYes');
+const installNo = document.getElementById('installNo');
 
-// Detect if already installed/standalone
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                     window.navigator.standalone === true;
-
-// If already installed, we hide the button to save space
-if (isStandalone) {
-  installBtn.style.display = 'none';
-}
-
-// 1. Capture the Chrome/Android install event
+// 1. Listen for the browser's PWA prompt availability
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  // Button stays visible as per your requirement
+  // Show the "Install App" button now that we know it's possible
+  installBtn.style.display = 'block';
+  console.log("✅ PWA Install ready");
 });
 
-// 2. Click event for the always-present button
+// 2. Click "Install App" -> Show your custom modal
 installBtn.addEventListener('click', () => {
-  modal.style.display = 'flex';
+  installModal.style.display = 'flex';
 });
 
-// 3. Modal "Yes" Logic
-yesBtn.addEventListener('click', async () => {
-  modal.style.display = 'none';
-
-  // iOS detection
-  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-
-  if (isIOS) {
-    alert(
-      'To install Riverside Connect on iOS:\n\n' +
-      '1. Tap the Share icon (the square with an arrow ⬆️)\n' +
-      '2. Scroll down and tap "Add to Home Screen"\n' +
-      '3. Tap "Add" in the top right.'
-    );
-  } else if (deferredPrompt) {
+// 3. User clicks "Yes" in your modal -> Trigger REAL Chrome Prompt
+installYes.addEventListener('click', async () => {
+  installModal.style.display = 'none';
+  if (deferredPrompt) {
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      installBtn.style.display = 'none'; // Hide after successful install
-    }
+    console.log(`User choice: ${outcome}`);
     deferredPrompt = null;
-  } else {
-    // Fallback if browser doesn't support or prompt isn't ready
-    alert('To install: Look for the "Install App" or "Add to Home Screen" option in your browser menu (usually three dots in the corner).');
+    installBtn.style.display = 'none';
   }
 });
 
-noBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
+// 4. User clicks "Cancel"
+installNo.addEventListener('click', () => {
+  installModal.style.display = 'none';
 });
 
-modal.addEventListener('click', (e) => {
-  if (e.target === modal) modal.style.display = 'none';
+// 5. Hide button if already installed
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
 });
 </script>
 

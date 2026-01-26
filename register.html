@@ -272,6 +272,8 @@
   from { opacity: 0; transform: translateY(-20px); } 
   to { opacity: 1; transform: translateY(0); } 
 }
+
+
   </style>
 </head>
 <body>
@@ -335,13 +337,65 @@
   <span class="btn-text">Continue</span>
 </button>
 
-<button
-  type="button"
-  id="installAppBtn"
-  style="display:none; margin-top:14px; background:transparent; border:1px solid rgba(96,165,250,0.4); color:#60a5fa;"
->
-  <i class="fas fa-download"></i> Install App
+<button type="button" id="installAppBtn" style="
+  background: transparent; 
+  border: 1px solid rgba(255,255,255,0.3); 
+  margin-top: 10px; 
+  box-shadow: none;
+  font-size: 0.9rem;
+  padding: 12px;
+">
+  <i class="fas fa-download" style="margin-right: 8px;"></i> Install App
 </button>
+<div id="installModal" style="
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  backdrop-filter:blur(3px);
+  z-index:9999;
+  justify-content:center;
+  align-items:center;
+">
+  <div style="
+    background: rgba(30,41,59,0.95);
+    padding: 24px;
+    border-radius: 16px;
+    max-width: 320px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+  ">
+    <h2 style="margin-bottom:12px; color:#60a5fa; font-size: 1.25rem;">Install App?</h2>
+    <p style="margin-bottom:20px; font-size:0.9rem; color:#cbd5e1;">
+      Install Riverside Connect for a faster experience and easier access.
+    </p>
+    <div style="display: flex; gap: 10px; justify-content: center;">
+      <button id="installYes" style="
+        flex: 1;
+        padding:12px;
+        background:#3b82f6;
+        color:white;
+        border:none;
+        border-radius:12px;
+        font-weight:600;
+        cursor:pointer;
+        margin-top: 0;
+      ">Yes</button>
+      <button id="installNo" style="
+        flex: 1;
+        padding:12px;
+        background:rgba(255,255,255,0.1);
+        color:white;
+        border:1px solid rgba(255,255,255,0.2);
+        border-radius:12px;
+        font-weight:600;
+        cursor:pointer;
+        margin-top: 0;
+      ">Cancel</button>
+    </div>
+  </div>
+</div>
 
     </form>
   </div>
@@ -446,69 +500,82 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 });
 
   </script>
-<script>
-/* ────────────────────────────────────────────────
-   UNIVERSAL PWA INSTALL BUTTON (2026-safe)
-──────────────────────────────────────────────── */
 
+
+<script>
 let deferredPrompt = null;
 const installBtn = document.getElementById('installAppBtn');
+const modal = document.getElementById('installModal');
+const yesBtn = document.getElementById('installYes');
+const noBtn = document.getElementById('installNo');
 
-// Detect iOS
-const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = window.matchMedia('(display-mode: standalone)').matches
-  || window.navigator.standalone === true;
+// Detect if already installed/standalone
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                     window.navigator.standalone === true;
 
-// Hide button if already installed
+// If already installed, we hide the button to save space
 if (isStandalone) {
-  installBtn.style.display = 'block'; // FORCE SHOW
-
+  installBtn.style.display = 'none';
 }
 
-// ─── Chrome / Edge / Android ───
+// 1. Capture the Chrome/Android install event
 window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();              // stop mini-infobar
+  e.preventDefault();
   deferredPrompt = e;
-
-  // Show install button ONLY when event fires
-  installBtn.style.display = 'block';
+  // Button stays visible as per your requirement
 });
 
-// Button click → show native install dialog
-installBtn.addEventListener('click', async () => {
-  // iOS fallback
-  if (isIOS && !isStandalone) {
+// 2. Click event for the always-present button
+installBtn.addEventListener('click', () => {
+  modal.style.display = 'flex';
+});
+
+// 3. Modal "Yes" Logic
+yesBtn.addEventListener('click', async () => {
+  modal.style.display = 'none';
+
+  // iOS detection
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+  if (isIOS) {
     alert(
-      'To install:\n\n' +
-      '1. Tap the Share icon ⬆️\n' +
-      '2. Select "Add to Home Screen"\n' +
-      '3. Confirm'
+      'To install Riverside Connect on iOS:\n\n' +
+      '1. Tap the Share icon (the square with an arrow ⬆️)\n' +
+      '2. Scroll down and tap "Add to Home Screen"\n' +
+      '3. Tap "Add" in the top right.'
     );
-    return;
+  } else if (deferredPrompt) {
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      installBtn.style.display = 'none'; // Hide after successful install
+    }
+    deferredPrompt = null;
+  } else {
+    // Fallback if browser doesn't support or prompt isn't ready
+    alert('To install: Look for the "Install App" or "Add to Home Screen" option in your browser menu (usually three dots in the corner).');
   }
-
-  if (!deferredPrompt) {
-    alert('Install is not available yet. Please use the browser menu.');
-    return;
-  }
-
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-
-  if (outcome === 'accepted') {
-    console.log('[PWA] User installed app');
-  }
-
-  deferredPrompt = null;
-  installBtn.style.display = 'none';
 });
 
-// ─── When installation completes ───
-window.addEventListener('appinstalled', () => {
-  console.log('[PWA] App installed');
-  installBtn.style.display = 'none';
+noBtn.addEventListener('click', () => {
+  modal.style.display = 'none';
+});
+
+modal.addEventListener('click', (e) => {
+  if (e.target === modal) modal.style.display = 'none';
 });
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker Registered'))
+        .catch(err => console.log('Service Worker Failed', err));
+    });
+  }
+</script>
+
 
 </body>
 </html>

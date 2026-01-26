@@ -5,17 +5,14 @@ const CACHE_NAME = 'Riverside Connect';
    // ← increment this when you update files
 
 const STATIC_ASSETS = [
-  '/',                        // root → usually resolves to index.html
-  '/register.html',
-  '/index.html',
-  '/announce.html',
-  '/manifest.json',
-  '/maskable_icon_x192.png',
-  '/maskable_icon_x512.png',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
-  // Add these if you have them locally or want stronger offline
-  // '/icons/icon-192-maskable.png',
-  // '/icons/icon-512-maskable.png',
+  './',                // Current directory
+  './register.html',   // Relative path
+  './index.html',
+  './announce.html',
+  './manifest.json',
+  './maskable_icon_x192.png',
+  './maskable_icon_x512.png',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css'
 ];
 
 // Names of other caches we want to keep (if you ever add e.g. images cache, dynamic cache…)

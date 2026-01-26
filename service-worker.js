@@ -6,7 +6,7 @@ const CACHE_NAME = 'Riverside Connect';
 
 const STATIC_ASSETS = [
   '/',                        // root → usually resolves to index.html
-  '/login.html',
+  '/register.html',
   '/index.html',
   '/announce.html',
   '/manifest.json',
@@ -91,7 +91,7 @@ self.addEventListener('fetch', event => {
 
   // ────────────────────────────────────────────────
   // NEW: Let HTML pages & navigation requests try the network first
-  //      (prevents serving stale login.html forever)
+  //      (prevents serving stale register.html forever)
   // ────────────────────────────────────────────────
   if (event.request.mode === 'navigate' || 
       url.pathname.endsWith('.html') || 
@@ -147,7 +147,7 @@ self.addEventListener('fetch', event => {
         if (event.request.mode === 'navigate') {
           // Prefer login if no user session, otherwise index
           // You could also return a custom offline.html if you create one
-          return caches.match('/login.html')
+          return caches.match('/register.html')
             .then(r => r || caches.match('/index.html'))
             .then(r => r || new Response(
               '<h1>Offline</h1><p>Please reconnect to use the chat.</p>',

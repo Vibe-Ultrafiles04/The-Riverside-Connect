@@ -1132,13 +1132,14 @@ markAnnSeen();
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      // Adding { scope: './' } is the "magic fix" for GitHub Pages subfolders
-     navigator.serviceWorker.register(new URL('sw.js', import.meta.url).href, { scope: './' })
+      const REPO_NAME = '/The-Riverside-Connect/';
+      
+      navigator.serviceWorker.register(REPO_NAME + 'sw.js', { scope: REPO_NAME })
         .then(reg => {
-          console.log('✅ Service Worker Registered. Scope:', reg.scope);
+          console.log('Service Worker registered successfully. Scope:', reg.scope);
         })
         .catch(err => {
-          console.error('❌ Service Worker registration failed:', err);
+          console.error('Service Worker registration FAILED:', err);
         });
     });
   }

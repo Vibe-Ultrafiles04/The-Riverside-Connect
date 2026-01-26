@@ -1395,49 +1395,65 @@ async function updateAnnBadge() {
   }
 </script>
 <script>
- let deferredPrompt; // Global variable to store the event
+  let deferredPrompt;
+  const installBtn = document.getElementById('installAppBtn');
+  const installModal = document.getElementById('installModal');
 
-window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent Chrome from showing the default mini-infobar
-  e.preventDefault();
-  // Stash the event so it can be triggered later.
-  deferredPrompt = e;
-  
-  // Optional: Only show your custom "Install App" button now that we know 
-  // the browser is ready to install
-  document.getElementById('installAppBtn').style.display = 'block';
-});
-
-// Logic for your "Yes" button in the modal
-document.getElementById('installYes').addEventListener('click', async () => {
-  if (deferredPrompt) {
-    // Show the browser's install prompt
-    deferredPrompt.prompt();
-    
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log(`User response to the install prompt: ${outcome}`);
-    
-    // We've used the prompt, and can't use it again, throw it away
-    deferredPrompt = null;
-    
-    // Hide your custom modal
-    document.getElementById('installModal').style.display = 'none';
-  } else {
-    // If the browser hasn't fired 'beforeinstallprompt' yet
-    alert("The app is already installed or your browser isn't ready yet.");
+  // 1. Register Service Worker (Crucial for the 'threshold')
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      // Using './' ensures it works within the /The-Riverside-Connect/ subfolder
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW registered for Riverside Connect'))
+        .catch(err => console.error('SW registration failed:', err));
+    });
   }
-});
 
-// Trigger your custom modal when the header button is clicked
-document.getElementById('installAppBtn').addEventListener('click', () => {
-  document.getElementById('installModal').style.display = 'flex';
-});
+  // 2. Listen for the browser's installability event
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered by your 'Yes' button
+    deferredPrompt = e;
+    // Show your custom install button now that we know the PWA is valid
+    if (installBtn) installBtn.style.display = 'block';
+  });
 
-// Cancel button logic
-document.getElementById('installNo').addEventListener('click', () => {
-  document.getElementById('installModal').style.display = 'none';
-});
+  // 3. Handle the 'Yes' click in your custom modal
+  document.getElementById('installYes').addEventListener('click', async () => {
+    if (deferredPrompt) {
+      // Show the actual browser install prompt
+      deferredPrompt.prompt();
+      
+      // Wait for the user to respond
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response: ${outcome}`);
+      
+      // Clean up
+      deferredPrompt = null;
+      installModal.style.display = 'none';
+      if (installBtn) installBtn.style.display = 'none';
+    }
+  });
+
+  // 4. Manual trigger for your custom modal
+  if (installBtn) {
+    installBtn.addEventListener('click', () => {
+      installModal.style.display = 'flex';
+    });
+  }
+
+  // 5. Cancel logic
+  document.getElementById('installNo').addEventListener('click', () => {
+    installModal.style.display = 'none';
+  });
+
+  // 6. Hide button if already installed
+  window.addEventListener('appinstalled', () => {
+    deferredPrompt = null;
+    if (installBtn) installBtn.style.display = 'none';
+    console.log('Riverside Connect was installed.');
+  });
 </script>
 
 

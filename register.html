@@ -500,7 +500,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 <script>
  if ('serviceWorker' in navigator) {
   // Use './' to stay inside the /The-Riverside-Connect/ subfolder
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
+  navigator.serviceWorker.register('./sw.js', { scope: './T' })
     .then(reg => console.log('✅ SW registered in subfolder scope'))
     .catch(err => console.error('❌ SW registration failed:', err));
 }

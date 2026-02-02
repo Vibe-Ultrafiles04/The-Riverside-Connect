@@ -891,7 +891,7 @@ html, body {
  let userName = localStorage.getItem('userName');
 
   if (!userName) {
-    window.location.href = 'register.html';
+    window.location.href = 'login.html';
   }
   // Load your own profile picture into the navbar
 const userAvatarImg = document.getElementById('user-avatar');
@@ -1746,6 +1746,7 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
       console.error(err);
     });
 });
+
 
 </script>
 <script>

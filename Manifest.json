@@ -3,7 +3,7 @@
   "short_name": "Riverside",
   "description": "Join the Deliverance Church Riverside community – chat, announcements & more",
   "start_url": "./",
-"id": "./",
+  "id": "./connect",
   "scope": "./",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],

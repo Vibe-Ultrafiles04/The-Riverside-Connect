@@ -1749,7 +1749,14 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
 
 
 </script>
-
+<script>
+ if ('serviceWorker' in navigator) {
+  // Use './' to stay inside the /The-Riverside-Connect/ subfolder
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
+    .then(reg => console.log('✅ SW registered in subfolder scope'))
+    .catch(err => console.error('❌ SW registration failed:', err));
+}
+</script>
 <script>
   let deferredPrompt;
   const installBtn = document.getElementById('installAppBtn');

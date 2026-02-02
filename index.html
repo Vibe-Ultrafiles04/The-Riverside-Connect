@@ -1831,20 +1831,27 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
   // ────────────────────────────────────────────────────────────────
   // 3. "Yes" button – trigger install
   // ────────────────────────────────────────────────────────────────
-  document.getElementById('installYes')?.addEventListener('click', async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted install');
-        if (installBtn) installBtn.style.display = 'none';
-      }
-      
-      deferredPrompt = null;
-      if (installModal) installModal.style.display = 'none';
-    }
-  });
+  document.getElementById('installYes')?.addEventListener('click', () => {
+  if (deferredPrompt) {
+    // Trigger the native install prompt immediately
+    deferredPrompt.prompt();
+
+    // Clean up right away — no waiting for userChoice
+    deferredPrompt = null;
+    if (installModal) installModal.style.display = 'none';
+
+    // Give positive feedback (most PWAs do this now)
+    showToast("Installing… check your home screen!", "success");
+
+    // Optional: hide the custom install button optimistically
+    if (installBtn) installBtn.style.display = 'none';
+
+    console.log('install prompt triggered');
+  } else {
+    console.warn('No deferredPrompt available — already used or not captured');
+    showToast("Install option not available right now. Try the browser menu.", "info");
+  }
+});
 
   // ────────────────────────────────────────────────────────────────
   // 4. Manual trigger (clicking the button opens modal)

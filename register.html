@@ -523,56 +523,7 @@ document.getElementById('recoverBtn').addEventListener('click', async () => {
 });
 
   </script>
-<script>
-  let deferredPrompt;
-  const installBtn = document.getElementById('installAppBtn');
-  const installModal = document.getElementById('installModal');
 
-  // 1. Capture the event specifically for the live domain
-  window.addEventListener('beforeinstallprompt', (e) => {
-    console.log('Capture: Install prompt is ready');
-    e.preventDefault();
-    deferredPrompt = e;
-    if (installBtn) installBtn.style.display = 'block';
-  });
-
-  // 2. The "Yes" button logic with a fallback check
-  document.getElementById('installYes').addEventListener('click', async () => {
-    if (deferredPrompt) {
-      // Trigger the browser's native prompt
-      deferredPrompt.prompt();
-      
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log(`User response: ${outcome}`);
-      
-      deferredPrompt = null;
-      installModal.style.display = 'none';
-      if (installBtn) installBtn.style.display = 'none';
-    } else {
-      // If deferredPrompt is null, the browser lost the event 
-      // or the app is already installed.
-      alert("Installation is already pending or this browser doesn't support the trigger here.");
-      installModal.style.display = 'none';
-    }
-  });
-
-  // 3. UI Controls
-  if (installBtn) {
-    installBtn.addEventListener('click', () => {
-      installModal.style.display = 'flex';
-    });
-  }
-
-  document.getElementById('installNo').addEventListener('click', () => {
-    installModal.style.display = 'none';
-  });
-
-  window.addEventListener('appinstalled', () => {
-    deferredPrompt = null;
-    if (installBtn) installBtn.style.display = 'none';
-    console.log('PWA installed successfully');
-  });
-</script>
 
 <script>
  if ('serviceWorker' in navigator) {

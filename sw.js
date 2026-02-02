@@ -1,12 +1,12 @@
 // sw.js — Improved offline-first PWA support for DC Riverside Chat (2026 edition)
 // Version bump required when HTML/CSS/JS or manifest changes
 
-const CACHE_NAME = 'Riverside Connect';
+const CACHE_NAME = 'Riverside-Connect-v2';
    // ← increment this when you update files
 
 const STATIC_ASSETS = [
   './',                // Current directory
-  './register.html',   // Relative path
+  './login.html',   // Relative path
   './index.html',
   './announce.html',
   './manifest.json',

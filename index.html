@@ -1762,50 +1762,12 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
   const installBtn = document.getElementById('installAppBtn');
   const installModal = document.getElementById('installModal');
 
-  // ────────────────────────────────────────────────────────────────
-  //  Stronger detection: Hide install button if already installed / in standalone
-  // ────────────────────────────────────────────────────────────────
-  function shouldHideInstallButton() {
-    // 1. Standard media query (most reliable)
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      return true;
-    }
-    
-    // 2. iOS Safari / older iOS support
-    if (window.navigator.standalone === true) {
-      return true;
-    }
-    
-    // 3. Extra safety: check if launched from home screen via user agent + no address bar clues
-    //    (some Android browsers expose this indirectly)
-    if (navigator.userAgent.includes('PWA') || 
-        !window.location.search.includes('utm_source') &&  // often missing in standalone
-        window.innerWidth === screen.width && window.innerHeight === screen.height) {
-      return true;
-    }
-    
-    return false;
+  // --- NEW: Hide button immediately if already in "standalone" (installed) mode ---
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+    if (installBtn) installBtn.style.display = 'none';
   }
 
-  // Run check immediately + on resize/orientation change (defensive)
-  function updateInstallButtonVisibility() {
-    if (shouldHideInstallButton() && installBtn) {
-      installBtn.style.display = 'none';
-      // Optional: also hide modal if somehow open
-      if (installModal) installModal.style.display = 'none';
-    }
-  }
-
-  // Initial check
-  updateInstallButtonVisibility();
-
-  // Re-check on resize / orientation change (rare but covers edge cases)
-  window.addEventListener('resize', updateInstallButtonVisibility);
-  window.addEventListener('orientationchange', updateInstallButtonVisibility);
-
-  // ────────────────────────────────────────────────────────────────
-  // 1. Register Service Worker (unchanged)
-  // ────────────────────────────────────────────────────────────────
+  // 1. Register Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('./sw.js')
@@ -1814,68 +1776,47 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
     });
   }
 
-  // ────────────────────────────────────────────────────────────────
-  // 2. Capture beforeinstallprompt – but only show button if NOT standalone
-  // ────────────────────────────────────────────────────────────────
+  // 2. Capture the install event
   window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent default browser prompt
     e.preventDefault();
     deferredPrompt = e;
-
-    // Only show our custom button if we're NOT already in standalone mode
-    if (!shouldHideInstallButton() && installBtn) {
-      installBtn.style.display = 'block';
-    }
+    // Only show button if not already installed
+    if (installBtn) installBtn.style.display = 'block';
   });
 
-  // ────────────────────────────────────────────────────────────────
-  // 3. "Yes" button – trigger install
-  // ────────────────────────────────────────────────────────────────
-  document.getElementById('installYes')?.addEventListener('click', async () => {
+  // 3. The "Yes" Button Logic
+  document.getElementById('installYes').addEventListener('click', async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       
       if (outcome === 'accepted') {
         console.log('User accepted install');
-        if (installBtn) installBtn.style.display = 'none';
+        if (installBtn) installBtn.style.display = 'none'; // Hide button
       }
-      
       deferredPrompt = null;
-      if (installModal) installModal.style.display = 'none';
+      installModal.style.display = 'none';
     }
   });
 
-  // ────────────────────────────────────────────────────────────────
-  // 4. Manual trigger (clicking the button opens modal)
-  // ────────────────────────────────────────────────────────────────
+  // 4. Manual Modal Trigger
   if (installBtn) {
     installBtn.addEventListener('click', () => {
-      // Extra safety: don't open modal if already installed
-      if (shouldHideInstallButton()) {
-        installBtn.style.display = 'none';
-        return;
-      }
-      if (installModal) installModal.style.display = 'flex';
+      installModal.style.display = 'flex';
     });
   }
 
-  // ────────────────────────────────────────────────────────────────
-  // 5. Cancel button
-  // ────────────────────────────────────────────────────────────────
-  document.getElementById('installNo')?.addEventListener('click', () => {
-    if (installModal) installModal.style.display = 'none';
+  // 5. Cancel Button
+  document.getElementById('installNo').addEventListener('click', () => {
+    installModal.style.display = 'none';
   });
 
-  // ────────────────────────────────────────────────────────────────
-  // 6. Fired when the app is successfully installed
-  // ────────────────────────────────────────────────────────────────
+  // 6. --- NEW: Final safeguard to hide button when installation finishes ---
   window.addEventListener('appinstalled', () => {
     console.log('App installed successfully');
     if (installBtn) installBtn.style.display = 'none';
-    if (installModal) installModal.style.display = 'none';
+    installModal.style.display = 'none';
     deferredPrompt = null;
-    // Optional: show a toast "App installed!"
   });
 </script>
 

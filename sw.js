@@ -1,7 +1,7 @@
 // sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
-// Version bump required when HTML/CSS/JS, manifest or logic changes
+// Now caches comments, announcements, view counts & approval status
 
-const CACHE_NAME = 'Riverside-Connect-v4';   // ← bumped version for approval + comments caching
+const CACHE_NAME = 'Riverside-Connect-v5';   // ← bumped version for announcements + view counts
 
 const STATIC_ASSETS = [
   './',
@@ -51,18 +51,18 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
   // ────────────────────────────────────────────────
-  // Handle Google Apps Script API calls (your backend)
+  // Handle all Google Apps Script API calls
   // ────────────────────────────────────────────────
   if (url.href.startsWith(API_BASE)) {
 
-    // GET requests → cache-first (for offline comments & approval status)
+    // GET requests → cache-first for offline viewing (comments, announcements, status, views)
     if (event.request.method === 'GET') {
       event.respondWith(
         caches.open(CACHE_NAME).then(cache => {
           return cache.match(event.request).then(cachedResponse => {
-            // Return cached data instantly (offline mode)
+            // Return cached data immediately → enables offline comments/announcements/status/views
             if (cachedResponse) {
-              // Quietly try to update in background when online
+              // Quietly update cache in background when online
               fetch(event.request)
                 .then(freshResponse => {
                   if (freshResponse && freshResponse.status === 200) {
@@ -74,22 +74,24 @@ self.addEventListener('fetch', event => {
               return cachedResponse;
             }
 
-            // No cache yet → network + cache if successful
+            // No cache yet → fetch from network and cache if successful
             return fetch(event.request).then(networkResponse => {
               if (networkResponse && networkResponse.status === 200) {
                 cache.put(event.request, networkResponse.clone());
               }
               return networkResponse;
             }).catch(() => {
-              // Offline fallback — structured response your app can handle
+              // Offline fallback — safe defaults your frontend can handle
               return new Response(
                 JSON.stringify({
                   status: 'offline',
                   offline: true,
-                  userStatus: 'pending', // safe default
+                  userStatus: 'pending',         // safe default for approval check
                   comments: [],
                   announcements: [],
-                  message: 'You are offline. Showing last known data.'
+                  viewCounts: [],                // empty array for view badges
+                  announcementsViewCounts: [],   // fallback for announce.html
+                  message: 'Offline — showing last known data (comments, announcements, views).'
                 }),
                 {
                   status: 200,
@@ -103,13 +105,14 @@ self.addEventListener('fetch', event => {
       return;
     }
 
-    // POST/DELETE (send, edit, delete message) → always network-first
+    // POST/DELETE/PUT (postComment, deleteComment, editComment, postAnnouncement, etc.)
+    // → always network-first, fail gracefully offline
     event.respondWith(
       fetch(event.request).catch(() => {
         return new Response(
           JSON.stringify({
             status: 'offline',
-            message: 'Cannot send, edit or delete messages while offline. Will try again when you reconnect.'
+            message: 'Cannot send, edit, delete or post while offline. Action will be attempted when you reconnect.'
           }),
           {
             status: 503,
@@ -134,12 +137,11 @@ self.addEventListener('fetch', event => {
   }
 
   // ────────────────────────────────────────────────
-  // All other requests (images, CSS, JS, etc.) → cache-first
+  // All other requests (images, CSS, JS, fonts…) → cache-first + revalidate
   // ────────────────────────────────────────────────
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) {
-        // Revalidate in background
         fetch(event.request)
           .then(freshResponse => {
             if (freshResponse && freshResponse.status === 200 && event.request.method === 'GET') {
@@ -174,7 +176,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Future: background sync for pending messages (optional next step)
+// Future: background sync for pending actions (messages/announcements)
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-pending-messages') {
     event.waitUntil(syncPendingMessages());
@@ -182,6 +184,6 @@ self.addEventListener('sync', event => {
 });
 
 async function syncPendingMessages() {
-  console.log('[SW] Background sync triggered — trying to send pending messages');
-  // → Add IndexedDB queue reading + sending logic later if needed
+  console.log('[SW] Background sync triggered — attempting to send pending messages/announcements');
+  // → Add IndexedDB queue + retry logic here in future if needed
 }

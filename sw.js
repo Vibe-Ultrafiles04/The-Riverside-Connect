@@ -1,11 +1,11 @@
-// sw.js — Improved offline-first PWA support for DC Riverside Chat (2026 edition)
-// Version bump required when HTML/CSS/JS or manifest changes
+// sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
+// Version bump required when HTML/CSS/JS, manifest or logic changes
 
-const CACHE_NAME = 'Riverside-Connect-v3';   // ← bumped version for new dynamic caching logic
+const CACHE_NAME = 'Riverside-Connect-v4';   // ← bumped version for approval + comments caching
 
 const STATIC_ASSETS = [
-  './',                // Current directory
-  './login.html',      // Relative path
+  './',
+  './login.html',
   './index.html',
   './announce.html',
   './manifest.json',
@@ -13,7 +13,6 @@ const STATIC_ASSETS = [
   './maskable_icon_x512.png'
 ];
 
-// Names of other caches we want to keep
 const EXPECTED_CACHES = [CACHE_NAME];
 
 const API_BASE = 'https://script.google.com/macros/s/AKfycbwsbPqeRiqW2it0f1UpTNMRba_YQ5KO7wo2syRn_u7CvxM5oEyct6n9zq0lntfbRTm4/exec';
@@ -25,10 +24,7 @@ self.addEventListener('install', event => {
         console.log('[SW] Installing v' + CACHE_NAME + ' — caching core assets');
         return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => {
-        // Skip waiting → new service worker activates immediately
-        return self.skipWaiting();
-      })
+      .then(() => self.skipWaiting())
       .catch(err => console.error('[SW] Install failed:', err))
   );
 });
@@ -36,7 +32,6 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     Promise.all([
-      // Clean up old caches
       caches.keys().then(keys =>
         Promise.all(
           keys
@@ -47,7 +42,6 @@ self.addEventListener('activate', event => {
             })
         )
       ),
-      // Take control of all open clients immediately
       self.clients.claim()
     ])
   );
@@ -57,67 +51,65 @@ self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
   // ────────────────────────────────────────────────
-  // 1. Handle Google Apps Script API calls
+  // Handle Google Apps Script API calls (your backend)
   // ────────────────────────────────────────────────
   if (url.href.startsWith(API_BASE)) {
 
-    // GET requests (mainly ?operation=getData) → cache-first + network fallback
+    // GET requests → cache-first (for offline comments & approval status)
     if (event.request.method === 'GET') {
       event.respondWith(
-        caches.match(event.request).then(cached => {
-          // Return cached data immediately (offline support for comments)
-          if (cached) {
-            // Try to update cache in background (stale-while-revalidate)
-            fetch(event.request)
-              .then(fresh => {
-                if (fresh && fresh.status === 200) {
-                  caches.open(CACHE_NAME).then(cache => {
-                    cache.put(event.request, fresh.clone());
-                  });
-                }
-              })
-              .catch(() => {}); // silent fail
+        caches.open(CACHE_NAME).then(cache => {
+          return cache.match(event.request).then(cachedResponse => {
+            // Return cached data instantly (offline mode)
+            if (cachedResponse) {
+              // Quietly try to update in background when online
+              fetch(event.request)
+                .then(freshResponse => {
+                  if (freshResponse && freshResponse.status === 200) {
+                    cache.put(event.request, freshResponse.clone());
+                  }
+                })
+                .catch(() => {}); // silent fail
 
-            return cached;
-          }
-
-          // No cache → go to network and cache if successful
-          return fetch(event.request).then(response => {
-            if (response && response.status === 200) {
-              const responseClone = response.clone();
-              caches.open(CACHE_NAME).then(cache => {
-                cache.put(event.request, responseClone);
-              });
+              return cachedResponse;
             }
-            return response;
-          }).catch(() => {
-            // Offline fallback — structured response your frontend can detect
-            return new Response(
-              JSON.stringify({
-                status: 'offline',
-                offline: true,
-                comments: [], // empty array so frontend doesn't crash
-                announcements: [],
-                message: 'You are offline. Showing last known messages (if previously loaded).'
-              }),
-              {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' }
+
+            // No cache yet → network + cache if successful
+            return fetch(event.request).then(networkResponse => {
+              if (networkResponse && networkResponse.status === 200) {
+                cache.put(event.request, networkResponse.clone());
               }
-            );
+              return networkResponse;
+            }).catch(() => {
+              // Offline fallback — structured response your app can handle
+              return new Response(
+                JSON.stringify({
+                  status: 'offline',
+                  offline: true,
+                  userStatus: 'pending', // safe default
+                  comments: [],
+                  announcements: [],
+                  message: 'You are offline. Showing last known data.'
+                }),
+                {
+                  status: 200,
+                  headers: { 'Content-Type': 'application/json' }
+                }
+              );
+            });
           });
         })
       );
       return;
     }
 
-    // POST/DELETE (postComment, deleteComment, etc.) → always network-first
+    // POST/DELETE (send, edit, delete message) → always network-first
     event.respondWith(
       fetch(event.request).catch(() => {
         return new Response(
           JSON.stringify({
             status: 'offline',
-            message: 'Cannot send, edit or delete messages while offline.'
+            message: 'Cannot send, edit or delete messages while offline. Will try again when you reconnect.'
           }),
           {
             status: 503,
@@ -130,7 +122,7 @@ self.addEventListener('fetch', event => {
   }
 
   // ────────────────────────────────────────────────
-  // 2. Navigation & HTML pages → network-first + cache fallback
+  // Navigation & HTML pages → network-first + cache fallback
   // ────────────────────────────────────────────────
   if (event.request.mode === 'navigate' || 
       url.pathname.endsWith('.html') || 
@@ -142,18 +134,17 @@ self.addEventListener('fetch', event => {
   }
 
   // ────────────────────────────────────────────────
-  // 3. Everything else → cache-first + stale-while-revalidate
+  // All other requests (images, CSS, JS, etc.) → cache-first
   // ────────────────────────────────────────────────
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) {
-        // Background revalidation
+        // Revalidate in background
         fetch(event.request)
-          .then(networkResponse => {
-            if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
-              const responseToCache = networkResponse.clone();
+          .then(freshResponse => {
+            if (freshResponse && freshResponse.status === 200 && event.request.method === 'GET') {
               caches.open(CACHE_NAME).then(cache => {
-                cache.put(event.request, responseToCache);
+                cache.put(event.request, freshResponse.clone());
               });
             }
           })
@@ -163,12 +154,7 @@ self.addEventListener('fetch', event => {
       }
 
       return fetch(event.request).then(networkResponse => {
-        if (
-          !networkResponse ||
-          networkResponse.status !== 200 ||
-          event.request.method !== 'GET' ||
-          networkResponse.type === 'opaque'
-        ) {
+        if (!networkResponse || networkResponse.status !== 200 || event.request.method !== 'GET') {
           return networkResponse;
         }
 
@@ -180,11 +166,7 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       }).catch(() => {
         if (event.request.mode === 'navigate') {
-          return caches.match('/index.html')
-            .then(r => r || new Response(
-              '<h1>Offline</h1><p>Please reconnect to use the chat.</p>',
-              { headers: { 'Content-Type': 'text/html' } }
-            ));
+          return caches.match('./index.html');
         }
         return new Response('', { status: 503 });
       });
@@ -192,7 +174,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Optional: listen for background sync (future use)
+// Future: background sync for pending messages (optional next step)
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-pending-messages') {
     event.waitUntil(syncPendingMessages());
@@ -200,5 +182,6 @@ self.addEventListener('sync', event => {
 });
 
 async function syncPendingMessages() {
-  console.log('[SW] Background sync triggered — messages pending');
+  console.log('[SW] Background sync triggered — trying to send pending messages');
+  // → Add IndexedDB queue reading + sending logic later if needed
 }

@@ -688,7 +688,8 @@ async function fetchMembers() {
 function renderMedia(item) {
   let mediaHtml = '';
 
-  // ── ONLY handle attached files (fileLink) — no avatars here ───────────
+  // ── 1. Attached media (fileLink) ──────────────────────────────────────
+  // This works for both announcements and comments — images/videos only
   if (item.fileLink && item.fileLink.trim()) {
     const links = item.fileLink.split(',').map(l => l.trim()).filter(Boolean);
     
@@ -729,11 +730,23 @@ function renderMedia(item) {
     });
   }
 
-  // ── IMPORTANT: NO avatar rendering here anymore ───────────────────────
-  // The tiny avatar is already handled in formatReport() header
-  // We only return attached media (images/videos from fileLink)
+  // ── 2. ONLY render avatars for MEMBERS (list mode) ─────────────────────
+  // We check if this item has 'date' or looks like a member record
+  if (item.picLink && (item.date || item.status || !item.fileLink)) {
+    const avatarId = extractFileId(item.picLink);
+    const avatarSrc = avatarId 
+      ? `https://lh3.googleusercontent.com/d/${avatarId}`
+      : item.picLink;
 
-  return mediaHtml || ''; // No fallback text needed
+    mediaHtml += `
+      <div class="media-content">
+        <img src="${avatarSrc}"
+             style="width:96px; height:96px; object-fit:cover; border-radius:50%; border:3px solid #60a5fa; box-shadow:0 4px 16px rgba(59,130,246,0.25);"
+             onerror="this.src='https://via.placeholder.com/96?text=@';">
+      </div>`;
+  }
+
+  return mediaHtml || '';
 }
 // Add right after your fetchBackend() function
 function extractFileId(url) {

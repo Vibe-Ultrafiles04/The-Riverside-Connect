@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riverside Connect - AI Builder</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f3f4f6; padding: 20px; max-width: 1200px; margin: auto; color: #334155; }
+    h1 { color: #1e40af; margin-bottom: 24px; }
+    h2 { color: #1e40af; margin: 32px 0 16px; font-size: 1.4rem; }
+    .section { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); margin-bottom: 32px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; margin-bottom: 8px; color: #475569; }
+    input, textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; }
+    textarea { min-height: 100px; resize: vertical; }
+    button { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+    button:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+    .topic-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .qa-pair { margin: 12px 0; padding: 12px; background: white; border-left: 4px solid #60a5fa; border-radius: 8px; position: relative; }
+    .qa-pair img { max-width: 100%; margin-top: 8px; border-radius: 8px; }
+    .like-btn { position: absolute; top: 8px; right: 8px; background: none; color: #94a3b8; font-size: 1rem; cursor: pointer; }
+    .like-btn:hover { color: #ef4444; }
+    .log-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin: 16px 0; }
+    .stats { display: flex; gap: 16px; margin-top: 16px; }
+    .stat-item { background: #eff6ff; padding: 12px; border-radius: 8px; flex: 1; text-align: center; }
+    #notification { color: #059669; font-weight: 600; margin-top: 12px; }
+    #qa-container { border: 1px dashed #cbd5e1; padding: 16px; border-radius: 8px; margin-bottom: 20px; }
+    .qa-pair-input { margin-bottom: 16px; padding: 12px; background: #f8fafc; border-radius: 8px; }
+    .profile-card { display: inline-block; margin: 8px; text-align: center; }
+    .profile-card img { width: 60px; height: 60px; border-radius: 50%; border: 2px solid #60a5fa; }
+    .profile-card div { margin-top: 8px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>AI Builder - Welcome, <span id="agent-name"></span> Agent!</h1>
+  <p>Create/edit topics, add Q&A, view logged questions, and track your contributions.</p>
+
+  <!-- User Profiles -->
+  <div class="section">
+    <h2>Agent Profiles</h2>
+    <div id="profiles-list"></div>
+  </div>
+
+  <!-- Create Topic -->
+  <div class="section">
+    <h2>Create New Topic</h2>
+    <div class="form-group">
+      <label>Topic Name</label>
+      <input id="topic-name" type="text" placeholder="e.g., Bible Verses">
+    </div>
+    <div id="qa-container">
+      <div class="qa-pair-input">
+        <label>Question 1</label>
+        <input class="q-input" type="text" placeholder="Presumed Question">
+        <label>Answer 1</label>
+        <textarea class="a-input" placeholder="Presumed Answer"></textarea>
+        <label>Image (optional)</label>
+        <input class="img-input" type="file" accept="image/*">
+      </div>
+    </div>
+    <button onclick="addQAInput()">+ Add More Q&A</button>
+    <button onclick="commitTopic()">Commit Topic</button>
+  </div>
+
+  <!-- Existing Topics -->
+  <div class="section">
+    <h2>Existing Topics</h2>
+    <div id="topics-list"></div>
+  </div>
+
+  <!-- Logged Questions -->
+  <div class="section">
+    <h2>Logged User Questions</h2>
+    <div id="logs-list"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="section">
+    <h2>Your Progress</h2>
+    <div class="stats">
+      <div class="stat-item">Topics Created: <span id="topic-count">0</span></div>
+      <div class="stat-item">Total Likes: <span id="likes-count">0</span></div>
+    </div>
+    <div id="notification"></div>
+  </div>
+
+  <script>
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwjuJdEngDugk4jMZM1XOzXHbBbDLj6wcHz0CIXh0iBwkhwSxzBMLUmWH1TA2FfrBGP/exec';
+    const agentName = localStorage.getItem('userName') || 'Agent';
+    document.getElementById('agent-name').textContent = agentName;
+
+    let qaCount = 1;
+
+    async function loadProfiles() {
+      const res = await fetch(`${SCRIPT_URL}?operation=getUserProfiles`);
+      const data = await res.json();
+      if (data.status !== 'success') return;
+
+      const list = document.getElementById('profiles-list');
+      list.innerHTML = '';
+      data.users.forEach(user => {
+        const card = document.createElement('div');
+        card.className = 'profile-card';
+        card.innerHTML = `
+          <img src="${user.picLink || 'https://via.placeholder.com/60?text=@'}" alt="${user.name}">
+          <div>${user.name}</div>
+          <div>Topics: ${user.topicCount}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    function addQAInput() {
+      qaCount++;
+      const container = document.getElementById('qa-container');
+      const pair = document.createElement('div');
+      pair.className = 'qa-pair-input';
+      pair.innerHTML = `
+        <label>Question ${qaCount}</label>
+        <input class="q-input" type="text" placeholder="Presumed Question">
+        <label>Answer ${qaCount}</label>
+        <textarea class="a-input" placeholder="Presumed Answer"></textarea>
+        <label>Image (optional)</label>
+        <input class="img-input" type="file" accept="image/*">
+      `;
+      container.appendChild(pair);
+    }
+
+    async function commitTopic() {
+      const topic = document.getElementById('topic-name').value.trim();
+      if (!topic) return alert('Topic name required');
+
+      const questions = [];
+      const answers = [];
+      const images = [];
+
+      document.querySelectorAll('.qa-pair-input').forEach(pair => {
+        const q = pair.querySelector('.q-input').value.trim();
+        const a = pair.querySelector('.a-input').value.trim();
+        const file = pair.querySelector('.img-input').files[0];
+        if (q && a) {
+          questions.push(q);
+          answers.push(a);
+          images.push(file ? new Promise(r => {
+            const reader = new FileReader();
+            reader.onload = e => r({ base64: e.target.result.split(',')[1], name: file.name });
+            reader.readAsDataURL(file);
+          }) : null);
+        }
+      });
+
+      if (questions.length === 0) return alert('At least one Q&A required');
+
+      const imageDataPromises = await Promise.all(images);
+      const payload = { operation: 'createTopicQA', topic, questions, answers, creator: agentName };
+      if (imageDataPromises.some(d => d)) {
+        const imageData = imageDataPromises[0]; // Assuming one image per topic for simplicity; adjust if multiple
+        if (imageData) {
+          payload.imageData = imageData.base64;
+          payload.imageName = imageData.name;
+        }
+      }
+
+      const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (data.status === 'success') {
+        alert('Topic created!');
+        loadTopics();
+        updateStats();
+      } else alert('Error: ' + data.message);
+    }
+
+    async function loadTopics() {
+      const res = await fetch(`${SCRIPT_URL}?operation=getAI_Topics`);
+      const data = await res.json();
+      if (data.status !== 'success') return;
+
+      const list = document.getElementById('topics-list');
+      list.innerHTML = '';
+      const topicsMap = data.topics.reduce((acc, item) => {
+        if (!acc[item.topic]) acc[item.topic] = [];
+        acc[item.topic].push(item);
+        return acc;
+      }, {});
+      for (const topic in topicsMap) {
+        const card = document.createElement('div');
+        card.className = 'topic-card';
+        card.innerHTML = `
+          <h3>${topic}</h3>
+          <button onclick="editTopic('${topic}')">Edit Topic</button>
+          <button onclick="deleteTopic('${topic}')">Delete Topic</button>
+        `;
+        topicsMap[topic].forEach(qa => {
+          const pair = document.createElement('div');
+          pair.className = 'qa-pair';
+          pair.innerHTML = `
+            <b>Q:</b> ${qa.question}<br>
+            <b>A:</b> ${qa.answer}<br>
+            ${qa.imageLink ? `<img src="${qa.imageLink}">` : ''}
+            <span>Likes: ${qa.likes}</span>
+            <button class="like-btn" onclick="likeQA('${qa.timestamp}')"><i class="fas fa-heart"></i></button>
+            <button onclick="editQA('${qa.timestamp}')">Edit Q&A</button>
+          `;
+          card.appendChild(pair);
+        });
+        list.appendChild(card);
+      }
+    }
+
+    async function editTopic(topic) {
+      const newTopic = prompt('New Topic Name:', topic);
+      if (newTopic) {
+        const payload = { operation: 'editTopicQA', timestamp: 'dummy' }; // Use endpoint to update all rows for topic
+        // Logic to update topic name across rows would need server-side loop; for simplicity, assume manual
+      }
+    }
+
+    async function deleteTopic(topic) {
+      if (confirm('Delete entire topic?')) {
+        const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ operation: 'deleteTopic', topic }) });
+        const data = await res.json();
+        if (data.status === 'success') {
+          alert('Deleted');
+          loadTopics();
+        }
+      }
+    }
+
+    async function likeQA(timestamp) {
+      const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ operation: 'likeQA', timestamp }) });
+      const data = await res.json();
+      if (data.status === 'success') loadTopics();
+    }
+
+    async function editQA(timestamp) {
+      const newQ = prompt('New Question:');
+      const newA = prompt('New Answer:');
+      const file = document.createElement('input'); file.type = 'file'; file.accept = 'image/*'; file.click();
+      file.onchange = async e => {
+        const f = e.target.files[0];
+        if (f) {
+          const reader = new FileReader();
+          reader.onload = async ev => {
+            const base64 = ev.target.result.split(',')[1];
+            const payload = { operation: 'editTopicQA', timestamp, newQuestion: newQ, newAnswer: newA, newImageData: base64, newImageName: f.name };
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (data.status === 'success') {
+              alert('Updated');
+              loadTopics();
+            }
+          };
+          reader.readAsDataURL(f);
+        } else {
+          // No new image
+          const payload = { operation: 'editTopicQA', timestamp, newQuestion: newQ, newAnswer: newA };
+          const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
+          const data = await res.json();
+          if (data.status === 'success') {
+            alert('Updated');
+            loadTopics();
+          }
+        }
+      };
+    }
+
+    async function loadLogs() {
+      const res = await fetch(`${SCRIPT_URL}?operation=getLoggedQuestions`);
+      const data = await res.json();
+      if (data.status !== 'success') return;
+
+      const list = document.getElementById('logs-list');
+      list.innerHTML = '';
+      data.logs.forEach(log => {
+        const card = document.createElement('div');
+        card.className = 'log-card';
+        card.innerHTML = `
+          <b>Topic:</b> ${log.topic}<br>
+          <b>Q:</b> ${log.question}<br>
+          <b>AI Response:</b> ${log.response}<br>
+          <b>Asker:</b> ${log.asker}
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    async function updateStats() {
+      // Fetch from getAI_Topics and count by creator
+      const res = await fetch(`${SCRIPT_URL}?operation=getAI_Topics`);
+      const data = await res.json();
+      if (data.status !== 'success') return;
+
+      const myTopics = new Set(data.topics.filter(t => t.creator === agentName).map(t => t.topic)).size;
+      const myLikes = data.topics.filter(t => t.creator === agentName).reduce((sum, t) => sum + t.likes, 0);
+
+      document.getElementById('topic-count').textContent = myTopics;
+      document.getElementById('likes-count').textContent = myLikes;
+      document.getElementById('notification').textContent = myLikes > 0 ? 'Great work – keep building!' : '';
+    }
+
+    loadProfiles();
+    loadTopics();
+    loadLogs();
+    updateStats();
+  </script>
+</body>
+</html>

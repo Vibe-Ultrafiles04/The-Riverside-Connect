@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Channels · Riverside</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #e2e8f0;
+  min-height: 100dvh;
+  display: flex;
+  overflow: hidden;   /* keep this */
+}
+
+html, body {
+  height: 100%;
+}
+
+
+    .sidebar {
+      width: 280px;
+      background: rgba(15,23,42,0.94);
+      backdrop-filter: blur(14px);
+      border-right: 1px solid rgba(96,165,250,0.18);
+      overflow-y: auto;
+      flex-shrink: 0;
+      padding: 16px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(96,165,250,0.2);
+      margin-bottom: 16px;
+    }
+
+    .back-btn {
+      color: #60a5fa;
+      font-size: 1.5rem;
+      text-decoration: none;
+      padding: 8px;
+      border-radius: 50%;
+    }
+
+    .sidebar h1 {
+      font-size: 1.4rem;
+      color: #60a5fa;
+      font-weight: 700;
+      flex: 1;
+    }
+
+    .channel-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .channel-tab {
+      padding: 12px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      background: rgba(30,41,59,0.4);
+      transition: all 0.2s;
+    }
+
+    .channel-tab:hover, .channel-tab.active {
+      background: rgba(96,165,250,0.3);
+    }
+
+    .channel-tab.active { border-left: 4px solid #60a5fa; }
+
+    .channel-tab-name { font-weight: 600; font-size: 1.05rem; }
+    .channel-tab-desc { font-size: 0.85rem; color: #94a3b8; margin-top: 4px; }
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+    .channel-header {
+      background: rgba(15,23,42,0.94);
+      backdrop-filter: blur(14px);
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(96,165,250,0.22);
+      flex-shrink: 0;
+    }
+
+    .channel-title {
+      font-size: 1.7rem;
+      color: #60a5fa;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .channel-meta { color: #94a3b8; font-size: 0.98rem; }
+
+   .feed-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+
+    .feed {
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .post {
+      background: rgba(30,41,59,0.88);
+      border-radius: 16px;
+      margin-bottom: 28px;
+      border: 1px solid rgba(96,165,250,0.15);
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .post-header {
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .post-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2.5px solid rgba(96,165,250,0.45);
+    }
+
+    .post-author { font-weight: 700; font-size: 1.1rem; color: #60a5fa; }
+    .post-time { color: #94a3b8; font-size: 0.85rem; }
+
+    .post-content {
+      padding: 0 16px 16px;
+      line-height: 1.6;
+      font-size: 1.05rem;
+      white-space: pre-wrap;
+    }
+
+    .post-media img, .post-media video {
+      width: 100%;
+      display: block;
+      max-height: 580px;
+      object-fit: contain;
+      background: #000;
+    }
+
+    .post-footer {
+      padding: 12px 16px;
+      display: flex;
+      gap: 24px;
+      border-top: 1px solid rgba(96,165,250,0.12);
+      color: #94a3b8;
+    }
+
+    .post-like {
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .post-like:hover { color: #ef4444; }
+
+    .comment-section {
+      padding: 0 16px 16px;
+      border-top: 1px solid rgba(96,165,250,0.12);
+    }
+
+    .comments-list { margin-bottom: 12px; }
+
+    .comment {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .comment-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .comment-body {
+      background: rgba(255,255,255,0.06);
+      padding: 10px 14px;
+      border-radius: 16px;
+      flex: 1;
+    }
+
+    .comment-author { font-weight: 600; font-size: 0.95rem; }
+    .comment-text { margin-top: 4px; }
+
+    /* Floating + button */
+    .fab {
+      position: fixed;
+      bottom: 32px;
+      right: 32px;
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      box-shadow: 0 8px 24px rgba(59,130,246,0.4);
+      cursor: pointer;
+      z-index: 1000;
+      transition: all 0.2s;
+    }
+
+    .fab:hover {
+      transform: scale(1.1);
+      box-shadow: 0 12px 32px rgba(59,130,246,0.5);
+    }
+
+    /* Posting panel (appears when + clicked) */
+    .post-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15,23,42,0.98);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(96,165,250,0.3);
+      padding: 24px;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      z-index: 999;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+
+    .post-panel.active {
+      transform: translateY(0);
+    }
+
+    .post-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .post-panel-close {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 1.6rem;
+      cursor: pointer;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(96,165,250,0.4);
+      color: white;
+      font-size: 1.05rem;
+      min-height: 120px;
+      resize: vertical;
+      margin-bottom: 16px;
+    }
+
+    .media-preview {
+      max-width: 100%;
+      max-height: 300px;
+      border-radius: 12px;
+      margin: 12px 0;
+      display: block;
+    }
+
+    .post-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .media-btn {
+      color: #60a5fa;
+      font-size: 1.8rem;
+      cursor: pointer;
+      padding: 12px;
+    }
+
+    .submit-post {
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .empty, .loading {
+      text-align: center;
+      padding: 140px 32px;
+      color: #94a3b8;
+      font-size: 1.2rem;
+    }
+
+    #toast-container {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      max-width: 90%;
+    }
+
+    .toast {
+      background: #1e293b;
+      padding: 14px 24px;
+      border-radius: 14px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+      border-left: 5px solid #3b82f6;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideDown 0.35s ease;
+    }
+
+    .toast.error { border-left-color: #ef4444; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-40px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar {
+        width: 100%;
+        max-height: 45dvh;
+        border-right: none;
+        border-bottom: 1px solid rgba(96,165,250,0.18);
+      }
+      .fab { bottom: 90px; right: 24px; }
+      .post-panel { padding: 20px; }
+    }
+
+   .feed-wrapper {
+  flex: 1 1 auto;                    /* very important: grow + shrink correctly */
+  overflow-y: scroll !important;     /* force scrollbar visibility when needed */
+  -webkit-overflow-scrolling: touch; /* smooth momentum scrolling on iOS */
+  scroll-behavior: smooth;
+  padding: 24px 24px 180px 24px;     /* more bottom padding — prevents FAB overlap */
+  height: 100%;                      /* make sure it stretches full height */
+}
+
+/* Custom thin beautiful scrollbar */
+.feed-wrapper::-webkit-scrollbar {
+  width: 5px;
+}
+
+.feed-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.feed-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.5);
+  border-radius: 10px;
+}
+
+.feed-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa;
+}
+
+/* Extra bottom space so last post isn't hidden under FAB */
+.feed {
+  padding-bottom: 120px;             /* ← increased safety margin */
+  min-height: 100%;                  /* helps when few posts */
+}
+
+@keyframes fadeInOut {
+  0%, 100% { opacity: 0; }
+  20%, 80% { opacity: 0.8; }
+}
+/* Only show when there are many posts */
+.feed-wrapper:has(.post:nth-child(4))::after {
+  content: "↓  more posts below  ↓";
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.85);
+  color: #94a3b8;
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-size: 0.82rem;
+  z-index: 90;
+  pointer-events: none;
+  opacity: 0.9;
+  transition: opacity 0.4s;
+}
+
+/* Hide when user has scrolled down a bit */
+.feed-wrapper.scrolled-far::after {
+  opacity: 0;
+}
+
+.post-media {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #60a5fa #1e293b;
+}
+
+.post-media::-webkit-scrollbar {
+  height: 6px;
+}
+
+.post-media::-webkit-scrollbar-thumb {
+  background: #60a5fa;
+  border-radius: 3px;
+}
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+    <h1>Channels</h1>
+  </div>
+
+  <div class="channel-list" id="channelList">
+    <div class="loading">Loading channels...</div>
+  </div>
+
+  <button id="createChannelBtn" style="display:none; width:100%; margin-top:16px; padding:12px; background:#60a5fa; color:white; border:none; border-radius:12px; font-weight:600; cursor:pointer;">
+    + New Channel
+  </button>
+</aside>
+
+<main class="main">
+  <header class="channel-header" id="channelHeader" style="display:none;">
+    <h2 class="channel-title" id="channelTitle"></h2>
+    <div class="channel-meta" id="channelMeta"></div>
+  </header>
+
+  <div class="feed-wrapper">
+    <div class="feed" id="feed">
+      <div class="empty" id="emptyState">
+        <i class="fas fa-layer-group" style="font-size:5rem; opacity:0.4; margin-bottom:24px;"></i><br>
+        No posts yet<br>
+        <small>Click the + button to share something</small>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Floating + Button -->
+<div class="fab" id="fabPost" onclick="openPostPanel()" style="display:none;">
+  <i class="fas fa-plus"></i>
+</div>
+
+<!-- Posting Panel -->
+<div class="post-panel" id="postPanel">
+  <div class="post-panel-header">
+    <h3>Create Post</h3>
+    <button class="post-panel-close" onclick="closePostPanel()">×</button>
+  </div>
+
+  <textarea id="postContent" placeholder="What's on your mind?"></textarea>
+
+  <div id="mediaPreview" style="display:none;"></div>
+
+  <div class="post-actions">
+    <label class="media-btn" for="mediaInput">
+      <i class="fas fa-image"></i>
+    </label>
+    <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
+
+    <button class="submit-post" onclick="submitPost()">Post</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1N-fwReLm4Ad1_ArlVBqxQ1ILrv0-LxxpLe5QMUS7W8KCBGTPcw6JDl-BeFWZTsnt/exec';
+
+let currentUserName  = localStorage.getItem("username") || "";
+let currentChannelId = null;
+let allChannels      = [];
+let isUserApproved   = false;
+
+if (!currentUserName) window.location.href = "index.html";
+
+const channelList    = document.getElementById("channelList");
+const channelHeader  = document.getElementById("channelHeader");
+const channelTitle   = document.getElementById("channelTitle");
+const channelMeta    = document.getElementById("channelMeta");
+const feed           = document.getElementById("feed");
+const fabPost        = document.getElementById("fabPost");
+const postPanel      = document.getElementById("postPanel");
+const postContent    = document.getElementById("postContent");
+const mediaInput     = document.getElementById("mediaInput");
+const mediaPreview   = document.getElementById("mediaPreview");
+const createBtn      = document.getElementById("createChannelBtn");
+
+function getLh3Link(url) {
+  if (!url) return '';
+  const id = url.match(/[-\w]{25,}/)?.[0];
+  return id ? `https://lh3.googleusercontent.com/d/${id}` : url;
+}
+function showToast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='success'?'check-circle':'exclamation-circle'}"></i> ${msg}`;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+async function checkApproval() {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getUserStatus&name=${encodeURIComponent(currentUserName)}`);
+    const data = await r.json();
+    if (data.status === "success" && data.userStatus === "approved") {
+      isUserApproved = true;
+      createBtn.style.display = "block";
+    }
+  } catch(e) {}
+}
+
+createBtn.onclick = async () => {
+  const name = prompt("Channel name?");
+  if (!name?.trim()) return;
+  const desc = prompt("Short description (optional):") || "";
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "createChannel",
+        creator: currentUserName,
+        name: name.trim(),
+        description: desc.trim()
+      })
+    });
+    const data = await res.json();
+    if (data.status === "success") {
+      showToast("Channel created!", "success");
+      loadAllChannels();
+    } else {
+      showToast("Error: " + (data.message || "Failed"), "error");
+    }
+  } catch(e) {
+    showToast("Network error", "error");
+  }
+};
+
+async function loadAllChannels() {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getAllChannels`);
+    const resp = await r.json();
+    allChannels = resp.channels || [];
+
+    channelList.innerHTML = allChannels.length === 0
+      ? '<div class="empty" style="padding:32px;text-align:center;">No channels yet</div>'
+      : '';
+
+    allChannels.forEach(ch => {
+      const tab = document.createElement("div");
+      tab.className = "channel-tab";
+      tab.innerHTML = `
+        <div class="channel-tab-name">${ch.name}</div>
+        <div class="channel-tab-desc">${ch.description || "No description"}</div>
+      `;
+      tab.onclick = () => openChannelTab(ch.id, ch.name, ch.description, ch.creator, ch.created);
+      channelList.appendChild(tab);
+    });
+
+    if (allChannels.length > 0 && !currentChannelId) {
+      openChannelTab(allChannels[0].id, allChannels[0].name, allChannels[0].description, allChannels[0].creator, allChannels[0].created);
+    }
+  } catch (err) {
+    channelList.innerHTML = '<div class="empty">Failed to load channels</div>';
+  }
+}
+
+async function openChannelTab(channelId, name, description, creator, created) {
+  currentChannelId = channelId;
+
+  document.querySelectorAll('.channel-tab').forEach(el => el.classList.remove('active'));
+  const active = [...document.querySelectorAll('.channel-tab')].find(el => 
+    el.querySelector('.channel-tab-name').textContent === name
+  );
+  if (active) active.classList.add('active');
+
+  channelTitle.textContent = name;
+  channelMeta.innerHTML = `${description || "No description"}<br>By ${creator} • ${new Date(created).toLocaleDateString()}`;
+  channelHeader.style.display = 'block';
+
+  // Show floating + button if authorised
+  await checkChannelAuthorisation(channelId);
+
+  loadPosts(channelId);
+}
+
+async function checkChannelAuthorisation(channelId) {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=isAuthorised&username=${encodeURIComponent(currentUserName)}&channelId=${encodeURIComponent(channelId)}`);
+    const data = await r.json();
+
+    if (data.status === "success" && data.isAuthorised) {
+      fabPost.style.display = 'flex';
+    } else {
+      fabPost.style.display = 'none';
+    }
+  } catch (e) {
+    fabPost.style.display = 'none';
+  }
+}
+
+async function loadPosts(channelId) {
+  feed.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading posts...</div>';
+
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getChannelPosts&channelId=${channelId}`);
+    const { posts = [] } = await r.json();
+
+    feed.innerHTML = posts.length === 0
+      ? `<div class="empty">
+           <i class="far fa-comment-dots" style="font-size:5rem; opacity:0.4; margin-bottom:24px;"></i><br>
+           No posts yet<br>
+           <small>Click the + button to be the first!</small>
+         </div>`
+      : '';
+
+    posts.forEach(post => {
+  const div = document.createElement("div");
+  div.className = "post";
+  const avatarSrc = getLh3Link(post.picLink) || 'https://via.placeholder.com/52?text=@';
+
+  let mediaHtml = '';
+  if (post.media?.link) {
+    const mediaSrc = getLh3Link(post.media.link);
+    if (post.media.type?.startsWith('image')) {
+      mediaHtml = `
+        <div class="post-media" style="overflow-x:auto; display:flex; gap:8px; padding:8px 0; scroll-snap-type:x mandatory;">
+          <img src="${mediaSrc}" loading="lazy" style="max-height:500px; border-radius:12px; scroll-snap-align:start;" onerror="this.src='https://via.placeholder.com/400?text=Image'">
+        </div>`;
+    } else {
+      mediaHtml = `
+        <div class="post-media" style="overflow-x:auto; display:flex; gap:8px; padding:8px 0;">
+          <video controls src="${mediaSrc}" loading="lazy" style="max-height:500px; border-radius:12px;"></video>
+        </div>`;
+    }
+  }
+
+  div.innerHTML = `
+    <div class="post-header">
+      <img class="post-avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/52?text=@'">
+      <div>
+        <div class="post-author">${post.author}</div>
+        <div class="post-time">${new Date(post.created).toLocaleString([],{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}</div>
+      </div>
+    </div>
+    <div class="post-content">${post.content.replace(/\n/g,'<br>')}</div>
+    ${mediaHtml}
+    <div class="post-footer">
+      <span class="post-like"><i class="far fa-heart"></i> ${post.likes || 0}</span>
+      <span><i class="far fa-comment"></i> Loading comments...</span>
+    </div>
+    <div class="comment-section" data-postid="${post.postId}">
+      <div class="comments-list"></div>
+      <textarea placeholder="Write a comment..." class="comment-input" data-postid="${post.postId}"></textarea>
+      <button class="submit-comment" onclick="postComment('${post.postId}')">Send</button>
+    </div>
+  `;
+  feed.appendChild(div);
+
+  loadComments(post.postId, div.querySelector(".comments-list"));
+});
+
+// ── ADD THIS BLOCK HERE ────────────────────────────────────────────────
+    const wrapper = document.querySelector('.feed-wrapper');
+    if (wrapper) {
+      // Go to top (newest posts usually appear at the top in feeds)
+      wrapper.scrollTop = 0;
+
+      // Alternative: if you prefer chat-like (oldest at top, scroll down to new)
+      // wrapper.scrollTop = wrapper.scrollHeight;
+
+      // Optional: small visual feedback
+      feed.classList.add('loaded');
+    }
+
+
+    // Ensure smooth vertical scroll
+    feed.scrollTop = feed.scrollHeight;
+  } catch (err) {
+    feed.innerHTML = '<div class="empty">Failed to load posts — check connection</div>';
+  }
+}
+
+// Posting Panel Controls
+function openPostPanel() {
+  postPanel.classList.add('active');
+  postContent.focus();
+}
+
+function closePostPanel() {
+  postPanel.classList.remove('active');
+  postContent.value = '';
+  mediaInput.value = '';
+  mediaPreview.innerHTML = '';
+  mediaPreview.style.display = 'none';
+}
+
+mediaInput.onchange = function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const preview = document.createElement(file.type.startsWith('image') ? 'img' : 'video');
+    preview.src = ev.target.result;
+    preview.className = 'media-preview';
+    if (file.type.startsWith('video')) preview.controls = true;
+    mediaPreview.innerHTML = '';
+    mediaPreview.appendChild(preview);
+    mediaPreview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+};
+
+async function submitPost() {
+  const content = postContent.value.trim();
+  const file = mediaInput.files[0];
+
+  if (!content && !file) {
+    showToast("Write something or add media", "error");
+    return;
+  }
+
+  let fileData = null;
+  if (file) {
+    const reader = new FileReader();
+    fileData = await new Promise(resolve => {
+      reader.onload = () => resolve({
+        base64: reader.result.split(',')[1],
+        name: file.name,
+        type: file.type
+      });
+      reader.readAsDataURL(file);
+    });
+  }
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "createChannelPost",
+        channelId: currentChannelId,
+        author: currentUserName,
+        content,
+        file: fileData
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      showToast("Posted!", "success");
+      closePostPanel();
+      loadPosts(currentChannelId);
+    } else {
+      showToast("Failed: " + (data.message || "Unknown"), "error");
+    }
+  } catch (err) {
+    showToast("Network error", "error");
+  }
+}
+
+// Comment posting (placeholder - implement as needed)
+async function postComment(postId) {
+  showToast("Comment posting not implemented yet", "info");
+}
+
+// Load comments (placeholder)
+async function loadComments(postId, container) {
+  container.innerHTML = '<div style="color:#94a3b8;padding:12px;">Comments loading...</div>';
+}
+
+window.addEventListener("load", async () => {
+  await checkApproval();
+  await loadAllChannels();
+});
+
+// Add this once — preferably near the end of your <script>, after all functions
+document.querySelector('.feed-wrapper')?.addEventListener('scroll', function() {
+  if (this.scrollTop > 300) {
+    this.classList.add('scrolled-far');
+  } else {
+    this.classList.remove('scrolled-far');
+  }
+});
+
+
+</script>
+</body>
+</html>

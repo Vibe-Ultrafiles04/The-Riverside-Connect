@@ -8,6 +8,7 @@ const STATIC_ASSETS = [
   './login.html',
   './index.html',
   './announce.html',
+  './channel.html',
   './manifest.json',
   './maskable_icon_x192.png',
   './maskable_icon_x512.png'

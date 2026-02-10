@@ -427,23 +427,6 @@ html, body {
   0%, 100% { opacity: 0; }
   20%, 80% { opacity: 0.8; }
 }
-/* Only show when there are many posts */
-.feed-wrapper:has(.post:nth-child(4))::after {
-  content: "↓  more posts below  ↓";
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(15, 23, 42, 0.85);
-  color: #94a3b8;
-  padding: 8px 18px;
-  border-radius: 30px;
-  font-size: 0.82rem;
-  z-index: 90;
-  pointer-events: none;
-  opacity: 0.9;
-  transition: opacity 0.4s;
-}
 
 /* Hide when user has scrolled down a bit */
 .feed-wrapper.scrolled-far::after {
@@ -464,25 +447,433 @@ html, body {
   background: #60a5fa;
   border-radius: 3px;
 }
+
+/* ── Bubble comment style (copied & adapted from index.html) ── */
+.bubble-comments .message {
+  display: flex;
+  align-items: flex-start;
+  max-width: 82%;
+  gap: 10px;
+  margin-bottom: 14px;
+  animation: fadeIn 0.35s ease-out;
+}
+
+.bubble-comments .message.own {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.bubble-comments .avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #60a5fa33;
+  flex-shrink: 0;
+}
+
+.bubble-comments .message-content {
+  background: rgba(30,41,59,0.78);
+  backdrop-filter: blur(6px);
+  padding: 10px 14px;
+  border-radius: 18px;
+  border-top-left-radius: 4px;
+  position: relative;
+  max-width: calc(100% - 52px);
+}
+
+.bubble-comments .message.own .message-content {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+  border-top-left-radius: 18px;
+  border-top-right-radius: 4px;
+}
+
+.bubble-comments .name {
+  font-weight: 600;
+  color: #60a5fa;
+  font-size: 0.92rem;
+  margin-bottom: 3px;
+}
+
+.bubble-comments .message.own .name {
+  color: white;
+  opacity: 0.95;
+}
+
+.bubble-comments .text {
+  word-break: break-word;
+  line-height: 1.38;
+  font-size: 0.96rem;
+}
+
+.bubble-comments .time {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-top: 5px;
+  opacity: 0.85;
+  display: block;
+}
+
+.bubble-comments .message.own .time {
+  color: rgba(255,255,255,0.75);
+}
+
+/* Quoted reply inside comment */
+.bubble-comments .quoted-msg {
+  background: rgba(0,0,0,0.25);
+  border-left: 3px solid #60a5fa;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin: 6px 0 10px 0;
+  font-size: 0.86rem;
+  color: #cbd5e1;
+}
+
+.bubble-comments .message.own .quoted-msg {
+  background: rgba(255,255,255,0.12);
+  border-left-color: white;
+  color: #f1f5f9;
+}
+
+/* Media in comments */
+.bubble-comments .media-content {
+  margin: 8px 0 4px 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.bubble-comments .media-content img,
+.bubble-comments .media-content video {
+  max-width: 100%;
+  max-height: 280px;
+  display: block;
+  border-radius: 10px;
+}
+
+/* Like button in post footer */
+.post-footer .post-like {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.post-footer .post-like.liked {
+  color: #f87171;
+}
+
+.post-footer .post-like:hover {
+  transform: scale(1.15);
+}
+
+/* Top Navigation */
+.top-nav {
+  background: rgba(15,23,42,0.94);
+  backdrop-filter: blur(14px);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(96,165,250,0.22);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  flex-shrink: 0;
+}
+
+.channels-btn {
+  background: rgba(96,165,250,0.2);
+  color: #60a5fa;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.channels-btn:hover {
+  background: rgba(96,165,250,0.4);
+}
+
+.page-title {
+  font-size: 1.3rem;
+  color: #60a5fa;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+}
+
+/* Channels Panel (slide from left) */
+.channels-panel {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: 300px;
+  height: 100%;
+  background: rgba(15,23,42,0.98);
+  backdrop-filter: blur(14px);
+  border-right: 1px solid rgba(96,165,250,0.3);
+  transition: left 0.35s ease;
+  z-index: 950;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.channels-panel.open {
+  left: 0;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(96,165,250,0.2);
+}
+
+.panel-header h2 {
+  margin: 0;
+  color: #60a5fa;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+/* Make main content full width now */
+main.main {
+  width: 100%;
+}
+
+/* On small screens — channels panel becomes full width */
+@media (max-width: 768px) {
+  .channels-panel {
+    width: 100%;
+    left: -100%;
+  }
+  .channels-panel.open {
+    left: 0;
+  }
+}
+
+/* Back button in top nav */
+.back-btn-top {
+  color: #60a5fa;
+  font-size: 1.4rem;
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.back-btn-top:hover {
+  background: rgba(96,165,250,0.25);
+  transform: scale(1.1);
+}
+
+/* Adjust top-nav layout to accommodate back button */
+.top-nav {
+  background: rgba(15,23,42,0.94);
+  backdrop-filter: blur(14px);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(96,165,250,0.22);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  flex-shrink: 0;
+}
+
+/* Make sure title takes available space but doesn't push things off */
+.page-title {
+  font-size: 1.3rem;
+  color: #60a5fa;
+  margin: 0;
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* On small screens, reduce padding/gaps if needed */
+@media (max-width: 480px) {
+  .top-nav {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .back-btn-top {
+    padding: 6px 10px;
+    font-size: 1.3rem;
+  }
+  .channels-btn {
+    padding: 6px 12px;
+    font-size: 0.95rem;
+  }
+}
+
+
+/* ── Comment toggle ─────────────────────────────────────── */
+.post-footer .comment-count {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.post-footer .comment-count:hover {
+  color: #60a5fa;
+}
+
+.post-footer .comment-count .icon {
+  margin-right: 6px;
+}
+
+.comment-section {
+  display: none;           /* hidden by default */
+  transition: all 0.25s ease;
+}
+
+.comment-section.open {
+  display: block;
+  animation: fadeIn 0.4s ease-out;
+}
+
+/* Optional: small indicator when collapsed */
+.post-footer .comment-count::after {
+  content: "Show Comments";
+  font-size: 0.7rem;
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.post-footer .comment-count.open::after {
+  content: "Hide Comments";
+}
+
+/* Channel Modal */
+.channel-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: 0.25s ease;
+  z-index: 2000;
+}
+
+.channel-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.channel-modal-content {
+  background: rgba(15,23,42,0.95);
+  padding: 28px;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 18px;
+  border: 1px solid rgba(96,165,250,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.channel-modal-content h3 {
+  margin-bottom: 18px;
+  color: #60a5fa;
+}
+
+.channel-modal-content input,
+.channel-modal-content textarea {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(96,165,250,0.4);
+  background: rgba(255,255,255,0.06);
+  color: white;
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+}
+
+.channel-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.cancel-btn {
+  background: transparent;
+  border: 1px solid #64748b;
+  color: #94a3b8;
+  padding: 8px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.create-btn {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  border: none;
+  color: white;
+  padding: 8px 22px;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
   </style>
 </head>
 <body>
 
-<aside class="sidebar">
-  <div class="sidebar-header">
-    <a href="index.html" class="back-btn"><i class="fas fa-arrow-left"></i></a>
-    <h1>Channels</h1>
-  </div>
+<!-- Top Navigation Bar -->
+<nav class="top-nav">
+  <!-- Back Button -->
+  <a href="index.html" class="back-btn-top" title="Back to main page">
+    <i class="fas fa-arrow-left"></i>
+  </a>
 
+  <!-- Channels Toggle Button -->
+  <button id="channelsToggle" class="channels-btn">
+    <i class="fas fa-layer-group"></i> Channels
+  </button>
+
+  <!-- Page Title (centered or right-aligned depending on space) -->
+  <h1 class="page-title">Riverside Channels</h1>
+</nav>
+
+<!-- Slide-in Channels Panel (hidden by default) -->
+<div class="channels-panel" id="channelsPanel">
+  <div class="panel-header">
+    <h2>Channels</h2>
+    <button id="closeChannels" class="close-btn">×</button>
+  </div>
   <div class="channel-list" id="channelList">
     <div class="loading">Loading channels...</div>
   </div>
 
-  <button id="createChannelBtn" style="display:none; width:100%; margin-top:16px; padding:12px; background:#60a5fa; color:white; border:none; border-radius:12px; font-weight:600; cursor:pointer;">
+  <button id="createChannelBtn" style="display:none; width:100%; margin:16px 0; padding:12px; background:#60a5fa; color:white; border:none; border-radius:12px; font-weight:600; cursor:pointer;">
     + New Channel
   </button>
-</aside>
-
+</div>
 <main class="main">
   <header class="channel-header" id="channelHeader" style="display:none;">
     <h2 class="channel-title" id="channelTitle"></h2>
@@ -525,11 +916,25 @@ html, body {
     <button class="submit-post" onclick="submitPost()">Post</button>
   </div>
 </div>
+<!-- Create Channel Toast Modal -->
+<div id="channelModal" class="channel-modal">
+  <div class="channel-modal-content">
+    <h3>Create New Channel</h3>
+
+    <input type="text" id="channelNameInput" placeholder="Channel name" />
+    <textarea id="channelDescInput" placeholder="Short description (optional)"></textarea>
+
+    <div class="channel-modal-actions">
+      <button class="cancel-btn" onclick="closeChannelModal()">Cancel</button>
+      <button class="create-btn" onclick="submitChannel()">Create</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx1N-fwReLm4Ad1_ArlVBqxQ1ILrv0-LxxpLe5QMUS7W8KCBGTPcw6JDl-BeFWZTsnt/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyYlVIBi7Y1EbgaVaZMLnnk-zKYy_dAZmgPqUVkKvYObtMo2QibUHFb5oyY1WzyurA5/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -574,31 +979,8 @@ async function checkApproval() {
   } catch(e) {}
 }
 
-createBtn.onclick = async () => {
-  const name = prompt("Channel name?");
-  if (!name?.trim()) return;
-  const desc = prompt("Short description (optional):") || "";
-
-  try {
-    const res = await fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        operation: "createChannel",
-        creator: currentUserName,
-        name: name.trim(),
-        description: desc.trim()
-      })
-    });
-    const data = await res.json();
-    if (data.status === "success") {
-      showToast("Channel created!", "success");
-      loadAllChannels();
-    } else {
-      showToast("Error: " + (data.message || "Failed"), "error");
-    }
-  } catch(e) {
-    showToast("Network error", "error");
-  }
+createBtn.onclick = () => {
+  document.getElementById("channelModal").classList.add("active");
 };
 
 async function loadAllChannels() {
@@ -629,8 +1011,49 @@ async function loadAllChannels() {
     channelList.innerHTML = '<div class="empty">Failed to load channels</div>';
   }
 }
+function closeChannelModal() {
+  document.getElementById("channelModal").classList.remove("active");
+  document.getElementById("channelNameInput").value = "";
+  document.getElementById("channelDescInput").value = "";
+}
+
+async function submitChannel() {
+  const name = document.getElementById("channelNameInput").value.trim();
+  const desc = document.getElementById("channelDescInput").value.trim();
+
+  if (!name) {
+    showToast("Channel name required", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "createChannel",
+        creator: currentUserName,
+        name,
+        description: desc
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      showToast("Channel created!", "success");
+      closeChannelModal();
+      loadAllChannels();
+    } else {
+      showToast(data.message || "Failed", "error");
+    }
+  } catch (err) {
+    showToast("Network error", "error");
+  }
+}
 
 async function openChannelTab(channelId, name, description, creator, created) {
+  if (!channelId) return; // safety
+
   currentChannelId = channelId;
 
   document.querySelectorAll('.channel-tab').forEach(el => el.classList.remove('active'));
@@ -643,12 +1066,11 @@ async function openChannelTab(channelId, name, description, creator, created) {
   channelMeta.innerHTML = `${description || "No description"}<br>By ${creator} • ${new Date(created).toLocaleDateString()}`;
   channelHeader.style.display = 'block';
 
-  // Show floating + button if authorised
   await checkChannelAuthorisation(channelId);
+  await loadPosts(channelId);
 
-  loadPosts(channelId);
+  startChannelPolling();  // ← add this line here
 }
-
 async function checkChannelAuthorisation(channelId) {
   try {
     const r = await fetch(`${SCRIPT_URL}?operation=isAuthorised&username=${encodeURIComponent(currentUserName)}&channelId=${encodeURIComponent(channelId)}`);
@@ -682,8 +1104,10 @@ async function loadPosts(channelId) {
     posts.forEach(post => {
   const div = document.createElement("div");
   div.className = "post";
+  div.dataset.postId = post.postId;
   const avatarSrc = getLh3Link(post.picLink) || 'https://via.placeholder.com/52?text=@';
-
+  
+ 
   let mediaHtml = '';
   if (post.media?.link) {
     const mediaSrc = getLh3Link(post.media.link);
@@ -712,15 +1136,48 @@ async function loadPosts(channelId) {
     ${mediaHtml}
     <div class="post-footer">
       <span class="post-like"><i class="far fa-heart"></i> ${post.likes || 0}</span>
-      <span><i class="far fa-comment"></i> Loading comments...</span>
+      <span class="comment-count" data-postid="${post.postId}">
+  <i class="far fa-comment icon"></i> 
+  <span class="count">Loading...</span>
+</span>
+
     </div>
-    <div class="comment-section" data-postid="${post.postId}">
-      <div class="comments-list"></div>
-      <textarea placeholder="Write a comment..." class="comment-input" data-postid="${post.postId}"></textarea>
-      <button class="submit-comment" onclick="postComment('${post.postId}')">Send</button>
+   <div class="comment-section bubble-comments" data-postid="${post.postId}">
+  <div class="comments-list" id="comments-${post.postId}"></div>
+
+  <div class="input-area" style="margin-top:16px; padding:12px; background:rgba(15,23,42,0.92); border-top:1px solid rgba(96,165,250,0.25);">
+    <div class="input-wrapper" style="display:flex; gap:10px; align-items:center;">
+      <input type="text" 
+             class="comment-input" 
+             id="comment-input-${post.postId}" 
+             placeholder="Write a comment..." 
+             style="flex:1; padding:12px 16px; border-radius:24px; background:rgba(255,255,255,0.08); border:none; color:white; font-size:15px;"
+      >
+      <button class="send-comment-btn" 
+              onclick="submitChannelComment('${post.postId}')"
+              style="width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,#3b82f6,#60a5fa); color:white; border:none; font-size:1.1rem; cursor:pointer;">
+        <i class="fas fa-paper-plane"></i>
+      </button>
     </div>
+  </div>
+</div>
   `;
   feed.appendChild(div);
+  // ── Attach toggle click ────────────────────────────────
+const countBtn = div.querySelector('.comment-count');
+if (countBtn) {
+  countBtn.onclick = () => toggleComments(post.postId);
+}
+
+// ── Load only the number of comments (fast) ─────────────
+const countSpan = countBtn?.querySelector('.count');
+if (countSpan) {
+  loadCommentCount(post.postId, countSpan);
+}
+
+// Attach like handler AFTER element exists
+  const likeBtn = div.querySelector('.post-like');
+  likeBtn.onclick = () => toggleLike(post.postId, likeBtn);
 
   loadComments(post.postId, div.querySelector(".comments-list"));
 });
@@ -786,6 +1243,12 @@ async function submitPost() {
     return;
   }
 
+  // ← Critical safety check
+  if (!currentChannelId) {
+    showToast("Please select a channel first", "error");
+    return;
+  }
+
   let fileData = null;
   if (file) {
     const reader = new FileReader();
@@ -824,15 +1287,181 @@ async function submitPost() {
     showToast("Network error", "error");
   }
 }
+async function toggleLike(postId, likeElement) {
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "toggleChannelPostLike",
+        postId: postId,
+        username: currentUserName
+      })
+    });
 
-// Comment posting (placeholder - implement as needed)
-async function postComment(postId) {
-  showToast("Comment posting not implemented yet", "info");
+    const data = await res.json();
+
+    if (data.status === "success") {
+      const icon = likeElement.querySelector('i');
+      const countSpan = likeElement.lastChild; // text node after icon
+
+      let currentCount = parseInt(countSpan.textContent.trim()) || 0;
+
+      // Backend tells us the new total likes
+      // But we can also check if user just liked or unliked based on UI state
+      if (likeElement.classList.contains('liked')) {
+        // Was liked → now unliked
+        currentCount = Math.max(0, currentCount - 1);
+        likeElement.classList.remove('liked');
+        icon.className = 'far fa-heart'; // hollow heart
+        showToast("Like removed", "success");
+      } else {
+        // Was not liked → now liked
+        currentCount += 1;
+        likeElement.classList.add('liked');
+        icon.className = 'fas fa-heart'; // solid heart
+        showToast("Liked!", "success");
+      }
+
+      // Update displayed count
+      countSpan.textContent = ` ${currentCount}`;
+    } else {
+      showToast(data.message || "Could not update like", "error");
+    }
+  } catch (err) {
+    console.error("Like failed:", err);
+    showToast("Network error", "error");
+  }
+}
+// 1. Load comments – now with bubble style + avatars
+async function loadComments(postId, container) {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getChannelComments&postId=${postId}`);
+    const { comments = [] } = await r.json();
+
+    container.innerHTML = comments.length === 0 
+      ? '<div style="text-align:center; padding:20px; color:#94a3b8; font-size:0.9rem;">No comments yet</div>'
+      : '';
+
+    comments.forEach(c => {
+      const isOwn = c.author === currentUserName;
+      const avatarSrc = getLh3Link(c.picLink) || 'https://via.placeholder.com/38?text=@';
+
+      let mediaHtml = '';
+      if (c.media?.link) {
+        const src = getLh3Link(c.media.link);
+        if (c.media.type?.startsWith('image')) {
+          mediaHtml = `<div class="media-content"><img src="${src}" loading="lazy"></div>`;
+        } else {
+          mediaHtml = `<div class="media-content"><video controls src="${src}" loading="lazy"></video></div>`;
+        }
+      }
+
+      const msg = document.createElement('div');
+      msg.className = `message ${isOwn ? 'own' : ''}`;
+      msg.innerHTML = `
+        <img class="avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/38?text=@'">
+        <div class="message-content">
+          <div class="name">${c.author}</div>
+          ${c.replyTo ? `
+            <div class="quoted-msg">
+              <b>@${c.replyTo.author}</b>: ${c.replyTo.content.substring(0,60)}${c.replyTo.content.length > 60 ? '...' : ''}
+            </div>
+          ` : ''}
+          ${mediaHtml}
+          <div class="text">${c.content.replace(/\n/g, '<br>')}</div>
+          <span class="time">${new Date(c.created).toLocaleString([], {hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'})}</span>
+        </div>
+      `;
+      container.appendChild(msg);
+    });
+
+  } catch (err) {
+    container.innerHTML = '<div style="color:#f87171; padding:16px;">Could not load comments</div>';
+  }
 }
 
-// Load comments (placeholder)
-async function loadComments(postId, container) {
-  container.innerHTML = '<div style="color:#94a3b8;padding:12px;">Comments loading...</div>';
+async function loadCommentCount(postId, countElement) {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getChannelCommentCount&postId=${postId}`);
+    const data = await r.json();
+    
+    if (data.status === "success") {
+      const count = data.count || 0;
+      countElement.textContent = count;
+      
+      // Optional: change icon style when there are comments
+      const icon = countElement.parentElement.querySelector('i');
+      if (count > 0) {
+        icon.className = 'fas fa-comment';
+      }
+    } else {
+      countElement.textContent = "?";
+    }
+  } catch (err) {
+    countElement.textContent = "—";
+  }
+}
+
+function toggleComments(postId) {
+  const section = document.querySelector(`.comment-section[data-postid="${postId}"]`);
+  const countBtn = document.querySelector(`.comment-count[data-postid="${postId}"]`);
+  
+  if (!section || !countBtn) return;
+
+  const willBeOpen = !section.classList.contains('open');
+
+  section.classList.toggle('open');
+  countBtn.classList.toggle('open');
+
+  if (willBeOpen) {
+    // Load comments only when opening
+    const container = document.getElementById(`comments-${postId}`);
+    if (container && container.children.length === 0) {
+      loadComments(postId, container);
+    }
+  }
+}
+
+// 2. Submit comment (rename from postComment → submitChannelComment)
+async function submitChannelComment(postId) {
+  const input = document.getElementById(`comment-input-${postId}`);
+  const content = input.value.trim();
+  if (!content) return;
+
+  // ← Critical safety checks
+  if (!currentChannelId) {
+    showToast("No channel selected", "error");
+    return;
+  }
+  if (!postId) {
+    showToast("Cannot comment — invalid post", "error");
+    return;
+  }
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "createChannelComment",
+        postId,
+        channelId: currentChannelId,
+        author: currentUserName,
+        content
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      input.value = "";
+      const container = document.getElementById(`comments-${postId}`);
+      loadComments(postId, container);
+    } else {
+      showToast("Failed: " + (data.message || "Unknown"), "error");
+    }
+  } catch (err) {
+    showToast("Network error", "error");
+  }
 }
 
 window.addEventListener("load", async () => {
@@ -846,6 +1475,87 @@ document.querySelector('.feed-wrapper')?.addEventListener('scroll', function() {
     this.classList.add('scrolled-far');
   } else {
     this.classList.remove('scrolled-far');
+  }
+});
+
+let pollingInterval = null;
+
+function startChannelPolling() {
+  if (pollingInterval) clearInterval(pollingInterval);
+
+  pollingInterval = setInterval(async () => {
+    if (!currentChannelId || document.hidden) return;
+
+    try {
+      // 1. Lightweight check for new posts
+      const resp = await fetch(`${SCRIPT_URL}?operation=getChannelPostsLight&channelId=${encodeURIComponent(currentChannelId)}`);
+      if (!resp.ok) return;
+
+      const { posts: serverPosts = [] } = await resp.json();
+
+      // 2. Get currently shown post IDs
+      const currentPostElements = document.querySelectorAll('.post');
+      const currentIds = new Set(
+        Array.from(currentPostElements)
+          .map(el => el.dataset.postId)
+          .filter(id => id)   // skip undefined/null
+      );
+
+      // 3. Check if there's anything new (by postId)
+      const hasNewPosts = serverPosts.some(sp => !currentIds.has(sp.postId));
+
+      if (hasNewPosts) {
+        // New posts detected → refresh the full feed
+        await loadPosts(currentChannelId);
+        showToast("New posts loaded ↑", "success");
+
+        // Optional: scroll to top only if user isn't scrolled far down
+        const wrapper = document.querySelector('.feed-wrapper');
+        if (wrapper && wrapper.scrollTop < 500) {
+          wrapper.scrollTop = 0;
+        }
+      }
+
+      // 4. Always refresh comments (low cost, good UX)
+      document.querySelectorAll('.comments-list').forEach(cont => {
+        const postId = cont.id.replace('comments-', '');
+        loadComments(postId, cont);
+      });
+
+    } catch (err) {
+      // Silent fail — don't disturb user on background poll error
+      console.warn("[polling] failed:", err);
+    }
+
+  }, 25000);   // 25 seconds — feels fresh without being too aggressive
+}
+// Stop when leaving / page hidden
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (pollingInterval) clearInterval(pollingInterval);
+  } else if (currentChannelId) {
+    startChannelPolling();
+  }
+});
+
+
+// Channels panel toggle
+const channelsToggle = document.getElementById('channelsToggle');
+const channelsPanel = document.getElementById('channelsPanel');
+const closeChannels = document.getElementById('closeChannels');
+
+channelsToggle?.addEventListener('click', () => {
+  channelsPanel.classList.add('open');
+});
+
+closeChannels?.addEventListener('click', () => {
+  channelsPanel.classList.remove('open');
+});
+
+// Optional: close when clicking outside
+channelsPanel?.addEventListener('click', (e) => {
+  if (e.target === channelsPanel) {
+    channelsPanel.classList.remove('open');
   }
 });
 

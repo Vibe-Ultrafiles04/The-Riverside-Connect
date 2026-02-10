@@ -391,13 +391,10 @@ html, body {
     }
 
    .feed-wrapper {
-  flex: 1 1 auto;                    /* very important: grow + shrink correctly */
-  overflow-y: scroll !important;     /* force scrollbar visibility when needed */
-  -webkit-overflow-scrolling: touch; /* smooth momentum scrolling on iOS */
-  scroll-behavior: smooth;
-  padding: 24px 24px 180px 24px;     /* more bottom padding — prevents FAB overlap */
-  height: 100%;                      /* make sure it stretches full height */
+  padding-left: 0;
+  padding-right: 0;
 }
+
 
 /* Custom thin beautiful scrollbar */
 .feed-wrapper::-webkit-scrollbar {
@@ -840,6 +837,51 @@ main.main {
   cursor: pointer;
 }
 
+.message .delete-comment-btn {
+  background: none;
+  border: none;
+  color: #f87171;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.message:hover .delete-comment-btn,
+.message.own .delete-comment-btn {
+  opacity: 0.9;
+}
+
+.message .delete-comment-btn:hover {
+  opacity: 1;
+  transform: scale(1.15);
+  color: #ef4444;
+}
+
+/* Optional: make it even more subtle — only show on hover for own messages */
+.message:not(.own) .delete-comment-btn {
+  display: none;
+}
+
+.message.deleting {
+  opacity: 0.5;
+  transition: opacity 0.4s;
+}
+
+.delete-comment-btn:disabled {
+  cursor: not-allowed !important;
+}
+
+.toast.confirm-toast {
+  min-width: 400px;
+  text-align: left;
+}
+
+.toast.confirm-toast button:hover {
+  opacity: 0.9;
+  transform: scale(1.03);
+}
   </style>
 </head>
 <body>
@@ -934,7 +976,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyYlVIBi7Y1EbgaVaZMLnnk-zKYy_dAZmgPqUVkKvYObtMo2QibUHFb5oyY1WzyurA5/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwKLZd8dwevMlxs7VM-GeaVFe_0jKRnBdKn1RDYFLt5xrdQdBz7n9mc7Hzwe4g4nL_Y/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1356,22 +1398,43 @@ async function loadComments(postId, container) {
         }
       }
 
-      const msg = document.createElement('div');
-      msg.className = `message ${isOwn ? 'own' : ''}`;
-      msg.innerHTML = `
-        <img class="avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/38?text=@'">
-        <div class="message-content">
-          <div class="name">${c.author}</div>
-          ${c.replyTo ? `
-            <div class="quoted-msg">
-              <b>@${c.replyTo.author}</b>: ${c.replyTo.content.substring(0,60)}${c.replyTo.content.length > 60 ? '...' : ''}
-            </div>
-          ` : ''}
-          ${mediaHtml}
-          <div class="text">${c.content.replace(/\n/g, '<br>')}</div>
-          <span class="time">${new Date(c.created).toLocaleString([], {hour:'2-digit', minute:'2-digit', day:'numeric', month:'short'})}</span>
-        </div>
-      `;
+     const msg = document.createElement('div');
+msg.className = `message ${isOwn ? 'own' : ''}`;
+msg.dataset.commentId = c.id;     // Important: store comment ID
+msg.dataset.postId = postId;      // Useful for count refresh if needed
+
+// Only show delete button if this is the user's own comment
+const deleteButton = isOwn ? `
+  <button class="delete-comment-btn" 
+          title="Delete this comment" 
+          onclick="deleteMyChannelComment('${c.id}', '${postId}', event)">
+    <i class="far fa-trash-alt"></i>
+  </button>
+` : '';
+
+// Build the message bubble
+msg.innerHTML = `
+  <img class="avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/38?text=@'">
+  <div class="message-content">
+    <div class="name" style="display: flex; justify-content: space-between; align-items: center;">
+      ${c.author}
+      ${deleteButton}
+    </div>
+    ${c.replyTo ? `
+      <div class="quoted-msg">
+        <b>@${c.replyTo.author}</b>: ${c.replyTo.content.substring(0,60)}${c.replyTo.content.length > 60 ? '...' : ''}
+      </div>
+    ` : ''}
+    ${mediaHtml}
+    <div class="text">${c.content.replace(/\n/g, '<br>')}</div>
+    <span class="time">${new Date(c.created).toLocaleString([], {
+      hour: '2-digit', 
+      minute: '2-digit', 
+      day: 'numeric', 
+      month: 'short'
+    })}</span>
+  </div>
+`;
       container.appendChild(msg);
     });
 
@@ -1478,6 +1541,148 @@ document.querySelector('.feed-wrapper')?.addEventListener('scroll', function() {
   }
 });
 
+async function deleteMyChannelComment(commentId, postId, event) {
+  event.stopPropagation();
+  event.preventDefault();
+
+  // Find the message element
+  const messageEl = event.target.closest('.message');
+  if (!messageEl) return;
+
+  // ── Show nice confirmation toast with action buttons ──────────────────────
+  const confirmed = await showConfirmToast(
+    "Delete this comment?",
+    "This cannot be undone.",
+    "Delete",
+    "Cancel"
+  );
+
+  if (!confirmed) return;
+
+  // ── Visual feedback: disable button + show loading state ─────────────────
+  const deleteBtn = messageEl.querySelector('.delete-comment-btn');
+  if (deleteBtn) {
+    deleteBtn.disabled = true;
+    deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    deleteBtn.style.opacity = '0.5';
+    deleteBtn.style.cursor = 'not-allowed';
+  }
+
+  messageEl.classList.add('deleting');
+  messageEl.style.opacity = '0.6';
+  messageEl.style.pointerEvents = 'none';
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "deleteChannelComment",
+        commentId: commentId,
+        postId: postId,
+        username: currentUserName
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      // Comment is deleted → remove it immediately
+      messageEl.remove();
+      showToast("Comment deleted", "success");
+
+      // Update comment count optimistically
+      const countEl = document.querySelector(`.comment-count[data-postid="${postId}"] .count`);
+      if (countEl) {
+        let count = parseInt(countEl.textContent.trim()) || 1;
+        countEl.textContent = Math.max(0, count - 1);
+      }
+    } 
+    else if (data.message?.includes("not found") || data.message?.includes("not the owner")) {
+      // Already gone from backend → remove from UI anyway
+      messageEl.remove();
+      showToast("Comment was already deleted", "success");
+
+      // Update count optimistically
+      const countEl = document.querySelector(`.comment-count[data-postid="${postId}"] .count`);
+      if (countEl) {
+        let count = parseInt(countEl.textContent.trim()) || 1;
+        countEl.textContent = Math.max(0, count - 1);
+      }
+    } 
+    else {
+      // Other backend error → show message, restore UI
+      showToast(data.message || "Could not delete comment", "error");
+      restoreUI(messageEl, deleteBtn);
+    }
+  } catch (err) {
+    console.error("Delete request failed:", err);
+
+    if (document.body.contains(messageEl)) {
+      showToast("Connection issue — try again", "error");
+      restoreUI(messageEl, deleteBtn);
+    }
+    // If element already gone (e.g. via polling), stay silent
+  }
+}
+
+// ── Nice toast-like confirmation with Yes/No buttons ─────────────────────────
+function showConfirmToast(title, message, confirmText = "Delete", cancelText = "Cancel") {
+  return new Promise((resolve) => {
+    const toast = document.createElement('div');
+    toast.className = 'toast confirm-toast';
+    toast.style.position = 'fixed';
+    toast.style.top = '80px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.zIndex = '10001';
+    toast.style.maxWidth = '420px';
+    toast.style.width = '90%';
+    toast.style.background = '#1e293b';
+    toast.style.padding = '16px 20px';
+    toast.style.borderRadius = '14px';
+    toast.style.boxShadow = '0 12px 32px rgba(0,0,0,0.6)';
+    toast.style.borderLeft = '5px solid #ef4444';
+    toast.style.color = '#e2e8f0';
+    toast.style.animation = 'slideDown 0.35s ease';
+
+    toast.innerHTML = `
+      <div style="font-weight:600; margin-bottom:8px;">${title}</div>
+      <div style="color:#cbd5e1; margin-bottom:16px;">${message}</div>
+      <div style="display:flex; gap:12px; justify-content:flex-end;">
+        <button class="cancel-btn" style="
+          padding:8px 16px;
+          background:transparent;
+          border:1px solid #64748b;
+          color:#94a3b8;
+          border-radius:999px;
+          cursor:pointer;
+          font-weight:600;
+        ">${cancelText}</button>
+        <button class="confirm-btn" style="
+          padding:8px 20px;
+          background:linear-gradient(135deg,#ef4444,#f87171);
+          color:white;
+          border:none;
+          border-radius:999px;
+          cursor:pointer;
+          font-weight:600;
+        ">${confirmText}</button>
+      </div>
+    `;
+
+    document.getElementById('toast-container').appendChild(toast);
+
+    toast.querySelector('.confirm-btn').onclick = () => {
+      toast.remove();
+      resolve(true);
+    };
+
+    toast.querySelector('.cancel-btn').onclick = () => {
+      toast.remove();
+      resolve(false);
+    };
+  });
+}
 let pollingInterval = null;
 
 function startChannelPolling() {

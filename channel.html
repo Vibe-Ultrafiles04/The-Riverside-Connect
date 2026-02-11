@@ -1015,7 +1015,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznZ7kEv1fe7no8WHuYgnXJf2LSv_robNZ3RE_TK3X1g42_zWXhDXYPjuG1iqBGO-de/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbww8Mxq2cfvFqQe9lQWNQ5VqKb5RiQxJ-sLLBc2T-Nkj0Defitmd4lQs7Gc1xddQazV/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1446,20 +1446,20 @@ async function loadPosts(channelId) {
   
  
   let mediaHtml = '';
-  if (post.media?.link) {
-    const mediaSrc = getLh3Link(post.media.link);
-    if (post.media.type?.startsWith('image')) {
-      mediaHtml = `
-        <div class="post-media" style="overflow-x:auto; display:flex; gap:8px; padding:8px 0; scroll-snap-type:x mandatory;">
-          <img src="${mediaSrc}" loading="lazy" style="max-height:500px; border-radius:12px; scroll-snap-align:start;" onerror="this.src='https://via.placeholder.com/400?text=Image'">
-        </div>`;
-    } else {
-      mediaHtml = `
-        <div class="post-media" style="overflow-x:auto; display:flex; gap:8px; padding:8px 0;">
-          <video controls src="${mediaSrc}" loading="lazy" style="max-height:500px; border-radius:12px;"></video>
-        </div>`;
-    }
+if (post.media?.link) {
+  const mediaSrc = getMediaSrc(post.media.link, post.media.type);
+  if (post.media.type?.startsWith('image')) {
+    mediaHtml = `
+      <div class="post-media" style="overflow-x:auto; display:flex; gap:8px; padding:8px 0; scroll-snap-type:x mandatory;">
+        <img src="${mediaSrc}" loading="lazy" style="max-height:500px; border-radius:12px; scroll-snap-align:start;" onerror="this.src='https://via.placeholder.com/400?text=Image'">
+      </div>`;
+  } else {
+    mediaHtml = `
+      <div class="post-media" style="overflow-x:auto; display:flex; gap:8px; padding:8px 0;">
+        <iframe src="${mediaSrc}" width="100%" height="400" frameborder="0" allowfullscreen></iframe>
+      </div>`;
   }
+}
 
   div.innerHTML = `
     <div class="post-header">
@@ -1469,7 +1469,14 @@ async function loadPosts(channelId) {
         <div class="post-time">${new Date(post.created).toLocaleString([],{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}</div>
       </div>
     </div>
-    <div class="post-content">${post.content.replace(/\n/g,'<br>')}</div>
+    <div class="post-content">${post.content
+  .replace(/https?:\/\/[^ \n<>"']*(?:drive\.google\.com|view\?usp=|usp=sharing|usp=drive_link|drive_link)[^ \n<>"']*/gi, '')
+  .replace(/\?usp=[^ \n<>"']*/gi, '')                    // nukes any ?usp=... fragment
+  .replace(/drive_link/gi, '')                           // removes literal "drive_link"
+  .replace(/\s{2,}/g, ' ')
+  .trim()
+  .replace(/\n/g, '<br>')}
+</div>
     ${mediaHtml}
     <div class="post-footer">
       <span class="post-like"><i class="far fa-heart"></i> ${post.likes || 0}</span>
@@ -1572,24 +1579,22 @@ mediaInput.onchange = function(e) {
 };
 
 async function submitPost() {
-  const content = postContent.value.trim();
+  let content = postContent.value.trim();
   const file = mediaInput.files[0];
 
-  if (!content && !file) {
-    showToast("Write something or add media", "error");
-    return;
-  }
-
-  // ← Critical safety check
-  if (!currentChannelId) {
-    showToast("Please select a channel first", "error");
-    return;
-  }
-
+  // Parse for Google Drive link (supports /file/d/ID/view, open?id=ID, etc.)
   let fileData = null;
-  if (file) {
-    const reader = new FileReader();
+  const driveRegex = /(?:drive\.google\.com\/(?:file\/d\/|open\?id=))([a-zA-Z0-9_-]+)/;
+  const match = content.match(driveRegex);
+  const parsedLink = match ? match[1] : null;
+
+  if (parsedLink && !file) {
+    // Filter out the link from text (keep other text, if any)
+    content = content.replace(match[0], '').trim();
+    fileData = { link: parsedLink };
+  } else if (file) {
     fileData = await new Promise(resolve => {
+      const reader = new FileReader();
       reader.onload = () => resolve({
         base64: reader.result.split(',')[1],
         name: file.name,
@@ -1597,6 +1602,17 @@ async function submitPost() {
       });
       reader.readAsDataURL(file);
     });
+  }
+
+  if (!content && !fileData) {
+    showToast("Write something or add media/link", "error");
+    return;
+  }
+
+  // Critical safety check remains
+  if (!currentChannelId) {
+    showToast("Please select a channel first", "error");
+    return;
   }
 
   try {
@@ -1607,7 +1623,7 @@ async function submitPost() {
         channelId: currentChannelId,
         author: currentUserName,
         content,
-        file: fileData
+        file: fileData  // Now supports {link} or {base64, name, type}
       })
     });
 
@@ -1623,6 +1639,18 @@ async function submitPost() {
   } catch (err) {
     showToast("Network error", "error");
   }
+}
+
+// Modify getLh3Link to handle videos with /preview (rename for clarity)
+function getMediaSrc(url, type) {
+  const id = url.match(/[-\w]{25,}/)?.[0];
+  if (!id) return url;
+  if (type.startsWith('image')) {
+    return `https://lh3.googleusercontent.com/d/${id}`;
+  } else if (type.startsWith('video')) {
+    return `https://drive.google.com/file/d/${id}/preview`;
+  }
+  return url;  // Fallback
 }
 async function toggleLike(postId, likeElement) {
   try {

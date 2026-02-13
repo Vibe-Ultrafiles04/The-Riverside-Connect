@@ -1015,7 +1015,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbww8Mxq2cfvFqQe9lQWNQ5VqKb5RiQxJ-sLLBc2T-Nkj0Defitmd4lQs7Gc1xddQazV/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMXrqzu0JPQ0u4E00YmSh30qlMqV5j-eINV99Zo8qp6mrgAko6uaKiOrHyWNGT5RVe/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1049,15 +1049,28 @@ function showToast(msg, type = 'success') {
   setTimeout(() => t.remove(), 4000);
 }
 
-async function checkApproval() {
+async function checkCreateChannelPermission() {
   try {
     const r = await fetch(`${SCRIPT_URL}?operation=getUserStatus&name=${encodeURIComponent(currentUserName)}`);
     const data = await r.json();
-    if (data.status === "success" && data.userStatus === "approved") {
-      isUserApproved = true;
-      createBtn.style.display = "block";
+
+    if (data.status === "success") {
+      const canCreate = data.userStatus === "approved" && data.isAdmin === true;
+      
+      isUserApproved = data.userStatus === "approved";  // keep for other logic if needed
+      createBtn.style.display = canCreate ? "block" : "none";
+      
+      // Optional: visual feedback
+      if (!canCreate && data.userStatus === "approved") {
+        createBtn.title = "Only admins can create new channels";
+        createBtn.style.opacity = "0.5";
+        createBtn.style.cursor = "not-allowed";
+      }
     }
-  } catch(e) {}
+  } catch(e) {
+    console.error("Permission check failed", e);
+    createBtn.style.display = "none";
+  }
 }
 
 createBtn.onclick = () => {
@@ -1858,7 +1871,7 @@ async function submitChannelComment(postId) {
 }
 
 window.addEventListener("load", async () => {
-  await checkApproval();
+  await checkCreateChannelPermission();   // ← changed name
   await loadAllChannels();
 });
 

@@ -208,13 +208,63 @@ html, body {
 
     .post-like:hover { color: #ef4444; }
 
-    .comment-section {
-      padding: 0 16px 16px;
-      border-top: 1px solid rgba(96,165,250,0.12);
-    }
+   /* ── Make comments section swipeable vertically when many ── */
+.comment-section {
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(96,165,250,0.12);
+  max-height: 60vh;                    /* ← NEW: limit height so it doesn't push whole page */
+  overflow-y: auto;                    /* ← NEW: enable vertical scroll inside comments */
+  -webkit-overflow-scrolling: touch;   /* ← NEW: smooth momentum scrolling on iOS */
+  scrollbar-width: thin;               /* Firefox thin scrollbar */
+  scrollbar-color: #60a5fa #1e293b;
+}
 
-    .comments-list { margin-bottom: 12px; }
+/* Custom scrollbar for comments (matches your feed style) */
+.comment-section::-webkit-scrollbar {
+  width: 5px;
+}
+.comment-section::-webkit-scrollbar-track {
+  background: transparent;
+}
+.comment-section::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.5);
+  border-radius: 10px;
+}
+.comment-section::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa;
+}
 
+/* Comments list inside — ensure it grows but stays scrollable */
+.comments-list {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;                            /* nicer spacing between bubbles */
+}
+
+/* Optional: make sure last message has space at bottom */
+.comments-list::after {
+  content: "";
+  height: 20px;                        /* breathing room at end of list */
+  flex-shrink: 0;
+}
+
+/* Make input area sticky at bottom of comment section */
+.comment-section .input-area {
+  position: sticky;
+  bottom: 0;
+  background: rgba(15,23,42,0.98);     /* match your panel bg */
+  padding: 12px 0;
+  z-index: 10;
+  border-top: 1px solid rgba(96,165,250,0.25);
+}
+
+/* Prevent input from being squished */
+.comment-section .input-wrapper {
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  padding: 4px;
+}
     .comment {
       display: flex;
       gap: 12px;
@@ -882,6 +932,30 @@ main.main {
   opacity: 0.9;
   transform: scale(1.03);
 }
+
+.desc-container {
+  position: relative;
+}
+
+.desc-toggle-wrapper {
+  margin-top: 2px;
+}
+
+.desc-toggle {
+  color: #60a5fa;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.desc-toggle:hover {
+  color: #93c5fd;
+  text-decoration: underline;
+}
+
+.desc-short,
+.desc-full {
+  transition: all 0.4s ease;
+}
   </style>
 </head>
 <body>
@@ -1015,7 +1089,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzMXrqzu0JPQ0u4E00YmSh30qlMqV5j-eINV99Zo8qp6mrgAko6uaKiOrHyWNGT5RVe/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysuF1QJ_037aMLHD5wqOjVNemlw74oYDoZ3DYmbTLXrArj4rDPYAIjn52FpJkV4Vei/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1303,35 +1377,36 @@ function closeChannelModal() {
   document.getElementById('channelAvatarPreview').src = "https://via.placeholder.com/110?text=Icon";
 }
 
-
 async function openChannelTab(channelId, name, description, creator, created, picLink) {
   if (!channelId) return;
 
   currentChannelId = channelId;
 
-  // Update active tab highlight (keep your existing logic)
   document.querySelectorAll('.channel-tab').forEach(el => el.classList.remove('active'));
-  const active = [...document.querySelectorAll('.channel-tab')].find(el => 
-    el.querySelector('.channel-tab-name').textContent === name
+  const active = [...document.querySelectorAll('.channel-tab')].find(el =>
+    el.querySelector('.channel-tab-name')?.textContent === name
   );
   if (active) active.classList.add('active');
 
-  // Prepare avatar source with fallback
-  const avatarSrc = picLink 
-    ? getLh3Link(picLink) 
+  const avatarSrc = picLink
+    ? getLh3Link(picLink)
     : `https://via.placeholder.com/64?text=${name.charAt(0).toUpperCase()}`;
 
-  // Check if current user is the creator (for edit permission)
   const isCreator = creator === currentUserName;
 
-  // Build modern header with radial avatar frame
+  const descText = (description || "No description").trim();
+  const words = descText.split(/\s+/);
+  const shortDesc = words.slice(0, 3).join(" ") + (words.length > 3 ? "..." : "");
+  const needsToggle = words.length > 3;
+
+  const dateStr = new Date(created).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
   channelHeader.innerHTML = `
-    <div style="
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      padding: 8px 0;
-    ">
+    <div style="display: flex; align-items: flex-start; gap: 16px; padding: 8px 0;">
       <div style="
         position: relative;
         width: 64px;
@@ -1339,7 +1414,6 @@ async function openChannelTab(channelId, name, description, creator, created, pi
         flex-shrink: 0;
         cursor: ${isCreator ? 'pointer' : 'default'};
       ">
-        <!-- Radial gradient border/frame -->
         <div style="
           position: absolute;
           inset: -4px;
@@ -1348,13 +1422,10 @@ async function openChannelTab(channelId, name, description, creator, created, pi
           z-index: 1;
           pointer-events: none;
         "></div>
-        
-        <!-- Avatar -->
         <img src="${avatarSrc}"
              id="channelAvatarHeader"
              style="
-               width: 100%;
-               height: 100%;
+               width: 100%; height: 100%;
                border-radius: 50%;
                object-fit: cover;
                border: 3px solid rgba(15, 23, 42, 0.9);
@@ -1363,33 +1434,89 @@ async function openChannelTab(channelId, name, description, creator, created, pi
                z-index: 2;
              "
              onerror="this.src='https://via.placeholder.com/64?text=@'"
-             alt="${name} channel icon">
+             alt="${name} icon">
 
         ${isCreator ? `
-          <!-- Camera overlay hint (visible on hover) -->
-          <div style="
-            position: absolute;
-            inset: 0;
+          <div id="avatarEditOverlay" style="
+            position: absolute; inset: 0;
             background: rgba(0,0,0,0.5);
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 3;
-            pointer-events: none;
-          " id="avatarEditOverlay">
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.2s;
+            z-index: 3; pointer-events: none;
+          ">
             <i class="fas fa-camera" style="font-size: 1.8rem; color: white;"></i>
           </div>
         ` : ''}
       </div>
 
-      <div>
-        <h2 class="channel-title" style="margin:0;">${name}</h2>
-        <div class="channel-meta" style="margin-top:4px;">
-          ${description || "No description"}<br>
-          By ${creator} • ${new Date(created).toLocaleDateString()}
+      <div style="flex: 1; min-width: 0;">
+        <h2 class="channel-title" style="margin: 0 0 6px 0; font-size: 1.4rem;">${name}</h2>
+
+        <div class="channel-meta" style="line-height: 1.45;">
+          <div class="desc-line" style="display: flex; align-items: baseline; flex-wrap: nowrap; gap: 0.4em; overflow: hidden;">
+            <span class="desc-short" style="
+              color: #e2e8f0;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              transition: opacity 0.4s ease;
+            ">${shortDesc}</span>
+
+            ${needsToggle ? `
+              <span class="desc-toggle" style="
+                color: #60a5fa;
+                cursor: pointer;
+                font-size: 0.9rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+                user-select: none;
+                transition: color 0.2s;
+              ">more</span>
+            ` : ''}
+
+            <span class="desc-creator-date" style="
+              color: #94a3b8;
+              font-size: 0.92rem;
+              white-space: nowrap;
+              flex-shrink: 0;
+              margin-left: auto;
+            ">
+              By ${creator} • ${dateStr}
+            </span>
+          </div>
+
+          <div class="desc-full-container" style="
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: max-height 0.55s ease, opacity 0.4s ease;
+          ">
+            <div class="desc-full" style="
+              color: #cbd5e1;
+              padding-top: 6px;
+              padding-bottom: 4px;
+            ">${descText}</div>
+
+            <div style="
+              color: #94a3b8;
+              font-size: 0.92rem;
+              padding-bottom: 4px;
+            ">
+              By ${creator} • ${dateStr}
+            </div>
+
+            ${needsToggle ? `
+              <span class="desc-toggle-less" style="
+                color: #f87171;
+                cursor: pointer;
+                font-size: 0.9rem;
+                display: block;
+                margin-top: 2px;
+                user-select: none;
+              ">less</span>
+            ` : ''}
+          </div>
         </div>
       </div>
     </div>
@@ -1397,30 +1524,52 @@ async function openChannelTab(channelId, name, description, creator, created, pi
 
   channelHeader.style.display = 'block';
 
-  // Add hover + click handlers ONLY if user is creator
+  // Creator avatar edit handlers
   if (isCreator) {
     const avatarImg = document.getElementById('channelAvatarHeader');
     const overlay = document.getElementById('avatarEditOverlay');
+    avatarImg.addEventListener('mouseenter', () => overlay && (overlay.style.opacity = '1'));
+    avatarImg.addEventListener('mouseleave', () => overlay && (overlay.style.opacity = '0'));
+    avatarImg.addEventListener('click', () => openEditChannelModal(channelId, name, description, picLink));
+  }
 
-    // Hover: show camera icon
-    avatarImg.addEventListener('mouseenter', () => {
-      if (overlay) overlay.style.opacity = '1';
-    });
-    avatarImg.addEventListener('mouseleave', () => {
-      if (overlay) overlay.style.opacity = '0';
-    });
+  // Toggle logic
+  const toggleMore = channelHeader.querySelector('.desc-toggle');
+  const toggleLess = channelHeader.querySelector('.desc-toggle-less');
+  const shortLine = channelHeader.querySelector('.desc-line');
+  const fullContainer = channelHeader.querySelector('.desc-full-container');
 
-    // Click: open the **separate edit modal**
-    avatarImg.addEventListener('click', () => {
-      openEditChannelModal(channelId, name, description, picLink);
-    });
+  if (toggleMore && needsToggle) {
+    const toggleClick = () => {
+      const isExpanded = fullContainer.style.maxHeight && fullContainer.style.maxHeight !== '0px';
+
+      if (!isExpanded) {
+        // Expand
+        fullContainer.style.maxHeight = `${fullContainer.scrollHeight}px`;
+        fullContainer.style.opacity = '1';
+        shortLine.style.opacity = '0';
+        shortLine.style.height = '0';
+        toggleMore.style.display = 'none';
+        if (toggleLess) toggleLess.style.display = 'inline';
+      } else {
+        // Collapse
+        fullContainer.style.maxHeight = '0';
+        fullContainer.style.opacity = '0';
+        shortLine.style.opacity = '1';
+        shortLine.style.height = 'auto';
+        toggleMore.style.display = 'inline';
+        if (toggleLess) toggleLess.style.display = 'none';
+      }
+    };
+
+    toggleMore.addEventListener('click', toggleClick);
+    if (toggleLess) toggleLess.addEventListener('click', toggleClick);
   }
 
   await checkChannelAuthorisation(channelId);
   await loadPosts(channelId);
   startChannelPolling();
 }
-
 async function checkChannelAuthorisation(channelId) {
   try {
     const r = await fetch(`${SCRIPT_URL}?operation=isAuthorised&username=${encodeURIComponent(currentUserName)}&channelId=${encodeURIComponent(channelId)}`);
@@ -1440,7 +1589,7 @@ async function loadPosts(channelId) {
   feed.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading posts...</div>';
 
   try {
-    const r = await fetch(`${SCRIPT_URL}?operation=getChannelPosts&channelId=${channelId}`);
+   const r = await fetch(`${SCRIPT_URL}?operation=getChannelPosts&channelId=${channelId}&username=${encodeURIComponent(currentUserName)}`);
     const { posts = [] } = await r.json();
 
     feed.innerHTML = posts.length === 0
@@ -1492,7 +1641,10 @@ if (post.media?.link) {
 </div>
     ${mediaHtml}
     <div class="post-footer">
-      <span class="post-like"><i class="far fa-heart"></i> ${post.likes || 0}</span>
+     <span class="post-like ${post.likedByCurrentUser ? 'liked' : ''}">
+  <i class="${post.likedByCurrentUser ? 'fas' : 'far'} fa-heart"></i> 
+  ${post.likes || 0}
+</span>
       <span class="comment-count" data-postid="${post.postId}">
   <i class="far fa-comment icon"></i> 
   <span class="count">Loading...</span>
@@ -1727,60 +1879,58 @@ async function loadComments(postId, container) {
       ? '<div style="text-align:center; padding:20px; color:#94a3b8; font-size:0.9rem;">No comments yet</div>'
       : '';
 
-    comments.forEach(c => {
-      const isOwn = c.author === currentUserName;
-      const avatarSrc = getLh3Link(c.picLink) || 'https://via.placeholder.com/38?text=@';
+    // Reverse order: newest comments at top
+comments.reverse().forEach(c => {
+  const isOwn = c.author === currentUserName;
+  const avatarSrc = getLh3Link(c.picLink) || 'https://via.placeholder.com/38?text=@';
 
-      let mediaHtml = '';
-      if (c.media?.link) {
-        const src = getLh3Link(c.media.link);
-        if (c.media.type?.startsWith('image')) {
-          mediaHtml = `<div class="media-content"><img src="${src}" loading="lazy"></div>`;
-        } else {
-          mediaHtml = `<div class="media-content"><video controls src="${src}" loading="lazy"></video></div>`;
-        }
-      }
+  let mediaHtml = '';
+  if (c.media?.link) {
+    const src = getLh3Link(c.media.link);
+    if (c.media.type?.startsWith('image')) {
+      mediaHtml = `<div class="media-content"><img src="${src}" loading="lazy"></div>`;
+    } else {
+      mediaHtml = `<div class="media-content"><video controls src="${src}" loading="lazy"></video></div>`;
+    }
+  }
 
-     const msg = document.createElement('div');
-msg.className = `message ${isOwn ? 'own' : ''}`;
-msg.dataset.commentId = c.id;     // Important: store comment ID
-msg.dataset.postId = postId;      // Useful for count refresh if needed
+  const msg = document.createElement('div');
+  msg.className = `message ${isOwn ? 'own' : ''}`;
+  msg.dataset.commentId = c.id;
+  msg.dataset.postId = postId;
 
-// Only show delete button if this is the user's own comment
-const deleteButton = isOwn ? `
-  <button class="delete-comment-btn" 
-          title="Delete this comment" 
-          onclick="deleteMyChannelComment('${c.id}', '${postId}', event)">
-    <i class="far fa-trash-alt"></i>
-  </button>
-` : '';
+  const deleteButton = isOwn ? `
+    <button class="delete-comment-btn" 
+            title="Delete this comment" 
+            onclick="deleteMyChannelComment('${c.id}', '${postId}', event)">
+      <i class="far fa-trash-alt"></i>
+    </button>
+  ` : '';
 
-// Build the message bubble
-msg.innerHTML = `
-  <img class="avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/38?text=@'">
-  <div class="message-content">
-    <div class="name" style="display: flex; justify-content: space-between; align-items: center;">
-      ${c.author}
-      ${deleteButton}
-    </div>
-    ${c.replyTo ? `
-      <div class="quoted-msg">
-        <b>@${c.replyTo.author}</b>: ${c.replyTo.content.substring(0,60)}${c.replyTo.content.length > 60 ? '...' : ''}
+  msg.innerHTML = `
+    <img class="avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/38?text=@'">
+    <div class="message-content">
+      <div class="name" style="display: flex; justify-content: space-between; align-items:center;">
+        ${c.author}
+        ${deleteButton}
       </div>
-    ` : ''}
-    ${mediaHtml}
-    <div class="text">${c.content.replace(/\n/g, '<br>')}</div>
-    <span class="time">${new Date(c.created).toLocaleString([], {
-      hour: '2-digit', 
-      minute: '2-digit', 
-      day: 'numeric', 
-      month: 'short'
-    })}</span>
-  </div>
-`;
-      container.appendChild(msg);
-    });
-
+      ${c.replyTo ? `
+        <div class="quoted-msg">
+          <b>@${c.replyTo.author}</b>: ${c.replyTo.content.substring(0,60)}${c.replyTo.content.length > 60 ? '...' : ''}
+        </div>
+      ` : ''}
+      ${mediaHtml}
+      <div class="text">${c.content.replace(/\n/g, '<br>')}</div>
+      <span class="time">${new Date(c.created).toLocaleString([], {
+        hour: '2-digit', 
+        minute: '2-digit', 
+        day: 'numeric', 
+        month: 'short'
+      })}</span>
+    </div>
+  `;
+  container.appendChild(msg);
+});
   } catch (err) {
     container.innerHTML = '<div style="color:#f87171; padding:16px;">Could not load comments</div>';
   }
@@ -2071,7 +2221,7 @@ function startChannelPolling() {
       console.warn("[polling] failed:", err);
     }
 
-  }, 25000);   // 25 seconds — feels fresh without being too aggressive
+  }, 12000);   // 12seconds — feels fresh without being too aggressive
 }
 // Stop when leaving / page hidden
 document.addEventListener('visibilitychange', () => {

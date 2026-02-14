@@ -969,6 +969,17 @@ main.main {
 .desc-scroll-area::-webkit-scrollbar-thumb:hover {
   background: #60a5fa;
 }
+
+.post-views {
+  color: #94a3b8;
+  cursor: default;
+}
+.post-views i {
+  margin-right: 4px;
+}
+.post-views .view-count {
+  font-weight: 500;
+}
   </style>
 </head>
 <body>
@@ -1102,7 +1113,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbysuF1QJ_037aMLHD5wqOjVNemlw74oYDoZ3DYmbTLXrArj4rDPYAIjn52FpJkV4Vei/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztEC6r39CLm_c8bvftsFL1UtLQKE5LWuUuvvhq6MPfo-87mDQ1N3MuHh9CqRv32W84/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1579,8 +1590,62 @@ async function openChannelTab(channelId, name, description, creator, created, pi
     if (toggleLess) toggleLess.addEventListener('click', toggleClick);
   }
 
-  await checkChannelAuthorisation(channelId);
+    await checkChannelAuthorisation(channelId);
   await loadPosts(channelId);
+
+  // ── Record view for all visible posts (once per user per post) ────────
+  async function recordViewsForCurrentChannel() {
+    if (!currentChannelId) return;
+
+    const postElements = document.querySelectorAll('.post');
+    const postIds = Array.from(postElements).map(el => el.dataset.postId).filter(Boolean);
+
+    if (postIds.length === 0) return;
+
+    try {
+      // Record view for each post (once per user)
+      for (const pid of postIds) {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            operation: "recordChannelPostView",
+            postId: pid,
+            username: currentUserName,
+            channelId: currentChannelId
+          })
+        });
+      }
+
+      // After recording, refresh the displayed counts
+      await updateAllPostViewCounts();
+    } catch (err) {
+      console.warn("Could not record views", err);
+    }
+  }
+
+  // Call it right after posts are loaded
+  await recordViewsForCurrentChannel();
+
+  // ── Helper: update all view counts on screen ───────────────────────────
+  async function updateAllPostViewCounts() {
+    const viewsElements = document.querySelectorAll('.post-views');
+
+    for (const el of viewsElements) {
+      const postId = el.dataset.postid;
+      if (!postId) continue;
+
+      try {
+        const r = await fetch(`${SCRIPT_URL}?operation=getChannelPostViewCount&postId=${encodeURIComponent(postId)}`);
+        const data = await r.json();
+        if (data.status === "success") {
+          el.querySelector('.view-count').textContent = data.count || 0;
+        }
+      } catch (err) {
+        el.querySelector('.view-count').textContent = "—";
+      }
+    }
+  }
+
   startChannelPolling();
 }
 async function checkChannelAuthorisation(channelId) {
@@ -1663,6 +1728,11 @@ if (post.media?.link) {
   <span class="count">Loading...</span>
 </span>
 
+  <span class="post-views" data-postid="${post.postId}">
+  views <span class="view-count">0</span>
+</span>
+  
+
     </div>
    <div class="comment-section bubble-comments" data-postid="${post.postId}">
   <div class="comments-list" id="comments-${post.postId}"></div>
@@ -1724,6 +1794,8 @@ if (countSpan) {
     feed.innerHTML = '<div class="empty">Failed to load posts — check connection</div>';
   }
 }
+
+
 
 // Posting Panel Controls
 function openPostPanel() {

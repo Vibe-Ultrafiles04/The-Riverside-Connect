@@ -2424,75 +2424,94 @@ async function deleteMyChannelComment(commentId, postId, event) {
 
 
 async function deleteMyChannelPost(postId, event) {
-  event.stopPropagation();
-  event.preventDefault();
+    event.stopPropagation();
+    event.preventDefault();
 
-  const postEl = event.target.closest('.post');
-  if (!postEl) return;
+    const postEl = event.target.closest('.post');
+    if (!postEl) return;
 
-  const confirmed = await showConfirmToast(
-    "Delete Post?",
-    "This will permanently remove the post and its comments.",
-    "Delete",
-    "Cancel"
-  );
+    const confirmed = await showConfirmToast(
+        "Delete Post?",
+        "This will permanently remove the post and all its comments.",
+        "Delete",
+        "Cancel"
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  const btn = postEl.querySelector('.delete-post-btn');
-  if (btn) {
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-  }
-
-  postEl.classList.add('deleting');
-
-  try {
-    const res = await fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({
-        operation: "deleteChannelPost",
-        postId,
-        username: currentUserName,
-        channelId: currentChannelId
-      })
-    });
-
-    const data = await res.json();
-
-    if (data.status === "success") {
-      showToast("Post deleted", "success");
-      postEl.remove();
-
-      // Optional: show empty state if no posts left
-      if (document.querySelectorAll('.post').length === 0) {
-        feed.innerHTML = `
-          <div class="empty">
-            <i class="far fa-comment-dots" style="font-size:5rem; opacity:0.4; margin-bottom:24px;"></i><br>
-            No posts yet<br>
-            <small>Be the first to share something!</small>
-          </div>
-        `;
-      }
-    } else {
-      showToast(data.message || "Failed to delete post", "error");
-      postEl.classList.remove('deleting');
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="far fa-trash-alt"></i>';
-      }
-    }
-  } catch (err) {
-    console.error("Delete post failed:", err);
-    showToast("Network error – try again", "error");
-    postEl.classList.remove('deleting');
+    const btn = postEl.querySelector('.delete-post-btn');
     if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = '<i class="far fa-trash-alt"></i>';
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     }
-  }
+
+    postEl.classList.add('deleting');
+
+    try {
+        const res = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify({
+                operation: "deleteChannelPost",
+                postId,
+                username: currentUserName,
+                channelId: currentChannelId
+            })
+        });
+
+        const data = await res.json();
+
+        if (data.status === "success") {
+            showToast("Post deleted", "success");
+
+            // ── Immediate removal ───────────────────────────────────────
+            postEl.remove();
+
+            // Show empty state if this was the last post
+            if (!document.querySelector('.post')) {
+                feed.innerHTML = `
+                    <div class="empty">
+                        <i class="far fa-comment-dots" style="font-size:5rem; opacity:0.4; margin-bottom:24px;"></i><br>
+                        No posts yet<br>
+                        <small>Be the first to share something!</small>
+                    </div>
+                `;
+            }
+
+            // ── Mark this postId as "locally deleted" for the next poll ──
+            // We store it in a data attribute on the feed-wrapper
+            const wrapper = document.querySelector('.feed-wrapper');
+            if (wrapper) {
+                let deletedIds = wrapper.dataset.deletedPostIds 
+                    ? JSON.parse(wrapper.dataset.deletedPostIds) 
+                    : [];
+                
+                if (!deletedIds.includes(postId)) {
+                    deletedIds.push(postId);
+                    // Keep only last 50 to prevent growing forever
+                    if (deletedIds.length > 50) deletedIds = deletedIds.slice(-50);
+                    wrapper.dataset.deletedPostIds = JSON.stringify(deletedIds);
+                }
+            }
+
+        } else {
+            showToast(data.message || "Failed to delete post", "error");
+            restorePostUI(postEl, btn);
+        }
+    } catch (err) {
+        console.error("Delete post failed:", err);
+        showToast("Network error – try again", "error");
+        restorePostUI(postEl, btn);
+    }
 }
 
+// Helper to restore UI on failure
+function restorePostUI(postEl, btn) {
+    postEl.classList.remove('deleting');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="far fa-trash-alt"></i>';
+    }
+}
 // ── Nice toast-like confirmation with Yes/No buttons ─────────────────────────
 function showConfirmToast(title, message, confirmText = "Delete", cancelText = "Cancel") {
   return new Promise((resolve) => {
@@ -2577,17 +2596,62 @@ function startChannelPolling() {
       // 3. Check if there's anything new (by postId)
       const hasNewPosts = serverPosts.some(sp => !currentIds.has(sp.postId));
 
-      if (hasNewPosts) {
-        // New posts detected → refresh the full feed
-        await loadPosts(currentChannelId);
-        showToast("New posts loaded ↑", "success");
+if (hasNewPosts) {
+  const wrapper = document.querySelector('.feed-wrapper');
+  
+  // Get IDs of posts we recently deleted ourselves (stored during deleteMyChannelPost)
+  let localDeletedIds = [];
+  if (wrapper && wrapper.dataset.deletedPostIds) {
+    try {
+      localDeletedIds = JSON.parse(wrapper.dataset.deletedPostIds);
+    } catch (e) {
+      console.warn("Invalid deletedPostIds data", e);
+    }
+  }
+  const deletedSet = new Set(localDeletedIds);
 
-        // Optional: scroll to top only if user isn't scrolled far down
-        const wrapper = document.querySelector('.feed-wrapper');
-        if (wrapper && wrapper.scrollTop < 500) {
-          wrapper.scrollTop = 0;
-        }
+  // Current visible post IDs in DOM
+  const currentVisibleIds = new Set(
+    Array.from(document.querySelectorAll('.post[data-post-id]'))
+      .map(el => el.dataset.postId)
+  );
+
+  // Check if there are any posts on server that we don't have yet (real new posts)
+  const hasRealNewPosts = serverPosts.some(sp => 
+    !currentVisibleIds.has(sp.postId) && !deletedSet.has(sp.postId)
+  );
+
+  if (hasRealNewPosts) {
+    // ── Only full refresh when there are actually new posts ─────────────
+    await loadPosts(currentChannelId);
+    showToast("New posts loaded ↑", "success");
+
+    const w = document.querySelector('.feed-wrapper');
+    if (w && w.scrollTop < 500) {
+      w.scrollTop = 0;
+    }
+  } 
+  else {
+    // ── Only deletions happened (or nothing relevant) ───────────────────
+    // 1. Remove any remaining ghost posts that were locally deleted
+    document.querySelectorAll('.post[data-post-id]').forEach(el => {
+      if (deletedSet.has(el.dataset.postId)) {
+        el.remove();
       }
+    });
+
+    // 2. Clean up the deleted list — remove IDs that no longer exist on server
+    const currentServerIds = new Set(serverPosts.map(p => p.postId));
+    const stillRelevantDeleted = localDeletedIds.filter(id => !currentServerIds.has(id));
+
+    if (wrapper) {
+      wrapper.dataset.deletedPostIds = JSON.stringify(stillRelevantDeleted);
+    }
+
+    // Optional: small silent toast or nothing at all
+    // showToast("Feed updated (deletions processed)", "info"); // ← remove or keep quiet
+  }
+}
 
       // 4. Always refresh comments (low cost, good UX)
       document.querySelectorAll('.comments-list').forEach(cont => {

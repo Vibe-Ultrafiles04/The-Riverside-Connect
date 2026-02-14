@@ -972,13 +972,100 @@ main.main {
 
 .post-views {
   color: #94a3b8;
-  cursor: default;
+  cursor: pointer;           /* ← changed */
+  user-select: none;
+  transition: color 0.18s ease;
 }
+
+.post-views:hover {
+  color: #60a5fa;
+}
+
 .post-views i {
   margin-right: 4px;
 }
 .post-views .view-count {
   font-weight: 500;
+}
+
+/* Viewer modal / floating card */
+.viewers-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+.viewers-modal.active {
+  display: flex;
+}
+.viewers-content {
+  background: rgba(30,41,59,0.96);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 80vh;
+  overflow-y: auto;
+  border: 1px solid rgba(96,165,250,0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+.viewers-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(96,165,250,0.25);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.viewers-header h3 {
+  margin: 0;
+  color: #60a5fa;
+}
+.viewers-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+.viewers-list {
+  padding: 12px 0;
+}
+.viewer-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 20px;
+  transition: background 0.2s;
+}
+.viewer-item:hover {
+  background: rgba(96,165,250,0.12);
+}
+.viewer-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(96,165,250,0.4);
+}
+.viewer-info {
+  flex: 1;
+}
+.viewer-name {
+  font-weight: 600;
+  color: #e2e8f0;
+}
+.viewer-time {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+.no-viewers {
+  text-align: center;
+  padding: 40px 20px;
+  color: #94a3b8;
 }
   </style>
 </head>
@@ -1110,10 +1197,21 @@ main.main {
   </div>
 </div>
 
+<!-- Viewers Modal -->
+<div id="viewersModal" class="viewers-modal">
+  <div class="viewers-content">
+    <div class="viewers-header">
+      <h3>Post Viewers</h3>
+      <button class="viewers-close" onclick="closeViewersModal()">×</button>
+    </div>
+    <div class="viewers-list" id="viewersList"></div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztEC6r39CLm_c8bvftsFL1UtLQKE5LWuUuvvhq6MPfo-87mDQ1N3MuHh9CqRv32W84/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxomno0v0aWWj76RhzNL-uEKidGEaeltnhP0ckyFZX0QSa6sOk3tQ3gdH0ENL_23aep/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1772,7 +1870,14 @@ if (countSpan) {
   likeBtn.onclick = () => toggleLike(post.postId, likeBtn);
 
   loadComments(post.postId, div.querySelector(".comments-list"));
+
+  const viewsElement = div.querySelector('.post-views');
+  if (viewsElement) {
+    viewsElement.onclick = () => openViewersModal(post.postId);
+  }
 });
+
+
 
 // ── ADD THIS BLOCK HERE ────────────────────────────────────────────────
     const wrapper = document.querySelector('.feed-wrapper');
@@ -1795,6 +1900,63 @@ if (countSpan) {
   }
 }
 
+function openViewersModal(postId) {
+  const modal = document.getElementById('viewersModal');
+  const list = document.getElementById('viewersList');
+  
+  if (!modal || !list) {
+    console.error("Viewers modal elements not found");
+    return;
+  }
+
+  // Optional: show loading state
+  list.innerHTML = '<div class="no-viewers">Loading viewers...</div>';
+
+  modal.classList.add('active');
+
+  // Fetch who viewed this post
+  fetch(`${SCRIPT_URL}?operation=getChannelPostViewers&postId=${encodeURIComponent(postId)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.status !== "success") {
+        list.innerHTML = '<div class="no-viewers">Could not load viewers</div>';
+        return;
+      }
+
+      const viewers = data.viewers || [];
+      if (viewers.length === 0) {
+        list.innerHTML = '<div class="no-viewers">No one has viewed this post yet</div>';
+        return;
+      }
+
+      list.innerHTML = '';
+      viewers.forEach(v => {
+        const item = document.createElement('div');
+        item.className = 'viewer-item';
+        
+        const avatarSrc = v.picLink ? getLh3Link(v.picLink) : 'https://via.placeholder.com/44?text=@';
+        
+        item.innerHTML = `
+          <img class="viewer-avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/44?text=@'">
+          <div class="viewer-info">
+            <div class="viewer-name">${v.username}</div>
+            <div class="viewer-time">Viewed ${new Date(v.viewedAt).toLocaleString([], {
+              hour: '2-digit', minute:'2-digit', day:'numeric', month:'short'
+            })}</div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    })
+    .catch(err => {
+      console.error(err);
+      list.innerHTML = '<div class="no-viewers">Error loading viewers</div>';
+    });
+}
+
+function closeViewersModal() {
+  document.getElementById('viewersModal')?.classList.remove('active');
+}
 
 
 // Posting Panel Controls
@@ -2338,7 +2500,11 @@ channelsPanel?.addEventListener('click', (e) => {
   }
 });
 
-
+document.getElementById('viewersModal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('viewersModal')) {
+    closeViewersModal();
+  }
+});
 </script>
 
 <script>

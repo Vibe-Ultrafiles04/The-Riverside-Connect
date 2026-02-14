@@ -796,7 +796,44 @@ main.main {
   display: block;
   animation: fadeIn 0.4s ease-out;
 }
+.post-header {
+  position: relative;           /* important for absolute positioning of delete btn */
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
 
+.delete-post-btn {
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.delete-post-btn:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.delete-post-btn:active {
+  transform: scale(0.95);
+}
+
+.delete-post-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Visual feedback while deleting */
+.post.deleting {
+  opacity: 0.45;
+  transition: opacity 0.5s;
+  pointer-events: none;
+}
+
+.post.deleting .post-content,
+.post.deleting .post-media {
+  filter: grayscale(40%);
+}
 /* Optional: small indicator when collapsed */
 .post-footer .comment-count::after {
   content: "Show Comments";
@@ -1211,7 +1248,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxomno0v0aWWj76RhzNL-uEKidGEaeltnhP0ckyFZX0QSa6sOk3tQ3gdH0ENL_23aep/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbkT975dRaDh7FaKdxuHjHQfRhyOXGX8fBl3MkD-j8xBlHGrXiGySjIXnbjZd2Jvtf/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1799,37 +1836,61 @@ if (post.media?.link) {
   }
 }
 
-  div.innerHTML = `
-    <div class="post-header">
-      <img class="post-avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/52?text=@'">
-      <div>
-        <div class="post-author">${post.author}</div>
-        <div class="post-time">${new Date(post.created).toLocaleString([],{hour:'2-digit',minute:'2-digit',day:'numeric',month:'short'})}</div>
-      </div>
-    </div>
-    <div class="post-content">${post.content
-  .replace(/https?:\/\/[^ \n<>"']*(?:drive\.google\.com|view\?usp=|usp=sharing|usp=drive_link|drive_link)[^ \n<>"']*/gi, '')
-  .replace(/\?usp=[^ \n<>"']*/gi, '')                    // nukes any ?usp=... fragment
-  .replace(/drive_link/gi, '')                           // removes literal "drive_link"
-  .replace(/\s{2,}/g, ' ')
-  .trim()
-  .replace(/\n/g, '<br>')}
-</div>
-    ${mediaHtml}
-    <div class="post-footer">
-     <span class="post-like ${post.likedByCurrentUser ? 'liked' : ''}">
-  <i class="${post.likedByCurrentUser ? 'fas' : 'far'} fa-heart"></i> 
-  ${post.likes || 0}
-</span>
-      <span class="comment-count" data-postid="${post.postId}">
-  <i class="far fa-comment icon"></i> 
-  <span class="count">Loading...</span>
-</span>
+ const isOwnPost = post.author === currentUserName;
 
-  <span class="post-views" data-postid="${post.postId}">
-  views <span class="view-count">0</span>
-</span>
-  
+div.innerHTML = `
+  <div class="post-header" style="position: relative;">
+    <img class="post-avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/52?text=@'">
+    <div>
+      <div class="post-author">${post.author}</div>
+      <div class="post-time">${new Date(post.created).toLocaleString([], {
+        hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short'
+      })}</div>
+    </div>
+
+    ${isOwnPost ? `
+      <button class="delete-post-btn"
+              title="Delete this post"
+              onclick="deleteMyChannelPost('${post.postId}', event)"
+              style="
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                background: none;
+                border: none;
+                color: #f87171;
+                font-size: 1.3rem;
+                cursor: pointer;
+                opacity: 0.75;
+                transition: all 0.2s;
+                z-index: 5;
+              ">
+        <i class="far fa-trash-alt"></i>
+      </button>
+    ` : ''}
+
+  </div>
+  <div class="post-content">${post.content
+    .replace(/https?:\/\/[^ \n<>"']*(?:drive\.google\.com|view\?usp=|usp=sharing|usp=drive_link|drive_link)[^ \n<>"']*/gi, '')
+    .replace(/\?usp=[^ \n<>"']*/gi, '')
+    .replace(/drive_link/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+    .replace(/\n/g, '<br>')}
+  </div>
+  ${mediaHtml}
+  <div class="post-footer">
+    <span class="post-like ${post.likedByCurrentUser ? 'liked' : ''}">
+      <i class="${post.likedByCurrentUser ? 'fas' : 'far'} fa-heart"></i>
+      ${post.likes || 0}
+    </span>
+    <span class="comment-count" data-postid="${post.postId}">
+      <i class="far fa-comment icon"></i>
+      <span class="count">Loading...</span>
+    </span>
+    <span class="post-views" data-postid="${post.postId}">
+      views <span class="view-count">0</span>
+    </span>
 
     </div>
    <div class="comment-section bubble-comments" data-postid="${post.postId}">
@@ -2357,6 +2418,77 @@ async function deleteMyChannelComment(commentId, postId, event) {
     if (document.body.contains(messageEl)) {
       showToast("Connection issue — try again", "error");
       restoreUI(messageEl, deleteBtn);
+    }
+  }
+}
+
+
+async function deleteMyChannelPost(postId, event) {
+  event.stopPropagation();
+  event.preventDefault();
+
+  const postEl = event.target.closest('.post');
+  if (!postEl) return;
+
+  const confirmed = await showConfirmToast(
+    "Delete Post?",
+    "This will permanently remove the post and its comments.",
+    "Delete",
+    "Cancel"
+  );
+
+  if (!confirmed) return;
+
+  const btn = postEl.querySelector('.delete-post-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  }
+
+  postEl.classList.add('deleting');
+
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "deleteChannelPost",
+        postId,
+        username: currentUserName,
+        channelId: currentChannelId
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === "success") {
+      showToast("Post deleted", "success");
+      postEl.remove();
+
+      // Optional: show empty state if no posts left
+      if (document.querySelectorAll('.post').length === 0) {
+        feed.innerHTML = `
+          <div class="empty">
+            <i class="far fa-comment-dots" style="font-size:5rem; opacity:0.4; margin-bottom:24px;"></i><br>
+            No posts yet<br>
+            <small>Be the first to share something!</small>
+          </div>
+        `;
+      }
+    } else {
+      showToast(data.message || "Failed to delete post", "error");
+      postEl.classList.remove('deleting');
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="far fa-trash-alt"></i>';
+      }
+    }
+  } catch (err) {
+    console.error("Delete post failed:", err);
+    showToast("Network error – try again", "error");
+    postEl.classList.remove('deleting');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="far fa-trash-alt"></i>';
     }
   }
 }

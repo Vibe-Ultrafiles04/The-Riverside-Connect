@@ -1324,14 +1324,13 @@ async function loadAllChannels() {
       const tab = document.createElement("div");
       tab.className = "channel-tab";
       
-      // Use avatar if exists, otherwise fallback
-      const avatarSrc = ch.picLink 
-        ? getLh3Link(ch.picLink) 
+      const avatarSrc = ch.picLink
+        ? getLh3Link(ch.picLink)
         : 'https://via.placeholder.com/48?text=' + ch.name.charAt(0).toUpperCase();
 
       tab.innerHTML = `
         <div style="display:flex; align-items:center; gap:12px;">
-          <img src="${avatarSrc}" 
+          <img src="${avatarSrc}"
                style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid rgba(96,165,250,0.4); flex-shrink:0;"
                onerror="this.src='https://via.placeholder.com/48?text=@'">
           <div>
@@ -1345,9 +1344,30 @@ async function loadAllChannels() {
       channelList.appendChild(tab);
     });
 
-    if (allChannels.length > 0 && !currentChannelId) {
-      openChannelTab(allChannels[0].id, allChannels[0].name, allChannels[0].description, allChannels[0].creator, allChannels[0].created, allChannels[0].picLink);
+    // ── Decide which channel to open automatically ───────────────────────────────
+    let channelToOpen = null;
+
+    const lastId = localStorage.getItem("lastChannelId");
+    if (lastId) {
+      channelToOpen = allChannels.find(ch => ch.id === lastId);
     }
+
+    // If no last channel (or it was deleted) → use first one
+    if (!channelToOpen && allChannels.length > 0) {
+      channelToOpen = allChannels[0];
+    }
+
+    if (channelToOpen) {
+      openChannelTab(
+        channelToOpen.id,
+        channelToOpen.name,
+        channelToOpen.description,
+        channelToOpen.creator,
+        channelToOpen.created,
+        channelToOpen.picLink
+      );
+    }
+
   } catch (err) {
     channelList.innerHTML = '<div class="empty">Failed to load channels</div>';
   }
@@ -1538,6 +1558,8 @@ function closeChannelModal() {
 
 async function openChannelTab(channelId, name, description, creator, created, picLink) {
   if (!channelId) return;
+
+  localStorage.setItem("lastChannelId", channelId);
 
   currentChannelId = channelId;
 

@@ -2234,6 +2234,62 @@ function getMediaSrc(url, type) {
 }
 
 async function toggleCommentReaction(commentId, postId, emojiType) {
+  const container = document.querySelector(`.comment-reactions[data-comment-id="${commentId}"]`);
+  if (!container) return;
+
+  // 1. Remember current state for possible rollback
+  const prevMyReaction = container.querySelector('.comment-reaction-menu button.active')?.dataset.emoji || null;
+  const prevCounts = {};
+  container.querySelectorAll('.comment-reaction-counts span').forEach(span => {
+    const type = span.dataset.type;
+    const countEl = span.querySelector('.reaction-count');
+    prevCounts[type] = countEl ? parseInt(countEl.textContent || '0', 10) : 0;
+  });
+
+  // 2. Optimistic update – do it NOW (instant feedback)
+  const isRemoving = prevMyReaction === emojiType;
+  let newMyReaction = isRemoving ? null : emojiType;
+
+  // Update menu active state
+  container.querySelectorAll('.comment-reaction-menu button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.emoji === newMyReaction);
+  });
+
+  // Update counts optimistically
+  if (isRemoving) {
+    // Remove reaction
+    const span = container.querySelector(`[data-type="${emojiType}"]`);
+    if (span) {
+      const countEl = span.querySelector('.reaction-count');
+      let count = parseInt(countEl.textContent || '1', 10);
+      count = Math.max(0, count - 1);
+      countEl.textContent = count;
+      span.classList.toggle('has-count', count > 0);
+    }
+  } else {
+    // Add or switch reaction
+    if (prevMyReaction && prevMyReaction !== emojiType) {
+      // Decrease old reaction
+      const oldSpan = container.querySelector(`[data-type="${prevMyReaction}"]`);
+      if (oldSpan) {
+        const oldCountEl = oldSpan.querySelector('.reaction-count');
+        let oldCount = parseInt(oldCountEl.textContent || '1', 10);
+        oldCount = Math.max(0, oldCount - 1);
+        oldCountEl.textContent = oldCount;
+        oldSpan.classList.toggle('has-count', oldCount > 0);
+      }
+    }
+    // Increase new reaction
+    const newSpan = container.querySelector(`[data-type="${emojiType}"]`);
+    if (newSpan) {
+      const newCountEl = newSpan.querySelector('.reaction-count');
+      let newCount = parseInt(newCountEl.textContent || '0', 10);
+      newCount += 1;
+      newCountEl.textContent = newCount;
+      newSpan.classList.add('has-count');
+    }
+  }
+
   try {
     const res = await fetch(SCRIPT_URL, {
       method: "POST",
@@ -2243,27 +2299,51 @@ async function toggleCommentReaction(commentId, postId, emojiType) {
         postId: postId,
         channelId: currentChannelId,
         username: currentUserName,
-        reactionType: emojiType   // "fire", "love", "thanks"
+        reactionType: emojiType
       })
     });
+
     const data = await res.json();
-    
+
     if (data.status === "success") {
+      // Backend confirmed → keep optimistic UI + sync any extra info
       updateCommentReactionUI(commentId, data.reactions);
       showToast(`Reaction ${data.action === "added" ? "added" : "removed"}`, "success");
     } else {
+      // Backend error → revert
+      revertToPrevious(container, prevMyReaction, prevCounts);
       showToast(data.message || "Failed", "error");
     }
   } catch (err) {
+    // Network failure → revert
+    revertToPrevious(container, prevMyReaction, prevCounts);
     showToast("Network error", "error");
   }
 }
 
+// Helper: revert on failure
+function revertToPrevious(container, prevMyReaction, prevCounts) {
+  // Restore active state
+  container.querySelectorAll('.comment-reaction-menu button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.emoji === prevMyReaction);
+  });
+
+  // Restore counts
+  Object.keys(prevCounts).forEach(type => {
+    const span = container.querySelector(`[data-type="${type}"]`);
+    if (span) {
+      const countEl = span.querySelector('.reaction-count');
+      if (countEl) countEl.textContent = prevCounts[type];
+      span.classList.toggle('has-count', prevCounts[type] > 0);
+    }
+  });
+}
+
+// Your original update function (unchanged – only used on success)
 function updateCommentReactionUI(commentId, reactions) {
   const container = document.querySelector(`.comment-reactions[data-comment-id="${commentId}"]`);
   if (!container) return;
 
-  // Update counts + visibility
   Object.keys(reactions.counts || {}).forEach(type => {
     const span = container.querySelector(`[data-type="${type}"]`);
     const countEl = span?.querySelector('.reaction-count');
@@ -2275,7 +2355,6 @@ function updateCommentReactionUI(commentId, reactions) {
     }
   });
 
-  // Update active/highlighted emoji in menu
   const menu = container.querySelector('.comment-reaction-menu');
   if (menu) {
     menu.querySelectorAll('button').forEach(btn => {

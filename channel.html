@@ -1104,6 +1104,91 @@ main.main {
   padding: 40px 20px;
   color: #94a3b8;
 }
+
+/* ── Comment Reaction Styles (updated: hide zero counts, single reaction) ── */
+.comment-reactions {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: #94a3b8;
+  min-height: 20px; /* prevents layout shift */
+}
+
+.comment-reaction-toggle {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 50%;
+  opacity: 0.6;
+  transition: all 0.18s;
+}
+
+.message:hover .comment-reaction-toggle,
+.message.own:hover .comment-reaction-toggle {
+  opacity: 1;
+}
+
+.comment-reaction-toggle:hover {
+  color: #60a5fa;
+  background: rgba(96,165,250,0.15);
+}
+
+.comment-reaction-menu {
+  position: absolute;
+  background: #1e293b;
+  border: 1px solid rgba(96,165,250,0.3);
+  border-radius: 10px;
+  padding: 6px 10px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  display: none;
+  z-index: 2000;           /* raised so it floats above comments */
+  right: 0;
+  top: 50%;                /* centered vertically relative to toggle */
+  transform: translateY(-50%) translateX(10px);  /* slight offset right + vertical center */
+  margin: 0;               /* removed margin-top */
+}
+.comment-reaction-menu button {
+  background: none;
+  border: none;
+  font-size: 1.6rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 50%;
+  transition: all 0.18s;
+}
+
+.comment-reaction-menu button:hover {
+  background: rgba(96,165,250,0.25);
+}
+
+.comment-reaction-menu button.active {
+  background: rgba(96,165,250,0.5);
+  transform: scale(1.15);
+}
+
+/* Hide counts if zero */
+.comment-reaction-counts span {
+  display: none;
+}
+
+.comment-reaction-counts span.has-count {
+  display: inline;
+  margin-right: 10px;
+  cursor: default;
+}
+
+.comment-reaction-counts .reaction-count {
+  font-weight: 500;
+  min-width: 16px;
+  display: inline-block;
+  text-align: center;
+  color: #cbd5e1;
+}
   </style>
 </head>
 <body>
@@ -1248,7 +1333,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwbkT975dRaDh7FaKdxuHjHQfRhyOXGX8fBl3MkD-j8xBlHGrXiGySjIXnbjZd2Jvtf/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzp6NAGGJ6zs3DiQhpH-flQ2XM4H-ZNKKry521aL4diCNNZe4-3hX8kx-AS4DmnLOUf/exec';
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -2147,6 +2232,70 @@ function getMediaSrc(url, type) {
   }
   return url;  // Fallback
 }
+
+async function toggleCommentReaction(commentId, postId, emojiType) {
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "toggleChannelCommentReaction",
+        commentId: commentId,
+        postId: postId,
+        channelId: currentChannelId,
+        username: currentUserName,
+        reactionType: emojiType   // "fire", "love", "thanks"
+      })
+    });
+    const data = await res.json();
+    
+    if (data.status === "success") {
+      updateCommentReactionUI(commentId, data.reactions);
+      showToast(`Reaction ${data.action === "added" ? "added" : "removed"}`, "success");
+    } else {
+      showToast(data.message || "Failed", "error");
+    }
+  } catch (err) {
+    showToast("Network error", "error");
+  }
+}
+
+function updateCommentReactionUI(commentId, reactions) {
+  const container = document.querySelector(`.comment-reactions[data-comment-id="${commentId}"]`);
+  if (!container) return;
+
+  // Update counts + visibility
+  Object.keys(reactions.counts || {}).forEach(type => {
+    const span = container.querySelector(`[data-type="${type}"]`);
+    const countEl = span?.querySelector('.reaction-count');
+    
+    if (countEl && span) {
+      const count = reactions.counts[type] || 0;
+      countEl.textContent = count;
+      span.classList.toggle('has-count', count > 0);
+    }
+  });
+
+  // Update active/highlighted emoji in menu
+  const menu = container.querySelector('.comment-reaction-menu');
+  if (menu) {
+    menu.querySelectorAll('button').forEach(btn => {
+      const type = btn.dataset.emoji;
+      btn.classList.toggle('active', reactions.myReaction === type);
+    });
+  }
+}
+
+// Close menus when clicking elsewhere
+document.addEventListener('click', e => {
+  if (!e.target.closest('.comment-reaction-toggle') && 
+      !e.target.closest('.comment-reaction-menu')) {
+    document.querySelectorAll('.comment-reaction-menu').forEach(m => {
+      m.style.display = 'none';
+    });
+  }
+});
+
+
 async function toggleLike(postId, likeElement) {
   try {
     const res = await fetch(SCRIPT_URL, {
@@ -2195,7 +2344,7 @@ async function toggleLike(postId, likeElement) {
 // 1. Load comments – now with bubble style + avatars
 async function loadComments(postId, container) {
   try {
-    const r = await fetch(`${SCRIPT_URL}?operation=getChannelComments&postId=${postId}`);
+    const r = await fetch(`${SCRIPT_URL}?operation=getChannelComments&postId=${postId}&username=${encodeURIComponent(currentUserName)}`);
     const { comments = [] } = await r.json();
     
     // ── NEW: Skip reload if we just deleted something (prevents re-adding ghosts) ──
@@ -2257,9 +2406,55 @@ comments.reverse().forEach(c => {
         day: 'numeric', 
         month: 'short'
       })}</span>
+
+    <div class="comment-reactions" data-comment-id="${c.id}">
+  <button class="comment-reaction-toggle" title="React">
+    <i class="fas fa-ellipsis-h"></i>
+  </button>
+  <div class="comment-reaction-menu">
+    <button data-emoji="fire" title="Fire" class="${c.reactions?.myReaction === 'fire' ? 'active' : ''}">🔥</button>
+    <button data-emoji="love" title="Love" class="${c.reactions?.myReaction === 'love' ? 'active' : ''}">❤️</button>
+    <button data-emoji="thanks" title="Thanks" class="${c.reactions?.myReaction === 'thanks' ? 'active' : ''}">🙏</button>
+  </div>
+  <div class="comment-reaction-counts">
+    <span data-type="fire" class="${(c.reactions?.fire || 0) > 0 ? 'has-count' : ''}">
+      <span class="reaction-count">${c.reactions?.fire || 0}</span> 🔥
+    </span>
+    <span data-type="love" class="${(c.reactions?.love || 0) > 0 ? 'has-count' : ''}">
+      <span class="reaction-count">${c.reactions?.love || 0}</span> ❤️
+    </span>
+    <span data-type="thanks" class="${(c.reactions?.thanks || 0) > 0 ? 'has-count' : ''}">
+      <span class="reaction-count">${c.reactions?.thanks || 0}</span> 🙏
+    </span>
+  </div>
+</div>
+
     </div>
   `;
   container.appendChild(msg);
+
+  // Reaction menu toggle + selection
+const reactionToggle = msg.querySelector('.comment-reaction-toggle');
+const reactionMenu = msg.querySelector('.comment-reaction-menu');
+
+if (reactionToggle && reactionMenu) {
+  reactionToggle.onclick = (e) => {
+    e.stopPropagation();
+    // Close all other menus
+    document.querySelectorAll('.comment-reaction-menu').forEach(m => {
+      if (m !== reactionMenu) m.style.display = 'none';
+    });
+    reactionMenu.style.display = reactionMenu.style.display === 'block' ? 'none' : 'block';
+  };
+
+  reactionMenu.querySelectorAll('button').forEach(btn => {
+    btn.onclick = () => {
+      const type = btn.dataset.emoji;
+      toggleCommentReaction(c.id, postId, type);
+      reactionMenu.style.display = 'none';
+    };
+  });
+}
 });
   } catch (err) {
     container.innerHTML = '<div style="color:#f87171; padding:16px;">Could not load comments</div>';

@@ -1189,6 +1189,183 @@ main.main {
   text-align: center;
   color: #cbd5e1;
 }
+
+
+/* ── Calendar Post Display ──────────────────────────────────────────────── */
+.calendar-container {
+  padding: 16px 0;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  margin: 12px 0;
+
+  /* ── The important parts for horizontal scrolling ── */
+  display: flex;                    /* ← changed from block */
+  flex-direction: row;              /* horizontal layout */
+  flex-wrap: nowrap;                /* prevent wrapping to new line */
+  overflow-x: auto;                 /* enable horizontal scroll */
+  gap: 24px;                        /* space between months */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: #60a5fa #1e293b;
+  padding-bottom: 12px;             /* breathing room for scrollbar */
+}
+
+.calendar-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.calendar-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.calendar-container::-webkit-scrollbar-thumb {
+  background: #60a5fa;
+  border-radius: 3px;
+}
+
+/* Each month block */
+.month-calendar {
+  flex: 0 0 auto;                   /* don't grow/shrink, keep natural width */
+  min-width: 280px;                 /* minimum width per calendar */
+  background: rgba(30, 41, 59, 0.7);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* Optional: make it look nicer on narrow screens */
+@media (max-width: 600px) {
+  .month-calendar {
+    min-width: 260px;               /* slightly smaller on mobile */
+  }
+}
+
+.month-calendar:last-child {
+  margin-right: 0;
+}
+
+.month-calendar h4 {
+  text-align: center;
+  color: #60a5fa;
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.day-header {
+  font-weight: 600;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  padding: 8px 4px;
+}
+
+.calendar-grid > div:not(.day-header) {
+  padding: 10px 4px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  color: #e2e8f0;
+  cursor: default;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-grid .highlighted {
+  background: rgba(96, 165, 250, 0.25);
+  border: 2px solid #60a5fa;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.calendar-grid .highlighted:hover {
+  background: rgba(96, 165, 250, 0.45);
+  transform: scale(1.08);
+}
+
+/* ── Event Detail Modal ─────────────────────────────────────────────────── */
+#eventModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+}
+
+#eventModal.active {
+  display: flex;
+}
+
+.event-modal-content {
+  background: rgba(30,41,59,0.98);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 460px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 20px;
+  border: 1px solid rgba(96,165,250,0.4);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  position: relative;
+}
+
+.event-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.event-modal-header h4 {
+  margin: 0;
+  color: #60a5fa;
+}
+
+.event-modal-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.8rem;
+  cursor: pointer;
+}
+
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.event-item {
+  background: rgba(96,165,250,0.12);
+  padding: 12px 16px;
+  border-radius: 10px;
+  border-left: 4px solid #60a5fa;
+  margin-bottom: 8px;
+}
+
+.event-item-title {
+  font-weight: 600;
+  color: #60a5fa;
+  margin-bottom: 2px;
+}
+
+.event-item-desc {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
   </style>
 </head>
 <body>
@@ -1251,15 +1428,24 @@ main.main {
     <h3>Create Post</h3>
     <button class="post-panel-close" onclick="closePostPanel()">×</button>
   </div>
-
+ <div id="mediaPreview" style="display:none;"></div>
   <textarea id="postContent" placeholder="What's on your mind?"></textarea>
+  
+ <div id="eventsContainer" style="display:none; margin:16px 0; padding:12px; background:rgba(30,41,59,0.5); border-radius:12px; max-height:40vh; overflow-y:auto;"></div>
 
-  <div id="mediaPreview" style="display:none;"></div>
+<button id="addEventBtn" style="display:none; width:100%; padding:12px; background:linear-gradient(135deg,#3b82f6,#60a5fa); color:white; border:none; border-radius:12px; font-weight:600; cursor:pointer; margin-top:8px;"
+        onclick="addEventInput()">
+  + Add another event
+</button>
+  
 
   <div class="post-actions">
     <label class="media-btn" for="mediaInput">
       <i class="fas fa-image"></i>
     </label>
+    <label class="calendar-btn" id="calendarToggle">
+  <i class="fas fa-calendar-alt"></i>
+</label>
     <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
 
     <button class="submit-post" onclick="submitPost()">Post</button>
@@ -1330,10 +1516,25 @@ main.main {
   </div>
 </div>
 
+
+<!-- Event Detail Modal -->
+<div id="eventModal">
+  <div class="event-modal-content">
+    <div class="event-modal-header">
+      <h4 id="eventModalDate"></h4>
+      <button class="event-modal-close" onclick="document.getElementById('eventModal').classList.remove('active')">×</button>
+    </div>
+    <div class="event-list" id="eventList"></div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzp6NAGGJ6zs3DiQhpH-flQ2XM4H-ZNKKry521aL4diCNNZe4-3hX8kx-AS4DmnLOUf/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwcGhppeu-x0xRf9t5TfC0XCCXRnb0SPIy3oQlD3DlIlsM4Db7msC9yI9eg3bAU5_0/exec';
+
+// Store events per post for quick lookup when clicking dates
+const postEventsMap = new Map(); // postId → array of events
 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
@@ -1924,6 +2125,9 @@ async function loadPosts(channelId) {
   const div = document.createElement("div");
   div.className = "post";
   div.dataset.postId = post.postId;
+  if (post.events?.length > 0) {
+  postEventsMap.set(post.postId, post.events);
+}
   const avatarSrc = getLh3Link(post.picLink) || 'https://via.placeholder.com/52?text=@';
   
  
@@ -1986,6 +2190,34 @@ div.innerHTML = `
     .replace(/\n/g, '<br>')}
   </div>
   ${mediaHtml}
+
+  
+ ${post.events?.length > 0 ? (function() {
+  const byMonth = {};
+  post.events.forEach(ev => {
+    const [year, month] = ev.date.split('-');
+    const key = `${year}-${month}`;
+    if (!byMonth[key]) byMonth[key] = [];
+    byMonth[key].push(ev);
+  });
+
+  let calendarHtml = `<div class="calendar-container" data-post-id="${post.postId}">`;
+  Object.keys(byMonth).sort().forEach(key => {
+    const [year, month] = key.split('-');
+    const monthName = new Date(year, month-1).toLocaleString('default', { month: 'long', year: 'numeric' });
+    calendarHtml += `
+      <div class="month-calendar">
+        <h4>${monthName}</h4>
+        <div class="calendar-grid">
+          ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="day-header">${d}</div>`).join('')}
+          ${generateMonthGrid(year, month, byMonth[key])}
+        </div>
+      </div>`;
+  });
+  calendarHtml += '</div>';
+  return calendarHtml;
+})() : ''}
+
   <div class="post-footer">
     <span class="post-like ${post.likedByCurrentUser ? 'liked' : ''}">
       <i class="${post.likedByCurrentUser ? 'fas' : 'far'} fa-heart"></i>
@@ -2158,18 +2390,163 @@ mediaInput.onchange = function(e) {
   reader.readAsDataURL(file);
 };
 
+function addEventInput() {
+  const container = document.getElementById('eventsContainer');
+
+  const row = document.createElement('div');
+  row.style.marginBottom = '16px';
+  row.style.padding = '12px';
+  row.style.background = 'rgba(15,23,42,0.6)';
+  row.style.borderRadius = '10px';
+  row.style.border = '1px solid rgba(96,165,250,0.3)';
+
+  row.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <input type="date" class="event-date" required style="padding:10px; border-radius:8px; border:1px solid #60a5fa; background:rgba(255,255,255,0.08); color:white; font-size:1rem;">
+      
+      <textarea class="event-title" placeholder="Event title (use / to add description)\nExample: Team Sync / Discuss Q2 goals and blockers" 
+                required style="min-height:80px; padding:12px; border-radius:10px; border:1px solid #60a5fa; background:rgba(255,255,255,0.08); color:white; font-size:1rem; resize:vertical; line-height:1.5;"></textarea>
+      
+      <label style="color:#60a5fa; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+        <i class="fas fa-image"></i> Add event image (optional)
+        <input type="file" class="event-image" accept="image/*" style="display:none;">
+      </label>
+      
+      <div class="image-preview" style="max-width:100%; max-height:180px; display:none; margin-top:8px; border-radius:8px; overflow:hidden; border:1px solid rgba(96,165,250,0.4);"></div>
+      
+      <button type="button" onclick="this.closest('div').remove()" 
+              style="align-self:flex-end; background:none; border:none; color:#f87171; font-size:1.4rem; cursor:pointer; padding:4px 8px;">
+        ×
+      </button>
+    </div>
+  `;
+
+  container.appendChild(row);
+
+  // Handle image preview + store base64
+  const fileInput = row.querySelector('.event-image');
+  const previewDiv = row.querySelector('.image-preview');
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+      previewDiv.innerHTML = `<img src="${ev.target.result}" style="width:100%; height:auto; display:block;">`;
+      previewDiv.style.display = 'block';
+      // Store base64 on the row for later collection
+      row.dataset.imageBase64 = ev.target.result.split(',')[1];
+      row.dataset.imageName = file.name;
+      row.dataset.imageType = file.type;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function generateMonthGrid(year, month, events) {
+  const firstDay = new Date(year, month - 1, 1).getDay();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let html = '';
+
+  // Empty cells
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div></div>';
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayStr = d.toString().padStart(2, '0');
+    const fullDate = `${year}-${month}-${dayStr}`;
+
+    const dayEvents = events.filter(e => e.date === fullDate);
+    const hasEvent = dayEvents.length > 0;
+
+    html += `
+      <div 
+        class="${hasEvent ? 'highlighted' : ''}"
+        data-date="${fullDate}"
+      >
+        ${d}
+      </div>
+    `;
+  }
+
+  return html;
+}
+// Replace your showEventsForDate with this
+function showEventsForDate(dateStr, dayEvents) {
+  const modal = document.getElementById('eventModal');
+  if (!modal) return console.error("Event modal not found");
+
+  const titleEl = document.getElementById('eventModalDate');
+  const listEl = document.getElementById('eventList');
+  if (!titleEl || !listEl) return console.error("Modal elements missing");
+
+  // Reset & clear
+  modal.classList.remove('active');
+  listEl.innerHTML = '';
+
+  // Date header
+  const [y, m, d] = dateStr.split('-');
+  const dateObj = new Date(y, m - 1, d);
+  titleEl.textContent = isNaN(dateObj.getTime()) 
+    ? "Invalid Date" 
+    : dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  // No events
+  if (!dayEvents?.length) {
+    listEl.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">No events on this day</div>';
+  } else {
+    dayEvents.forEach(ev => {
+      const raw = (ev.title || 'Untitled Event').trim();
+      let [titlePart, descPart = ''] = raw.includes('/') ? raw.split('/', 2).map(s => s.trim()) : [raw, ''];
+
+      const item = document.createElement('div');
+      item.className = 'event-item';
+
+      let html = `<div class="event-item-title" style="font-weight:600; color:#60a5fa;">${titlePart}</div>`;
+
+      if (descPart) {
+        html += `<div class="event-item-desc" style="color:#cbd5e1; line-height:1.4; margin-top:4px; white-space:pre-wrap;">
+          ${descPart.replace(/\n/g, '<br>')}
+        </div>`;
+      }
+
+      // lh3 image proxy
+      if (ev.imageUrl?.includes('uc?id=')) {
+        const id = ev.imageUrl.match(/uc\?id=([a-zA-Z0-9_-]+)/i)?.[1];
+        if (id) {
+          html += `
+            <div style="margin-top:10px; border-radius:10px; overflow:hidden; border:1px solid rgba(96,165,250,0.3); background:#000;">
+              <img src="https://lh3.googleusercontent.com/d/${id}" 
+                   style="width:100%; height:auto; display:block;" 
+                   alt="Event image" loading="lazy"
+                   onerror="this.src='https://via.placeholder.com/400x200/1e293b/94a3b8?text=Failed';">
+            </div>`;
+        }
+      }
+
+      item.innerHTML = html;
+      listEl.appendChild(item);
+    });
+  }
+
+  modal.classList.add('active');
+  console.log(`Modal opened: ${dateStr} — ${dayEvents?.length || 0} events`);
+}
+function closeEventModal() {
+  document.getElementById('eventModal')?.classList.remove('active');
+}
+
 async function submitPost() {
   let content = postContent.value.trim();
   const file = mediaInput.files[0];
 
-  // Parse for Google Drive link (supports /file/d/ID/view, open?id=ID, etc.)
   let fileData = null;
   const driveRegex = /(?:drive\.google\.com\/(?:file\/d\/|open\?id=))([a-zA-Z0-9_-]+)/;
   const match = content.match(driveRegex);
   const parsedLink = match ? match[1] : null;
 
   if (parsedLink && !file) {
-    // Filter out the link from text (keep other text, if any)
     content = content.replace(match[0], '').trim();
     fileData = { link: parsedLink };
   } else if (file) {
@@ -2184,27 +2561,69 @@ async function submitPost() {
     });
   }
 
-  if (!content && !fileData) {
-    showToast("Write something or add media/link", "error");
+  // ── Collect calendar events + images ──────────────────────────────────────
+  let events = [];
+  const eventsContainer = document.getElementById('eventsContainer');
+  const isCalendarMode = eventsContainer && eventsContainer.style.display !== 'none';
+
+  if (isCalendarMode) {
+    eventsContainer.querySelectorAll('div').forEach(row => {
+      const dateInput  = row.querySelector('input[type="date"]');
+      const titleInput = row.querySelector('textarea.event-title');
+
+      const dateVal  = dateInput?.value?.trim();
+      const titleVal = titleInput?.value?.trim();
+
+      if (dateVal && titleVal) {
+        const eventObj = {
+          date: dateVal,
+          title: titleVal
+        };
+
+        // Attach image if uploaded for this event
+        if (row.dataset.imageBase64) {
+          eventObj.image = {
+            base64: row.dataset.imageBase64,
+            name: row.dataset.imageName,
+            type: row.dataset.imageType
+          };
+        }
+
+        events.push(eventObj);
+      }
+    });
+
+    // Clean up empty rows
+    eventsContainer.querySelectorAll('div').forEach(row => {
+      const d = row.querySelector('input[type="date"]')?.value?.trim();
+      const t = row.querySelector('textarea')?.value?.trim();
+      if (!d || !t) row.remove();
+    });
+  }
+
+  // Validation
+  if (events.length === 0 && !content && !fileData) {
+    showToast("Please write something, add media, or create at least one event", "error");
     return;
   }
 
-  // Critical safety check remains
   if (!currentChannelId) {
     showToast("Please select a channel first", "error");
     return;
   }
 
   try {
+    const payload = {
+      operation: "createChannelPost",
+      channelId: currentChannelId,
+      author: currentUserName,
+      content: content || "",
+      file: fileData || (events.length > 0 ? { events } : null)
+    };
+
     const res = await fetch(SCRIPT_URL, {
       method: "POST",
-      body: JSON.stringify({
-        operation: "createChannelPost",
-        channelId: currentChannelId,
-        author: currentUserName,
-        content,
-        file: fileData  // Now supports {link} or {base64, name, type}
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
@@ -2220,7 +2639,6 @@ async function submitPost() {
     showToast("Network error", "error");
   }
 }
-
 // Modify getLh3Link to handle videos with /preview (rename for clarity)
 function getMediaSrc(url, type) {
   const id = url.match(/[-\w]{25,}/)?.[0];
@@ -2997,6 +3415,67 @@ document.getElementById('viewersModal')?.addEventListener('click', e => {
     closeViewersModal();
   }
 });
+
+
+// ── Calendar toggle: show/hide event inputs ────────────────────────────────
+document.getElementById('calendarToggle')?.addEventListener('click', function() {
+  const container = document.getElementById('eventsContainer');
+  const addBtn = document.getElementById('addEventBtn');
+
+  // Safety: make sure elements exist
+  if (!container || !addBtn) {
+    console.warn("Calendar elements not found in DOM");
+    return;
+  }
+
+  const isCurrentlyHidden = container.style.display === 'none' || !container.style.display;
+
+  if (isCurrentlyHidden) {
+    // Show calendar section
+    container.style.display = 'block';
+    addBtn.style.display = 'block';
+
+    // Add first event row if empty
+    if (container.children.length === 0) {
+      addEventInput();
+    }
+
+    // Optional: visual feedback
+    this.style.color = '#3b82f6';           // make icon active/blue
+    this.style.transform = 'scale(1.15)';   // slight zoom
+  } else {
+    // Hide calendar section
+    container.style.display = 'none';
+    addBtn.style.display = 'none';
+
+    // Optional: reset icon style
+    this.style.color = '#60a5fa';
+    this.style.transform = 'scale(1)';
+  }
+});
+
+
+// Handle all calendar date clicks via delegation
+document.addEventListener('click', function(e) {
+  const day = e.target.closest('.highlighted');
+  if (!day) return;
+
+  const container = day.closest('.calendar-container');
+  if (!container) return;
+
+  const postId = container.dataset.postId;
+  const dateStr = day.dataset.date;
+
+  if (!postId || !dateStr) return;
+
+  const allEvents = postEventsMap.get(postId);
+  if (!allEvents) return;
+
+  const dayEvents = allEvents.filter(ev => ev.date === dateStr);
+
+  showEventsForDate(dateStr, dayEvents);
+});
+
 </script>
 
 <script>

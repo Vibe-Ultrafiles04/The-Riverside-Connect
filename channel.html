@@ -1431,19 +1431,16 @@ main.main {
  <div id="mediaPreview" style="display:none;"></div>
   <textarea id="postContent" placeholder="What's on your mind?"></textarea>
   
- <div id="eventsContainer" style="display:none; margin:16px 0; padding:12px; background:rgba(30,41,59,0.5); border-radius:12px; max-height:40vh; overflow-y:auto;"></div>
+ <div id="eventsContainer" style="display:none;"></div>
 
-<button id="addEventBtn" style="display:none; width:100%; padding:12px; background:linear-gradient(135deg,#3b82f6,#60a5fa); color:white; border:none; border-radius:12px; font-weight:600; cursor:pointer; margin-top:8px;"
-        onclick="addEventInput()">
-  + Add another event
-</button>
+
   
 
   <div class="post-actions">
     <label class="media-btn" for="mediaInput">
       <i class="fas fa-image"></i>
     </label>
-    <label class="calendar-btn" id="calendarToggle">
+   <label class="calendar-btn" id="calendarToggle" onclick="openEventModal()">
   <i class="fas fa-calendar-alt"></i>
 </label>
     <input type="file" id="mediaInput" accept="image/*,video/*" style="display:none;">
@@ -2390,58 +2387,156 @@ mediaInput.onchange = function(e) {
   reader.readAsDataURL(file);
 };
 
-function addEventInput() {
-  const container = document.getElementById('eventsContainer');
+// Reusable modal for adding multiple events + final post
+let eventModal = null;
 
-  const row = document.createElement('div');
-  row.style.marginBottom = '16px';
-  row.style.padding = '12px';
-  row.style.background = 'rgba(15,23,42,0.6)';
-  row.style.borderRadius = '10px';
-  row.style.border = '1px solid rgba(96,165,250,0.3)';
+function openEventModal() {
+  if (!eventModal) {
+    eventModal = document.createElement('div');
+    eventModal.id = 'multiEventModal';
+    eventModal.style.cssText = `
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; z-index: 5000;
+    `;
+    eventModal.innerHTML = `
+      <div style="
+        background: rgba(30,41,59,0.98); border-radius: 16px; width: 90%; max-width: 520px;
+        padding: 24px; border: 1px solid rgba(96,165,250,0.4); box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+        color: white; position: relative; max-height: 92vh; overflow-y: auto;
+      ">
+        <button onclick="closeEventModal()" 
+                style="position:absolute; top:12px; right:16px; background:none; border:none; color:#94a3b8; font-size:2.4rem; cursor:pointer;">
+          ×
+        </button>
+        <h3 style="margin:0 0 20px; color:#60a5fa; text-align:center;">Add Events to Post</h3>
 
-  row.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:10px;">
-      <input type="date" class="event-date" required style="padding:10px; border-radius:8px; border:1px solid #60a5fa; background:rgba(255,255,255,0.08); color:white; font-size:1rem;">
-      
-      <textarea class="event-title" placeholder="Event title (use / to add description)\nExample: Team Sync / Discuss Q2 goals and blockers" 
-                required style="min-height:80px; padding:12px; border-radius:10px; border:1px solid #60a5fa; background:rgba(255,255,255,0.08); color:white; font-size:1rem; resize:vertical; line-height:1.5;"></textarea>
-      
-      <label style="color:#60a5fa; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
-        <i class="fas fa-image"></i> Add event image (optional)
-        <input type="file" class="event-image" accept="image/*" style="display:none;">
-      </label>
-      
-      <div class="image-preview" style="max-width:100%; max-height:180px; display:none; margin-top:8px; border-radius:8px; overflow:hidden; border:1px solid rgba(96,165,250,0.4);"></div>
-      
-      <button type="button" onclick="this.closest('div').remove()" 
-              style="align-self:flex-end; background:none; border:none; color:#f87171; font-size:1.4rem; cursor:pointer; padding:4px 8px;">
-        ×
-      </button>
-    </div>
-  `;
+        <!-- Event counter (NEW) -->
+        <div id="eventCount" style="text-align:center; color:#94a3b8; margin-bottom:16px; font-size:0.95rem;">
+          Events added: <span id="countNum">0</span>
+        </div>
 
-  container.appendChild(row);
+        <!-- Event form -->
+        <div id="eventForm" style="display:flex; flex-direction:column; gap:16px; margin-bottom:24px;">
+          <input type="date" id="evDate" required 
+                 style="padding:12px; border-radius:10px; border:1px solid #60a5fa; background:rgba(255,255,255,0.08); color:white; font-size:1rem;">
+          
+          <textarea id="evTitle" placeholder="Event title (use / for description)\nExample: Event Title/ Event Description" 
+                    required style="min-height:100px; padding:12px; border-radius:10px; border:1px solid #60a5fa; background:rgba(255,255,255,0.08); color:white; font-size:1rem; resize:vertical; line-height:1.5;"></textarea>
+          
+          <label style="color:#60a5fa; cursor:pointer; font-size:0.95rem; display:flex; align-items:center; gap:8px;">
+            <i class="fas fa-image"></i> Add event image (optional)
+            <input type="file" id="evImage" accept="image/*" style="display:none;">
+          </label>
+          
+          <div id="evPreview" style="max-width:100%; max-height:220px; display:none; margin-top:8px; border-radius:10px; overflow:hidden; border:1px solid rgba(96,165,250,0.4); background:#000;"></div>
+          
+          <button id="addEvBtn" style="
+            padding:12px; background:linear-gradient(135deg,#3b82f6,#60a5fa); color:white; border:none;
+            border-radius:12px; font-weight:600; cursor:pointer;">
+            Add This Event
+          </button>
+        </div>
 
-  // Handle image preview + store base64
-  const fileInput = row.querySelector('.event-image');
-  const previewDiv = row.querySelector('.image-preview');
+        <!-- Final actions -->
+        <div style="display:flex; gap:12px; justify-content:space-between; margin-top:20px;">
+          <button onclick="closeEventModal()" style="
+            flex:1; padding:12px; background:transparent; border:1px solid #64748b; color:#94a3b8; 
+            border-radius:12px; font-weight:600; cursor:pointer;">
+            Cancel
+          </button>
+          <button id="postAllBtn" style="
+            flex:1; padding:12px; background:linear-gradient(135deg,#10b981,#34d399); color:white; border:none;
+            border-radius:12px; font-weight:700; font-size:1.1rem; cursor:pointer;">
+            Post All Events
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(eventModal);
 
-  fileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
+    // Close
+    function closeEventModal() {
+      eventModal.style.display = 'none';
+    }
+    eventModal.querySelector('button[onclick="closeEventModal()"]').onclick = closeEventModal;
 
-    const reader = new FileReader();
-    reader.onload = ev => {
-      previewDiv.innerHTML = `<img src="${ev.target.result}" style="width:100%; height:auto; display:block;">`;
-      previewDiv.style.display = 'block';
-      // Store base64 on the row for later collection
-      row.dataset.imageBase64 = ev.target.result.split(',')[1];
-      row.dataset.imageName = file.name;
-      row.dataset.imageType = file.type;
+    // Image preview
+    const fileInput = eventModal.querySelector('#evImage');
+    const preview = eventModal.querySelector('#evPreview');
+    fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        preview.innerHTML = `<img src="${ev.target.result}" style="width:100%; height:auto; display:block;">`;
+        preview.style.display = 'block';
+        preview.dataset.base64 = ev.target.result.split(',')[1];
+        preview.dataset.name = file.name;
+        preview.dataset.type = file.type;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Add event + update counter
+    eventModal.querySelector('#addEvBtn').onclick = () => {
+      const date = eventModal.querySelector('#evDate').value.trim();
+      const title = eventModal.querySelector('#evTitle').value.trim();
+
+      if (!date || !title) {
+        showToast("Date and title required", "error");
+        return;
+      }
+
+      const container = document.getElementById('eventsContainer');
+      const row = document.createElement('div');
+      row.style.display = 'none';
+      row.innerHTML = `
+        <input type="date" value="${date}">
+        <textarea>${title}</textarea>
+      `;
+
+      if (preview.dataset.base64) {
+        row.dataset.imageBase64 = preview.dataset.base64;
+        row.dataset.imageName = preview.dataset.name;
+        row.dataset.imageType = preview.dataset.type;
+      }
+
+      container.appendChild(row);
+
+      // Clear form for next event
+      eventModal.querySelector('#evDate').value = '';
+      eventModal.querySelector('#evTitle').value = '';
+      preview.style.display = 'none';
+      preview.innerHTML = '';
+      fileInput.value = '';
+
+      // Update live counter
+      const countEl = eventModal.querySelector('#countNum');
+      let currentCount = parseInt(countEl.textContent) || 0;
+      currentCount += 1;
+      countEl.textContent = currentCount;
+
+      showToast(`Event added (${currentCount} total) — continue or Post`, "success");
     };
-    reader.readAsDataURL(file);
-  });
+
+    // Post everything
+    eventModal.querySelector('#postAllBtn').onclick = () => {
+      closeEventModal();
+      submitPost(); // your existing function
+    };
+  }
+
+  // Open + reset form + reset counter
+  eventModal.style.display = 'flex';
+  eventModal.querySelector('#evDate').value = '';
+  eventModal.querySelector('#evTitle').value = '';
+  eventModal.querySelector('#evPreview').style.display = 'none';
+  eventModal.querySelector('#evPreview').innerHTML = '';
+  eventModal.querySelector('#evImage').value = '';
+  
+  // Reset counter to 0 when opening modal
+  const countEl = eventModal.querySelector('#countNum');
+  if (countEl) countEl.textContent = '0';
 }
 function generateMonthGrid(year, month, events) {
   const firstDay = new Date(year, month - 1, 1).getDay();
@@ -2561,49 +2656,53 @@ async function submitPost() {
     });
   }
 
-  // ── Collect calendar events + images ──────────────────────────────────────
+  // ── ALWAYS collect events (force collection even if hidden) ────────────────
   let events = [];
   const eventsContainer = document.getElementById('eventsContainer');
-  const isCalendarMode = eventsContainer && eventsContainer.style.display !== 'none';
 
-  if (isCalendarMode) {
-    eventsContainer.querySelectorAll('div').forEach(row => {
-      const dateInput  = row.querySelector('input[type="date"]');
-      const titleInput = row.querySelector('textarea.event-title');
+  // Temporarily make visible so querySelectorAll can find elements
+  const wasHidden = eventsContainer.style.display === 'none';
+  if (wasHidden) eventsContainer.style.display = 'block';
 
-      const dateVal  = dateInput?.value?.trim();
-      const titleVal = titleInput?.value?.trim();
+  eventsContainer.querySelectorAll('div').forEach(row => {
+    const dateInput = row.querySelector('input[type="date"]');
+    const titleInput = row.querySelector('textarea');
 
-      if (dateVal && titleVal) {
-        const eventObj = {
-          date: dateVal,
-          title: titleVal
+    const dateVal = dateInput?.value?.trim();
+    const titleVal = titleInput?.value?.trim();
+
+    if (dateVal && titleVal) {
+      const eventObj = {
+        date: dateVal,
+        title: titleVal
+      };
+
+      // Attach image if present
+      if (row.dataset.imageBase64) {
+        eventObj.image = {
+          base64: row.dataset.imageBase64,
+          name: row.dataset.imageName,
+          type: row.dataset.imageType
         };
-
-        // Attach image if uploaded for this event
-        if (row.dataset.imageBase64) {
-          eventObj.image = {
-            base64: row.dataset.imageBase64,
-            name: row.dataset.imageName,
-            type: row.dataset.imageType
-          };
-        }
-
-        events.push(eventObj);
       }
-    });
 
-    // Clean up empty rows
-    eventsContainer.querySelectorAll('div').forEach(row => {
-      const d = row.querySelector('input[type="date"]')?.value?.trim();
-      const t = row.querySelector('textarea')?.value?.trim();
-      if (!d || !t) row.remove();
-    });
-  }
+      events.push(eventObj);
+    }
+  });
 
-  // Validation
-  if (events.length === 0 && !content && !fileData) {
-    showToast("Please write something, add media, or create at least one event", "error");
+  // Restore original visibility
+  if (wasHidden) eventsContainer.style.display = 'none';
+
+  // Clean up empty/invalid rows
+  eventsContainer.querySelectorAll('div').forEach(row => {
+    const d = row.querySelector('input[type="date"]')?.value?.trim();
+    const t = row.querySelector('textarea')?.value?.trim();
+    if (!d || !t) row.remove();
+  });
+
+  // Validation: allow pure events, text, or media
+  if (events.length === 0 && !content.trim() && !fileData) {
+    showToast("Please add text, media, or at least one event", "error");
     return;
   }
 
@@ -2631,6 +2730,8 @@ async function submitPost() {
     if (data.status === "success") {
       showToast("Posted!", "success");
       closePostPanel();
+      // Clear events after success
+      eventsContainer.innerHTML = '';
       loadPosts(currentChannelId);
     } else {
       showToast("Failed: " + (data.message || "Unknown"), "error");

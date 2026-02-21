@@ -820,15 +820,7 @@ html, body {
     </div>
   </div>
 </div>
-<!-- Game Play Modal -->
-<div id="gamePlayModal" class="game-play-modal">
-  <div class="game-play-content">
-    <button class="game-close" onclick="closeGamePlayModal()">×</button>
-    <div id="timerBar" class="timer-bar"></div>
-    <h3 id="gamePlayTitle"></h3>
-    <div class="question-carousel" id="questionCarousel"></div>
-  </div>
-</div>
+
 <!-- Leaderboard Modal -->
 <div id="leaderboardModal" class="leaderboard-modal">
   <div class="leaderboard-content">
@@ -854,7 +846,6 @@ const channelMeta = document.getElementById("channelMeta");
 const feed = document.getElementById("feed");
 const fabGame = document.getElementById("fabGame");
 const gamePanel = document.getElementById("gamePanel");
-const gamePlayModal = document.getElementById("gamePlayModal");
 const leaderboardModal = document.getElementById("leaderboardModal");
 let selectedChannelAvatar = null;
 let questions = [];
@@ -1049,7 +1040,7 @@ async function loadGames(channelId) {
         </div>
         <div class="game-content">${game.name}<br>${game.description}</div>
         <div class="game-footer">
-          <button class="play-btn" onclick="playGame('${game.id}')">Play</button>
+         <button class="play-btn" onclick="window.location.href='play.html?gameId=${game.id}'">Play</button>
           <span class="leaderboard-btn" onclick="showLeaderboard('${game.id}')"><i class="fas fa-trophy"></i> Leaderboard</span>
         </div>
       `;
@@ -1193,71 +1184,9 @@ async function submitGame() {
   }
 }
 
-async function playGame(gameId) {
-  try {
-    const r = await fetch(`${SCRIPT_URL}?operation=getQnAGame&gameId=${gameId}&username=${encodeURIComponent(currentUserName)}`);
-    const data = await r.json();
-    if (data.status !== "success") return showToast("Failed to load game", "error");
-    currentGame = data.game;
-    document.getElementById("gamePlayTitle").textContent = currentGame.name;
-    const carousel = document.getElementById("questionCarousel");
-    carousel.innerHTML = "";
-    currentGame.questions.forEach((q, index) => {
-      const slide = document.createElement("div");
-      slide.className = "question-slide";
-      slide.dataset.index = index;
-      slide.innerHTML = `
-        <div class="question-text">${q.text}</div>
-        ${q.image ? `<img class="question-image" src="${getLh3Link(q.image)}">` : ''}
-        <div class="choices"></div>
-        <div class="reason">${q.reason}</div>
-        <button class="next-btn" onclick="nextQuestion()">Next</button>
-      `;
-      q.choices.forEach((c, cIndex) => {
-        const btn = document.createElement("button");
-        btn.className = "choice-btn";
-        btn.innerHTML = `${c.text}${c.image ? `<img src="${getLh3Link(c.image)}" style="max-width:100%; margin-top:8px;">` : ''}`;
-        btn.onclick = () => selectChoice(index, cIndex);
-        slide.querySelector(".choices").appendChild(btn);
-      });
-      carousel.appendChild(slide);
-    });
-    gamePlayModal.classList.add("active");
-    if (currentGame.timer) startTimer(currentGame.timer);
-  } catch (err) {
-    showToast("Network error", "error");
-  }
-}
 
-function selectChoice(qIndex, cIndex) {
-  const slide = document.querySelector(`.question-slide[data-index="${qIndex}"]`);
-  const choices = slide.querySelectorAll(".choice-btn");
-  const correct = currentGame.questions[qIndex].correctIndex === cIndex;
-  choices.forEach((btn, i) => {
-    btn.disabled = true;
-    if (i === currentGame.questions[qIndex].correctIndex) btn.classList.add("correct");
-    else if (i === cIndex) btn.classList.add("incorrect");
-  });
-  slide.querySelector(".reason").style.display = "block";
-  slide.querySelector(".next-btn").style.display = "block";
-  if (correct) currentGame.score = (currentGame.score || 0) + 1;
-  if (qIndex === currentGame.questions.length - 1) {
-    slide.querySelector(".next-btn").textContent = "Finish";
-    slide.querySelector(".next-btn").onclick = finishGame;
-  }
-}
 
-function nextQuestion() {
-  const carousel = document.getElementById("questionCarousel");
-  carousel.scrollBy({ left: carousel.clientWidth, behavior: "smooth" });
-}
 
-function finishGame() {
-  clearInterval(timerInterval);
-  submitScore(currentGame.id, currentGame.score || 0);
-  closeGamePlayModal();
-  showToast(`Game over! Score: ${currentGame.score || 0}/${currentGame.questions.length}`, "success");
-}
 
 async function submitScore(gameId, score) {
   try {
@@ -1273,24 +1202,9 @@ async function submitScore(gameId, score) {
   } catch (err) {}
 }
 
-function startTimer(seconds) {
-  let remaining = seconds;
-  const bar = document.getElementById("timerBar");
-  bar.style.width = "100%";
-  timerInterval = setInterval(() => {
-    remaining--;
-    bar.style.width = `${(remaining / seconds) * 100}%`;
-    if (remaining <= 0) {
-      clearInterval(timerInterval);
-      finishGame();
-    }
-  }, 1000);
-}
 
-function closeGamePlayModal() {
-  gamePlayModal.classList.remove("active");
-  clearInterval(timerInterval);
-}
+
+
 
 async function showLeaderboard(gameId) {
   const list = document.getElementById("leaderboardList");

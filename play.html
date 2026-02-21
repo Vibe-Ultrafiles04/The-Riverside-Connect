@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Play Q&A Game · Riverside</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #e2e8f0;
+      min-height: 100dvh;
+      padding: 16px;
+    }
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    header {
+      text-align: center;
+      padding: 16px 0 20px;
+      position: relative;
+    }
+    .back-btn {
+      position: absolute;
+      left: 8px;
+      top: 16px;
+      font-size: 1.6rem;
+      color: #60a5fa;
+      background: rgba(96,165,250,0.15);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    h1 {
+      color: #60a5fa;
+      font-size: 1.9rem;
+      margin-bottom: 8px;
+    }
+    .header-actions {
+      margin-top: 12px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .leaderboard-btn {
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .leaderboard-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(139,92,246,0.3);
+    }
+    .timer-bar {
+      height: 6px;
+      background: #60a5fa;
+      transition: width 1s linear;
+      border-radius: 3px;
+      margin: 16px 0 24px;
+    }
+    .question-slide {
+      background: rgba(30,41,59,0.88);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(96,165,250,0.2);
+    }
+    .question-text {
+      font-size: 1.28rem;
+      line-height: 1.45;
+      margin-bottom: 20px;
+    }
+    .question-image {
+      max-width: 100%;
+      border-radius: 12px;
+      margin: 16px 0;
+      display: block;
+    }
+    .choices {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .choice-btn {
+      padding: 14px 18px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(96,165,250,0.35);
+      color: white;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 1.05rem;
+      text-align: left;
+      transition: all 0.18s;
+    }
+    .choice-btn:hover:not(:disabled) {
+      background: rgba(96,165,250,0.18);
+      border-color: #60a5fa;
+    }
+    .choice-btn:disabled {
+      opacity: 0.7;
+    }
+    .choice-btn.correct {
+      background: #10b981 !important;
+      border-color: #34d399 !important;
+      color: white;
+    }
+    .choice-btn.incorrect {
+      background: #ef4444 !important;
+      border-color: #f87171 !important;
+    }
+    .reason {
+      margin-top: 20px;
+      padding: 14px;
+      background: rgba(30,41,59,0.6);
+      border-radius: 12px;
+      line-height: 1.5;
+      display: none;
+    }
+    .next-btn {
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      cursor: pointer;
+      margin: 16px auto 0;
+      display: none;
+      width: fit-content;
+    }
+    .score-final {
+      text-align: center;
+      font-size: 2.2rem;
+      margin: 32px 0;
+      color: #60a5fa;
+    }
+    .empty, .loading {
+      text-align: center;
+      padding: 120px 24px;
+      color: #94a3b8;
+    }
+
+    /* Leaderboard styles */
+    #leaderboardSection {
+      margin-top: 32px;
+      display: none;           /* hidden by default */
+    }
+    .leaderboard-list {
+      background: rgba(15,23,42,0.7);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(96,165,250,0.25);
+    }
+    .leader-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      transition: background 0.2s;
+    }
+    .leader-item:hover {
+      background: rgba(96,165,250,0.12);
+    }
+    .leader-rank {
+      font-size: 1.4rem;
+      font-weight: bold;
+      min-width: 40px;
+      text-align: center;
+      color: #94a3b8;
+    }
+    .leader-rank.top-1 { color: #ffd700; }
+    .leader-rank.top-2 { color: #c0c0c0; }
+    .leader-rank.top-3 { color: #cd7f32; }
+    .leader-name {
+      flex: 1;
+      font-weight: 600;
+    }
+    .leader-score {
+      font-size: 1.1rem;
+      color: #60a5fa;
+    }
+    .no-leaders {
+      text-align: center;
+      padding: 40px 20px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 500px) {
+      .question-slide { padding: 18px; }
+      .question-text { font-size: 1.18rem; }
+      .choice-btn { font-size: 1rem; padding: 12px 16px; }
+      .header-actions { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <a href="Q&A.html" class="back-btn" title="Back to games"><i class="fas fa-arrow-left"></i></a>
+    <h1 id="gameTitle">Loading game...</h1>
+    <div class="header-actions">
+      <button id="showLeaderboardBtn" class="leaderboard-btn">
+        <i class="fas fa-trophy"></i> Leaderboard
+      </button>
+    </div>
+
+    <!-- Leaderboard area – hidden until button clicked -->
+  <div id="leaderboardSection">
+    <h2 style="text-align:center; color:#60a5fa; margin-bottom:20px;">Leaderboard</h2>
+    <div id="leaderboardList" class="leaderboard-list">
+      <div class="no-leaders">Click "Leaderboard" to load rankings</div>
+    </div>
+  </div>
+  
+    <div id="timerBar" class="timer-bar" style="width:100%"></div>
+  </header>
+
+  <div id="currentQuestion" class="question-slide"></div>
+
+  <div id="finalScreen" style="display:none;">
+    <div class="score-final">Game Over!</div>
+    <p id="scoreText" style="text-align:center; font-size:1.4rem; margin:16px 0;"></p>
+  </div>
+
+  
+
+  <button id="nextButton" class="next-btn">Next</button>
+
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxlg5UerBCrrwQn0fhZoDk-Ayw4sK5HAEqmZxs1_0pD0hSr904tWsoQLIqymsfGG5SD/exec';
+
+const urlParams = new URLSearchParams(window.location.search);
+const gameId = urlParams.get('gameId');
+const username = localStorage.getItem("userName") || "";
+
+let currentGame = null;
+let currentQuestionIndex = 0;
+let score = 0;
+let timerInterval = null;
+let leaderboardLoaded = false;
+
+if (!gameId || !username) {
+  document.getElementById("currentQuestion").innerHTML = '<div class="empty">Invalid game or not logged in</div>';
+} else {
+  loadGame();
+}
+
+// Toggle leaderboard visibility
+document.getElementById("showLeaderboardBtn").addEventListener("click", () => {
+  const section = document.getElementById("leaderboardSection");
+  if (section.style.display === "block") {
+    section.style.display = "none";
+  } else {
+    section.style.display = "block";
+    if (!leaderboardLoaded) {
+      loadLeaderboard();
+      leaderboardLoaded = true;
+    }
+  }
+});
+
+async function loadGame() {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getQnAGame&gameId=${gameId}&username=${encodeURIComponent(username)}`);
+    const data = await r.json();
+    if (data.status !== "success") {
+      document.getElementById("currentQuestion").innerHTML = '<div class="empty">Failed to load game</div>';
+      return;
+    }
+    currentGame = data.game;
+    document.getElementById("gameTitle").textContent = currentGame.name;
+    showQuestion(0);
+    if (currentGame.timer) startTimer(currentGame.timer);
+  } catch (err) {
+    document.getElementById("currentQuestion").innerHTML = '<div class="empty">Network error</div>';
+  }
+}
+
+function showQuestion(index) {
+  currentQuestionIndex = index;
+  const q = currentGame.questions[index];
+  const container = document.getElementById("currentQuestion");
+  container.innerHTML = `
+    <div class="question-text">${q.text}</div>
+    ${q.image ? `<img class="question-image" src="https://lh3.googleusercontent.com/d/${q.image.match(/[-\w]{25,}/)?.[0] || ''}">` : ''}
+    <div class="choices" id="choices"></div>
+    <div class="reason" id="reason">${q.reason || ''}</div>
+  `;
+
+  const choicesDiv = document.getElementById("choices");
+  q.choices.forEach((choice, i) => {
+    const btn = document.createElement("button");
+    btn.className = "choice-btn";
+    btn.innerHTML = choice.text + (choice.image ? `<br><img src="https://lh3.googleusercontent.com/d/${choice.image.match(/[-\w]{25,}/)?.[0] || ''}" style="max-width:100%;margin-top:8px;border-radius:8px;">` : '');
+    btn.onclick = () => selectChoice(i);
+    choicesDiv.appendChild(btn);
+  });
+
+  document.getElementById("nextButton").style.display = "none";
+  document.getElementById("reason").style.display = "none";
+}
+
+function selectChoice(choiceIndex) {
+  const q = currentGame.questions[currentQuestionIndex];
+  const correct = q.correctIndex === choiceIndex;
+  if (correct) score++;
+
+  const buttons = document.querySelectorAll(".choice-btn");
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correctIndex) btn.classList.add("correct");
+    if (i === choiceIndex && !correct) btn.classList.add("incorrect");
+  });
+
+  document.getElementById("reason").style.display = "block";
+  const nextBtn = document.getElementById("nextButton");
+  nextBtn.style.display = "block";
+
+  if (currentQuestionIndex === currentGame.questions.length - 1) {
+    nextBtn.textContent = "Finish Game";
+    nextBtn.onclick = finishGame;
+  } else {
+    nextBtn.onclick = () => {
+      if (currentQuestionIndex + 1 < currentGame.questions.length) {
+        showQuestion(currentQuestionIndex + 1);
+      }
+    };
+  }
+}
+
+function finishGame() {
+  clearInterval(timerInterval);
+  submitScore();
+  document.getElementById("currentQuestion").style.display = "none";
+  document.getElementById("nextButton").style.display = "none";
+  
+  const final = document.getElementById("finalScreen");
+  final.style.display = "block";
+  
+  document.getElementById("scoreText").innerHTML = 
+    `Your score: <b>${score} / ${currentGame.questions.length}</b>`;
+}
+
+async function submitScore() {
+  try {
+    await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        operation: "submitQnAScore",
+        gameId,
+        username,
+        score
+      })
+    });
+  } catch {}
+}
+
+function startTimer(seconds) {
+  let remaining = seconds;
+  const bar = document.getElementById("timerBar");
+  timerInterval = setInterval(() => {
+    remaining--;
+    bar.style.width = `${(remaining / seconds) * 100}%`;
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      finishGame();
+    }
+  }, 1000);
+}
+
+async function loadLeaderboard() {
+  const list = document.getElementById("leaderboardList");
+  list.innerHTML = '<div class="no-leaders">Loading leaderboard...</div>';
+
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getQnALeaderboard&gameId=${gameId}`);
+    const data = await r.json();
+
+    if (data.status !== "success") {
+      list.innerHTML = '<div class="no-leaders">Could not load leaderboard</div>';
+      return;
+    }
+
+    const leaders = data.leaders || [];
+    if (leaders.length === 0) {
+      list.innerHTML = '<div class="no-leaders">No scores yet — be the first!</div>';
+      return;
+    }
+
+    list.innerHTML = '';
+    leaders.forEach((l, index) => {
+      const item = document.createElement('div');
+      item.className = 'leader-item';
+
+      const rankClass = index === 0 ? 'top-1' : index === 1 ? 'top-2' : index === 2 ? 'top-3' : '';
+
+      item.innerHTML = `
+        <div class="leader-rank ${rankClass}">${index + 1}</div>
+        <div class="leader-name">${l.username}</div>
+        <div class="leader-score">${l.score}</div>
+      `;
+      list.appendChild(item);
+    });
+  } catch (err) {
+    list.innerHTML = '<div class="no-leaders">Error loading leaderboard</div>';
+  }
+}
+</script>
+</body>
+</html>

@@ -740,6 +740,84 @@ html, body {
       padding: 40px 20px;
       color: #94a3b8;
     }
+
+    /* Game card image + text overlay - centered, compact & cool */
+.game-content {
+  position: relative;
+  text-align: center;
+  padding: 0;
+  background: rgba(30, 41, 59, 0.9);
+  border-radius: 0 0 16px 16px;
+}
+
+/* Image as full background-like cover */
+.game-content img {
+  width: 100%;
+  max-height: 220px;               /* ← compact height */
+  object-fit: cover;               /* crops nicely, fills space */
+  object-position: center;
+  border-radius: 12px 12px 0 0;
+  display: block;
+  margin: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease;
+}
+
+/* Hover zoom on image */
+.game:hover .game-content img {
+  transform: scale(1.04);
+}
+
+/* Cool centered text overlay on image */
+.game-overlay-text {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 20px 16px 16px;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, transparent 100%);
+  border-radius: 0 0 16px 16px;
+  color: white;
+  text-align: center;
+  z-index: 2;
+}
+
+.game-overlay-text h3 {
+  margin: 0 0 8px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #60a5fa;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.7);
+}
+
+.game-overlay-text p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #e2e8f0;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .game-content img {
+    max-height: 180px;
+  }
+  
+  .game-overlay-text {
+    padding: 16px 12px 12px;
+  }
+  
+  .game-overlay-text h3 {
+    font-size: 1.25rem;
+  }
+  
+  .game-overlay-text p {
+    font-size: 0.9rem;
+  }
+}
+
+    
   </style>
 </head>
 <body>
@@ -794,10 +872,14 @@ html, body {
   <input id="gameName" class="question-input" placeholder="Game Name">
   <input id="gameDesc" class="question-input" placeholder="Description (optional)">
   <input id="gameTimer" class="timer-input" type="number" placeholder="Timer in seconds (optional)">
+
+  
   <div id="questionsContainer"></div>
   <button onclick="addQuestion()" class="add-choice-btn"><i class="fas fa-plus"></i> Add Question</button>
   <button class="submit-game" onclick="submitGame()">Create Game</button>
 </div>
+
+
 <!-- Create Q&A Channel Modal -->
 <div id="channelModal" class="channel-modal">
   <div class="channel-modal-content">
@@ -833,7 +915,7 @@ html, body {
 </div>
 <div id="toast-container"></div>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwb94GJx_M17u56VHg329ngnjw6Ru37h_6j-6O1gVcRHRsa-8V6-De7NMltFwctbYRH/exec'; 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkPePVr3rSAyCgIBz3rbubqzCe_NwJfVobP-4U6FmXfwBl88-lPDQY0cdxl5i6fuuZ/exec'; 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentQnAChannelId = null;
 let allQnAChannels = [];
@@ -1019,6 +1101,7 @@ async function loadGames(channelId) {
   try {
     const r = await fetch(`${SCRIPT_URL}?operation=getQnAGames&channelId=${channelId}`);
     const { games = [] } = await r.json();
+
     feed.innerHTML = games.length === 0
       ? `<div class="empty">
            <i class="fas fa-gamepad" style="font-size:5rem; opacity:0.4; margin-bottom:24px;"></i><br>
@@ -1026,31 +1109,57 @@ async function loadGames(channelId) {
            <small>Click the + button to create one</small>
          </div>`
       : '';
+
+    // For each game, fetch its first question image
+    for (const game of games) {
+      try {
+        const qRes = await fetch(`${SCRIPT_URL}?operation=getQnAQuestionsAndChoices&gameId=${game.id}`);
+        const qData = await qRes.json();
+        if (qData.status === "success" && qData.questions?.length > 0) {
+          game.firstQuestionImage = qData.questions[0].imageLink || '';
+        }
+      } catch (e) {
+        console.warn("Failed to fetch questions for game", game.id, e);
+      }
+    }
+
     games.forEach(game => {
       const div = document.createElement("div");
       div.className = "game";
       div.dataset.gameId = game.id;
+
+      const imgSrc = game.firstQuestionImage ? getLh3Link(game.firstQuestionImage) : '';
+
       div.innerHTML = `
-        <div class="game-header">
-          <img class="game-avatar" src="${getLh3Link(game.picLink) || 'https://via.placeholder.com/52?text=@'}" onerror="this.src='https://via.placeholder.com/52?text=@'">
-          <div>
-            <div class="game-author">${game.creator}</div>
-            <div class="game-time">${new Date(game.created).toLocaleString()}</div>
-          </div>
-        </div>
-        <div class="game-content">${game.name}<br>${game.description}</div>
-        <div class="game-footer">
-         <button class="play-btn" onclick="window.location.href='play.html?gameId=${game.id}'">Play</button>
-          <span class="leaderboard-btn" onclick="showLeaderboard('${game.id}')"><i class="fas fa-trophy"></i> Leaderboard</span>
-        </div>
-      `;
+  <div class="game-header">
+    <img class="game-avatar" src="${getLh3Link(game.creatorPicLink) || 'https://via.placeholder.com/52?text=@'}" onerror="this.src='https://via.placeholder.com/52?text=@'">
+    <div>
+      <div class="game-author">${game.creator}</div>
+      <div class="game-time">${new Date(game.created).toLocaleString()}</div>
+    </div>
+  </div>
+ <div class="game-content">
+  ${imgSrc ? `
+    <img src="${imgSrc}"
+         onerror="this.src='https://via.placeholder.com/600x340?text=No+Image'; this.style.opacity='0.7';"
+         alt="First question image">
+  ` : ''}
+  <div class="game-overlay-text">
+    <h3>${game.name}</h3>
+    <p>${game.description || 'No description provided'}</p>
+  </div>
+</div>
+  <div class="game-footer">
+    <button class="play-btn" onclick="window.location.href='play.html?gameId=${game.id}'">Play</button>
+    <span class="leaderboard-btn" onclick="showLeaderboard('${game.id}')"><i class="fas fa-trophy"></i> Leaderboard</span>
+  </div>
+`;
       feed.appendChild(div);
     });
   } catch (err) {
     feed.innerHTML = '<div class="empty">Failed to load games — check connection</div>';
   }
 }
-
 function openGamePanel() {
   console.log("openGamePanel called – should show setup panel now");
 
@@ -1082,59 +1191,88 @@ function closeGamePanel() {
 
 function addQuestion() {
   const index = questions.length;
-
-  // Create the question object FIRST (with empty choices array)
-  questions[index] = {
-    choices: []
-  };
+  questions[index] = { choices: [] };
 
   const container = document.createElement("div");
   container.className = "question-container";
   container.innerHTML = `
     <input class="question-input" placeholder="Question ${index + 1}" data-index="${index}">
+    
+    <!-- Preview area for question image -->
+    <div class="preview-area" style="margin:12px 0; text-align:center;">
+      <img id="qPreview${index}" src="https://via.placeholder.com/300x180?text=Question+Image+Preview" 
+           style="max-width:100%; max-height:180px; border-radius:8px; display:none; border:1px solid #60a5fa;">
+    </div>
+    
     <label class="media-btn" for="questionImage${index}"><i class="fas fa-image"></i> Add Image</label>
     <input type="file" id="questionImage${index}" accept="image/*" style="display:none;">
+    
     <div class="choice-container" data-index="${index}"></div>
     <button onclick="addChoice(${index})" class="add-choice-btn"><i class="fas fa-plus"></i> Add Choice</button>
     <textarea class="reason-input" placeholder="Reason for correct answer" data-index="${index}"></textarea>
   `;
   document.getElementById("questionsContainer").appendChild(container);
 
-  // Now it's safe to add choices
-  addChoice(index);   // first default choice
-  addChoice(index);   // second default choice
+  // Add default choices
+  addChoice(index);
+  addChoice(index);
 
-  // Image handler
-  container.querySelector(`#questionImage${index}`).onchange = async (e) => {
+  // Preview handler for question image
+  const fileInput = container.querySelector(`#questionImage${index}`);
+  const previewImg = container.querySelector(`#qPreview${index}`);
+
+  fileInput.onchange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       const base64 = await fileToBase64(file);
       questions[index].image = { base64: base64.split(',')[1], name: file.name, type: file.type };
+
+      // Show preview
+      previewImg.src = base64;
+      previewImg.style.display = 'block';
     }
   };
 }
+
 function addChoice(qIndex) {
   const container = document.querySelector(`.choice-container[data-index="${qIndex}"]`);
   const choiceIndex = questions[qIndex].choices.length;
+
   const div = document.createElement("div");
   div.className = "choice-input";
   div.innerHTML = `
     <input placeholder="Choice ${choiceIndex + 1}">
+    
+    <!-- Preview for this choice -->
+    <div style="margin:8px 0; text-align:center;">
+      <img id="cPreview${qIndex}_${choiceIndex}" src="https://via.placeholder.com/120?text=Choice+Preview" 
+           style="max-width:120px; max-height:80px; border-radius:6px; display:none; border:1px dashed #60a5fa;">
+    </div>
+    
     <label class="media-btn" for="choiceImage${qIndex}_${choiceIndex}"><i class="fas fa-image"></i></label>
     <input type="file" id="choiceImage${qIndex}_${choiceIndex}" accept="image/*" style="display:none;">
     <input type="checkbox" class="correct-checkbox" title="Correct answer">
   `;
   container.appendChild(div);
+
   questions[qIndex].choices.push({});
-  div.querySelector(`#choiceImage${qIndex}_${choiceIndex}`).onchange = async (e) => {
+
+  // Preview handler for choice image
+  const fileInput = div.querySelector(`#choiceImage${qIndex}_${choiceIndex}`);
+  const previewImg = div.querySelector(`#cPreview${qIndex}_${choiceIndex}`);
+
+  fileInput.onchange = async (e) => {
     const file = e.target.files[0];
     if (file) {
       const base64 = await fileToBase64(file);
       questions[qIndex].choices[choiceIndex].image = { base64: base64.split(',')[1], name: file.name, type: file.type };
+
+      // Show preview
+      previewImg.src = base64;
+      previewImg.style.display = 'block';
     }
   };
 }
-
 async function submitGame() {
   const name = document.getElementById("gameName").value.trim();
   const desc = document.getElementById("gameDesc").value.trim();

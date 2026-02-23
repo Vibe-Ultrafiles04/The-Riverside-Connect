@@ -598,29 +598,131 @@ html, body {
       transition: width 1s linear;
       margin-bottom: 16px;
     }
-    .question-carousel {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      gap: 16px;
-      padding-bottom: 16px;
-    }
-    .question-slide {
-      flex: 0 0 100%;
-      scroll-snap-align: start;
-      background: rgba(15,23,42,0.8);
-      border-radius: 12px;
-      padding: 20px;
-    }
-    .question-text {
-      font-size: 1.2rem;
-      margin-bottom: 16px;
-    }
-    .question-image {
-      max-width: 100%;
-      border-radius: 8px;
-      margin-bottom: 16px;
-    }
+/* Horizontal swipeable question cards container */
+#questionsContainer {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 24px;
+  padding: 20px 0 32px;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: #60a5fa rgba(96,165,250,0.2);
+  -webkit-overflow-scrolling: touch; /* smooth iOS scrolling */
+}
+
+/* Custom scrollbar styling */
+#questionsContainer::-webkit-scrollbar {
+  height: 10px;
+}
+#questionsContainer::-webkit-scrollbar-track {
+  background: rgba(96,165,250,0.1);
+  border-radius: 10px;
+}
+#questionsContainer::-webkit-scrollbar-thumb {
+  background: #60a5fa;
+  border-radius: 10px;
+  border: 2px solid rgba(96,165,250,0.1);
+}
+
+/* Each question card - swipeable slide */
+.question-container {
+  flex: 0 0 360px;                /* fixed width - feels like a full slide */
+  min-width: 360px;
+  background: rgba(30,41,59,0.95);
+  border-radius: 20px;
+  border: 1px solid rgba(96,165,250,0.4);
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  scroll-snap-align: start;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Hover / active feel when swiping or focusing */
+.question-container:hover,
+.question-container:focus-within {
+  transform: translateY(-10px) scale(1.02);
+  box-shadow: 0 16px 40px rgba(96,165,250,0.4);
+  border-color: #60a5fa;
+}
+
+/* Inputs & elements inside each card */
+.question-container .question-input,
+.question-container .reason-input,
+.question-container .timer-input {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.question-container .preview-area {
+  margin: 16px 0;
+  text-align: center;
+}
+
+.question-container .preview-area img {
+  max-width: 100%;
+  max-height: 200px;
+  border-radius: 12px;
+  border: 1px solid rgba(96,165,250,0.35);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+  object-fit: contain;
+}
+
+.question-container .choice-container {
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(15,23,42,0.6);
+  border-radius: 12px;
+}
+
+/* Swipe hint arrows when there are multiple questions */
+#questionsContainer.has-many::before,
+#questionsContainer.has-many::after {
+  content: '';
+  position: sticky;
+  top: 50%;
+  width: 50px;
+  height: 50px;
+  background: rgba(96,165,250,0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  color: white;
+  pointer-events: none;
+  z-index: 10;
+  transform: translateY(-50%);
+  backdrop-filter: blur(4px);
+}
+
+#questionsContainer.has-many::before {
+  left: 16px;
+  content: '←';
+}
+
+#questionsContainer.has-many::after {
+  right: 16px;
+  content: '→';
+}
+
+/* Hide arrows when only one question */
+#questionsContainer:not(.has-many)::before,
+#questionsContainer:not(.has-many)::after {
+  display: none;
+}
+
+/* Mobile - cards take almost full width */
+@media (max-width: 768px) {
+  .question-container {
+    flex: 0 0 90vw;
+    min-width: 90vw;
+  }
+}
+
+
     .choices {
       display: flex;
       flex-direction: column;
@@ -1188,6 +1290,28 @@ function closeGamePanel() {
   gamePanel.style.display = 'none'; // safety
   console.log("Panel closed");
 }
+
+// Auto-show/hide swipe arrows when number of questions changes
+function updateSwipeArrows() {
+  const container = document.getElementById("questionsContainer");
+  if (container.children.length > 1) {
+    container.classList.add("has-many");
+  } else {
+    container.classList.remove("has-many");
+  }
+}
+
+// Call after every new question is added
+// Add this line at the VERY END of your addQuestion() function:
+updateSwipeArrows();
+
+// Also call when opening the panel
+openGamePanel = (function(original) {
+  return function() {
+    original.apply(this, arguments);
+    setTimeout(updateSwipeArrows, 100);
+  };
+})(openGamePanel);
 
 function addQuestion() {
   const index = questions.length;

@@ -122,15 +122,27 @@
     .choice-btn:disabled {
       opacity: 0.7;
     }
-    .choice-btn.correct {
-      background: #10b981 !important;
-      border-color: #34d399 !important;
-      color: white;
-    }
-    .choice-btn.incorrect {
-      background: #ef4444 !important;
-      border-color: #f87171 !important;
-    }
+   /* Quiz correct (green) */
+.choice-btn.correct {
+  background: #10b981 !important;
+  border-color: #34d399 !important;
+  color: white !important;
+}
+
+/* Quiz incorrect (red) */
+.choice-btn.incorrect {
+  background: #ef4444 !important;
+  border-color: #f87171 !important;
+  color: white !important;
+}
+
+/* Survey selected choice - different color (e.g. blue-ish) */
+.choice-btn.selected {
+  background: #3b82f6 !important;       /* blue - you can change this color */
+  border-color: #60a5fa !important;
+  color: white !important;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.4);
+}
     .reason {
       margin-top: 20px;
       padding: 14px;
@@ -268,6 +280,8 @@
     max-height: 90px;
   }
 }
+
+
   </style>
 </head>
 <body>
@@ -277,11 +291,9 @@
   <header>
     <a href="Q&A.html" class="back-btn" title="Back to games"><i class="fas fa-arrow-left"></i></a>
     <h1 id="gameTitle">Loading game...</h1>
-    <div class="header-actions">
-      <button id="showLeaderboardBtn" class="leaderboard-btn">
-        <i class="fas fa-trophy"></i> Leaderboard
-      </button>
-    </div>
+    <div class="header-actions" id="headerActions">
+  <!-- Buttons will be injected here by JS -->
+</div>
 
     <!-- Leaderboard area – hidden until button clicked -->
   <div id="leaderboardSection">
@@ -321,7 +333,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDeLDMwQJQiDTEelVyPbnkl3xqe95TojafsjnjOFN9ePBt8UFPrWfQoOe1cER-EwYy/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcBQcetkQef5rYQt_Wf1mSvIDEstU9ZkKpaTQZ_SkloyXAMmNOIk56pYRGkcG5Rai7/exec';
 
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
@@ -332,6 +344,8 @@ let currentQuestionIndex = 0;
 let score = 0;
 let timerInterval = null;
 let leaderboardLoaded = false;
+let surveyResponses = {};  // { questionIndex: chosenChoiceIndex }
+
 
 if (!gameId || !username) {
   document.getElementById("currentQuestion").innerHTML = '<div class="empty">Invalid game or not logged in</div>';
@@ -369,6 +383,31 @@ async function loadGame() {
       return;
     }
     currentGame = gameData.game;
+// Dynamically create the correct button
+const actionsDiv = document.getElementById("headerActions");
+actionsDiv.innerHTML = ""; // clear
+
+if (currentGame.mode === "survey") {
+  const resultsBtn = document.createElement("button");
+  resultsBtn.className = "leaderboard-btn"; // reuse style, or make new class
+  resultsBtn.innerHTML = '<i class="fas fa-chart-bar"></i> View Results';
+  resultsBtn.onclick = () => showSurveyResults();
+  actionsDiv.appendChild(resultsBtn);
+} else {
+  const lbBtn = document.createElement("button");
+  lbBtn.id = "showLeaderboardBtn";
+  lbBtn.className = "leaderboard-btn";
+  lbBtn.innerHTML = '<i class="fas fa-trophy"></i> Leaderboard';
+  lbBtn.onclick = () => {
+    const section = document.getElementById("leaderboardSection");
+    section.style.display = section.style.display === "block" ? "none" : "block";
+    if (section.style.display === "block" && !leaderboardLoaded) {
+      loadLeaderboard();
+      leaderboardLoaded = true;
+    }
+  };
+  actionsDiv.appendChild(lbBtn);
+}
 
     // Step 2: Get ALL questions + choices for this game (you'll need a new backend function)
     const qRes = await fetch(`${SCRIPT_URL}?operation=getQnAQuestionsAndChoices&gameId=${gameId}`);
@@ -456,17 +495,47 @@ function showQuestion(index) {
 }
 function selectChoice(choiceIndex) {
   const q = currentGame.questions[currentQuestionIndex];
-  const correct = q.correctIndex === choiceIndex;
-  if (correct) score++;
 
+  // Record selection (survey) or score (quiz)
+  if (currentGame.mode === "survey") {
+    surveyResponses[currentQuestionIndex] = choiceIndex;
+  } else {
+    const correct = q.correctIndex === choiceIndex;
+    if (correct) score++;
+  }
+
+  // Highlight selected button — different logic per mode
   const buttons = document.querySelectorAll(".choice-btn");
   buttons.forEach((btn, i) => {
     btn.disabled = true;
-    if (i === q.correctIndex) btn.classList.add("correct");
-    if (i === choiceIndex && !correct) btn.classList.add("incorrect");
+
+    // Clear previous classes
+    btn.classList.remove("correct", "incorrect", "selected");
+
+    if (currentGame.mode === "survey") {
+      // Survey: highlight chosen one only (blue)
+      if (i === choiceIndex) {
+        btn.classList.add("selected");
+      }
+    } else {
+      // Quiz: ALWAYS highlight chosen one + show correct/incorrect
+      if (i === choiceIndex) {
+        btn.classList.add("selected");          // ← key fix: always mark chosen
+      }
+      if (i === q.correctIndex) {
+        btn.classList.add("correct");
+      }
+      if (i === choiceIndex && q.correctIndex !== choiceIndex) {
+        btn.classList.add("incorrect");
+      }
+    }
   });
 
-  document.getElementById("reason").style.display = "block";
+  // Show reason ONLY in quiz
+  document.getElementById("reason").style.display = 
+    currentGame.mode === "survey" ? "none" : "block";
+
+  // Show Next / Finish button — this now always works
   const nextBtn = document.getElementById("nextButton");
   nextBtn.style.display = "block";
 
@@ -474,6 +543,7 @@ function selectChoice(choiceIndex) {
     nextBtn.textContent = "Finish Game";
     nextBtn.onclick = finishGame;
   } else {
+    nextBtn.textContent = "Next";
     nextBtn.onclick = () => {
       if (currentQuestionIndex + 1 < currentGame.questions.length) {
         showQuestion(currentQuestionIndex + 1);
@@ -481,18 +551,29 @@ function selectChoice(choiceIndex) {
     };
   }
 }
-
 function finishGame() {
   clearInterval(timerInterval);
-  submitScore();
+
+  if (currentGame.mode === "survey") {
+    submitSurveyResponses();                    // ← sends all answers
+    showToast("Survey submitted – thank you!", "success");
+  } else {
+    submitScore();
+  }
+
   document.getElementById("currentQuestion").style.display = "none";
   document.getElementById("nextButton").style.display = "none";
-  
+
   const final = document.getElementById("finalScreen");
   final.style.display = "block";
-  
-  document.getElementById("scoreText").innerHTML = 
-    `Your score: <b>${score} / ${currentGame.questions.length}</b>`;
+
+  if (currentGame.mode === "survey") {
+    document.getElementById("scoreText").innerHTML = 
+      "Survey submitted!<br>Results available via View Results button.";
+  } else {
+    document.getElementById("scoreText").innerHTML = 
+      `Your score: <b>${score} / ${currentGame.questions.length}</b>`;
+  }
 }
 
 async function submitScore() {
@@ -532,6 +613,40 @@ function startTimer(seconds) {
       finishGame();
     }
   }, 1000);
+}
+
+async function submitSurveyResponses() {
+  if (Object.keys(surveyResponses).length === 0) return;
+
+  console.log("Submitting survey answers one by one...");
+
+  for (const [qIdxStr, cIdx] of Object.entries(surveyResponses)) {
+    const qIndex = Number(qIdxStr);
+    const question = currentGame.questions[qIndex];
+    
+    // Use real questionId if your backend returns it, otherwise fallback
+    const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
+
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          operation: "recordSurveyResponses",  // ← now matches backend after your change
+          gameId,
+          username,
+          questionId,                          // ← single question
+          choiceIndex: Number(cIdx)
+        })
+      });
+
+      const data = await res.json();
+      console.log(`Answer for q${qIndex}:`, data);
+    } catch (err) {
+      console.error(`Failed for question ${qIndex}:`, err);
+    }
+  }
+
+  console.log("All answers sent");
 }
 
 function updateTimerDisplay(seconds) {
@@ -576,6 +691,185 @@ async function loadLeaderboard() {
   } catch (err) {
     list.innerHTML = '<div class="no-leaders">Error loading leaderboard</div>';
   }
+}
+
+function showSurveyResults() {
+  // Create or reuse modal
+  let modal = document.getElementById("surveyResultsModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "surveyResultsModal";
+    modal.style.cssText = `
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.85); display: none;
+      overflow: hidden; touch-action: pan-x;
+    `;
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div style="height:100%; width:100%; position:relative;">
+      <button onclick="document.getElementById('surveyResultsModal').style.display='none'" style="position:absolute; top:16px; right:16px; background:none; border:none; color:#60a5fa; font-size:2.2rem; cursor:pointer; z-index:10;">×</button>
+      
+      <div id="resultsCarousel" style="
+        display:flex; height:100%; transition: transform 0.4s ease;
+        touch-action: pan-x; user-select: none;
+      "></div>
+
+      <div id="carouselDots" style="
+        position:absolute; bottom:20px; left:50%; transform:translateX(-50%);
+        display:flex; gap:12px; z-index:10;
+      "></div>
+    </div>
+  `;
+  modal.style.display = "block";
+
+  // Loading
+  document.getElementById("resultsCarousel").innerHTML = `
+    <div style="flex:0 0 100%; display:flex; align-items:center; justify-content:center; color:white; font-size:1.4rem;">
+      Loading Survey Results...
+    </div>
+  `;
+
+  // Fetch results + participants
+  Promise.all([
+    fetch(`${SCRIPT_URL}?operation=getSurveyResults&gameId=${gameId}`).then(r => r.json()),
+    fetch(`${SCRIPT_URL}?operation=getSurveyParticipants&gameId=${gameId}`).then(r => r.json())
+  ])
+  .then(([resultsData, participantsData]) => {
+    const results = resultsData.results || [];
+    const participants = participantsData.participants || [];
+
+    if (resultsData.status !== "success") {
+      document.getElementById("resultsCarousel").innerHTML = `
+        <div style="flex:0 0 100%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:1.3rem; text-align:center; padding:20px;">
+          ${resultsData.message || "Failed to load results"}
+        </div>
+      `;
+      return;
+    }
+
+    let slidesHTML = "";
+    let dotsHTML = "";
+
+    // Questions slides
+    results.forEach((q, qIndex) => {
+      let choicesHTML = "";
+      q.choices.forEach(c => {
+        const percent = c.percent;
+        choicesHTML += `
+          <div style="margin:12px 0;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:1.1rem;">
+              <span>${c.text}</span>
+              <span style="color:#60a5fa; font-weight:600;">${percent}% (${c.count})</span>
+            </div>
+            <div style="background:rgba(255,255,255,0.1); border-radius:8px; height:14px; overflow:hidden;">
+              <div style="background:#3b82f6; height:100%; width:${percent}%; transition:width 0.6s;"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      slidesHTML += `
+        <div style="flex:0 0 100%; padding:60px 20px 100px; overflow-y:auto; color:white;">
+          <h2 style="margin:0 0 20px; color:#60a5fa; font-size:1.6rem; text-align:center;">${q.questionText}</h2>
+          ${q.questionImage ? `<img src="${getLh3Link(q.questionImage)}" style="max-width:100%; border-radius:12px; margin:0 auto 24px; display:block; max-height:260px;">` : ''}
+          <p style="text-align:center; font-weight:600; margin-bottom:24px; font-size:1.1rem;">Total responses: ${q.totalResponses}</p>
+          <div style="max-width:520px; margin:0 auto;">${choicesHTML}</div>
+        </div>
+      `;
+      dotsHTML += `<div style="width:12px; height:12px; border-radius:50%; background:${qIndex===0?'#60a5fa':'rgba(255,255,255,0.3)'}; transition:all 0.3s;"></div>`;
+    });
+
+    // Participants slide (last one)
+    let participantsHTML = `
+      <div style="flex:0 0 100%; padding:60px 20px 100px; overflow-y:auto; color:white; text-align:center;">
+        <h2 style="margin:0 0 32px; color:#60a5fa; font-size:1.6rem;">Participants (${participants.length})</h2>
+        <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:24px; max-width:600px; margin:0 auto;">
+    `;
+    if (participants.length === 0) {
+      participantsHTML += `<p style="color:#94a3b8; font-size:1.2rem;">No participants yet.</p>`;
+    } else {
+      participants.forEach(p => {
+        const pic = p.picLink ? getLh3Link(p.picLink) : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.username)}&background=60a5fa&color=fff&size=128`;
+        participantsHTML += `
+          <div style="text-align:center;">
+            <img src="${pic}" style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #60a5fa; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+            <div style="margin-top:8px; font-size:1rem; color:#e2e8f0;">${p.username}</div>
+          </div>
+        `;
+      });
+    }
+    participantsHTML += `</div></div>`;
+
+    slidesHTML += participantsHTML;
+    dotsHTML += `<div style="width:12px; height:12px; border-radius:50%; background:rgba(255,255,255,0.3); transition:all 0.3s;"></div>`;
+
+    document.getElementById("resultsCarousel").innerHTML = slidesHTML;
+    document.getElementById("carouselDots").innerHTML = dotsHTML;
+
+    // Swipe logic (touch + mouse)
+    const carousel = document.getElementById("resultsCarousel");
+    let isDragging = false, startX = 0, currentTranslate = 0, prevTranslate = 0, currentIndex = 0;
+    const totalSlides = results.length + 1;
+
+    const updateDots = (index) => {
+      document.querySelectorAll("#carouselDots > div").forEach((dot, i) => {
+        dot.style.background = i === index ? "#60a5fa" : "rgba(255,255,255,0.3)";
+      });
+    };
+
+    const setPositionByIndex = () => {
+      currentTranslate = currentIndex * -100;
+      prevTranslate = currentTranslate;
+      carousel.style.transform = `translateX(${currentTranslate}%)`;
+      updateDots(currentIndex);
+    };
+
+    // Mouse + touch events
+    const pointerDown = (e) => {
+      isDragging = true;
+      startX = e.type.includes("mouse") ? e.pageX : e.touches[0].clientX;
+      carousel.style.transition = "none";
+    };
+
+    const pointerMove = (e) => {
+      if (!isDragging) return;
+      const currentPosition = e.type.includes("mouse") ? e.pageX : e.touches[0].clientX;
+      const diff = currentPosition - startX;
+      currentTranslate = prevTranslate + diff;
+      carousel.style.transform = `translateX(${currentTranslate}%)`;
+    };
+
+    const pointerUp = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      carousel.style.transition = "transform 0.4s ease";
+
+      const movedBy = currentTranslate - prevTranslate;
+      if (movedBy < -60 && currentIndex < totalSlides - 1) currentIndex++;
+      if (movedBy > 60 && currentIndex > 0) currentIndex--;
+
+      setPositionByIndex();
+    };
+
+    carousel.addEventListener("mousedown", pointerDown);
+    carousel.addEventListener("mousemove", pointerMove);
+    carousel.addEventListener("mouseup", pointerUp);
+    carousel.addEventListener("mouseleave", pointerUp);
+
+    carousel.addEventListener("touchstart", pointerDown);
+    carousel.addEventListener("touchmove", pointerMove);
+    carousel.addEventListener("touchend", pointerUp);
+  })
+  .catch(err => {
+    console.error(err);
+    document.getElementById("resultsCarousel").innerHTML = `
+      <div style="flex:0 0 100%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-size:1.3rem;">
+        Network error — try again
+      </div>
+    `;
+  });
 }
 </script>
 </body>

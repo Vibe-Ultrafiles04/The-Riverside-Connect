@@ -1014,7 +1014,20 @@ html, body {
   <input id="gameDesc" class="question-input" placeholder="Description (optional)">
   <input id="gameTimer" class="timer-input" type="number" placeholder="Timer in seconds (optional)">
 
-  
+  <div style="margin: 16px 0; padding: 12px; background: rgba(96,165,250,0.12); border-radius: 12px;">
+  <label style="display: block; margin-bottom: 8px; font-weight: 600;">Game Type</label>
+  <div style="display: flex; gap: 16px;">
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <input type="radio" name="gameMode" value="quiz" checked>
+      Quiz (timed, scored, leaderboard)
+    </label>
+    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+      <input type="radio" name="gameMode" value="survey">
+      Survey (opinion, results summary, no scoring)
+    </label>
+  </div>
+</div>
+
   <div id="questionsContainer"></div>
   <button onclick="addQuestion()" class="add-choice-btn"><i class="fas fa-plus"></i> Add Question</button>
   <button class="submit-game" onclick="submitGame()">Create Game</button>
@@ -1056,7 +1069,7 @@ html, body {
 </div>
 <div id="toast-container"></div>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzDeLDMwQJQiDTEelVyPbnkl3xqe95TojafsjnjOFN9ePBt8UFPrWfQoOe1cER-EwYy/exec'; 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcBQcetkQef5rYQt_Wf1mSvIDEstU9ZkKpaTQZ_SkloyXAMmNOIk56pYRGkcG5Rai7/exec'; 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentQnAChannelId = null;
 let allQnAChannels = [];
@@ -1317,6 +1330,8 @@ games.forEach(game => {
   }
 });
 
+
+
   } catch (err) {
     feed.innerHTML = '<div class="empty">Failed to load games — check connection</div>';
   }
@@ -1330,9 +1345,8 @@ function openGamePanel() {
   document.getElementById("gameTimer").value = "";
   document.getElementById("questionsContainer").innerHTML = "";
 
-  addQuestion(); // now safe – won't crash
+  addQuestion(); // creates initial question + 2 choices
 
-  // Force panel visible
   gamePanel.classList.add('active');
   gamePanel.style.display = 'block';
   gamePanel.style.opacity = '1';
@@ -1341,6 +1355,9 @@ function openGamePanel() {
   gamePanel.scrollTop = 0;
 
   document.getElementById("gameName")?.focus();
+
+  // Important: apply correct visibility right after first question is added
+  setTimeout(updateGameModeUI, 50);   // small delay so DOM is ready
 
   console.log("Panel should be visible at bottom – check screen");
 }
@@ -1372,6 +1389,38 @@ openGamePanel = (function(original) {
   };
 })(openGamePanel);
 
+// ── Live update UI when user changes Quiz ↔ Survey ─────────────────────────────
+function updateGameModeUI() {
+  const isSurvey = isSurveyMode();
+
+  // Update ALL existing reason inputs
+  document.querySelectorAll('.reason-input').forEach(el => {
+    el.style.display = isSurvey ? 'none' : 'block';
+    if (isSurvey) el.value = '';  // optional: clear reason when switching to survey
+  });
+
+  // Update ALL existing correct checkboxes
+  document.querySelectorAll('.correct-checkbox').forEach(el => {
+    el.style.display = isSurvey ? 'none' : 'inline-block';
+    if (isSurvey) {
+      el.checked = false;           // optional: uncheck when hiding
+      el.removeAttribute('title');
+    } else {
+      el.setAttribute('title', 'Correct answer');
+    }
+  });
+}
+
+// Attach listeners to both radio buttons
+document.querySelectorAll('input[name="gameMode"]').forEach(radio => {
+  radio.addEventListener('change', updateGameModeUI);
+});
+
+function isSurveyMode() {
+  const surveyRadio = document.querySelector('input[name="gameMode"][value="survey"]');
+  return surveyRadio && surveyRadio.checked;
+}
+
 function addQuestion() {
   const index = questions.length;
   questions[index] = { choices: [] };
@@ -1395,6 +1444,14 @@ function addQuestion() {
     <textarea class="reason-input" placeholder="Reason for correct answer" data-index="${index}"></textarea>
   `;
   document.getElementById("questionsContainer").appendChild(container);
+
+  if (isSurveyMode()) {
+    const reasonInput = container.querySelector('.reason-input');
+    if (reasonInput) {
+      reasonInput.style.display = 'none';
+      reasonInput.value = '';           // optional – clear it so it doesn't get sent
+    }
+  }
 
   // Add default choices
   addChoice(index);
@@ -1438,6 +1495,15 @@ function addChoice(qIndex) {
   `;
   container.appendChild(div);
 
+  // ── Hide correct checkbox when in survey mode ────────────────────────────────
+  if (isSurveyMode()) {
+    const checkbox = div.querySelector('.correct-checkbox');
+    if (checkbox) {
+      checkbox.style.display = 'none';
+      checkbox.removeAttribute('title');     // optional but recommended
+    }
+  }
+
   questions[qIndex].choices.push({});
 
   // Preview handler for choice image
@@ -1460,7 +1526,15 @@ async function submitGame() {
   const name = document.getElementById("gameName").value.trim();
   const desc = document.getElementById("gameDesc").value.trim();
   const timer = document.getElementById("gameTimer").value.trim();
-  if (!name || !currentQnAChannelId) return showToast("Game name and channel required", "error");
+
+  if (!name || !currentQnAChannelId) {
+    return showToast("Game name and channel required", "error");
+  }
+
+  // 1. Get mode FIRST
+  const mode = document.querySelector('input[name="gameMode"]:checked')?.value || 'quiz';
+
+  // 2. NOW safely create payload
   const payload = {
     operation: "createQnAGame",
     channelId: currentQnAChannelId,
@@ -1468,44 +1542,73 @@ async function submitGame() {
     name,
     description: desc,
     timer,
+    mode,                    // ← included here
     questions: []
   };
+
+  // Build questions
   document.querySelectorAll(".question-container").forEach((qCont, qIndex) => {
+    const text = qCont.querySelector(".question-input").value.trim();
+    if (!text) return; // skip empty
+
     const question = {
-      text: qCont.querySelector(".question-input").value.trim(),
-      image: questions[qIndex].image,
+      text,
+      image: questions[qIndex]?.image || null,
       choices: [],
       correctIndex: -1,
       reason: qCont.querySelector(".reason-input").value.trim()
     };
+
     qCont.querySelectorAll(".choice-input").forEach((cDiv, cIndex) => {
-      const text = cDiv.querySelector("input[placeholder^='Choice']").value.trim();
+      const choiceText = cDiv.querySelector("input[placeholder^='Choice']").value.trim();
+      if (!choiceText) return;
+
       const isCorrect = cDiv.querySelector(".correct-checkbox").checked;
+
       question.choices.push({
-        text,
-        image: questions[qIndex].choices[cIndex].image
+        text: choiceText,
+        image: questions[qIndex]?.choices?.[cIndex]?.image || null
       });
+
       if (isCorrect) question.correctIndex = cIndex;
     });
-    if (question.correctIndex !== -1) payload.questions.push(question);
+
+    if (question.choices.length > 0) {
+      payload.questions.push(question);
+    }
   });
-  if (payload.questions.length === 0) return showToast("Add at least one question with a correct choice", "error");
+
+  // Validation
+  if (payload.questions.length === 0) {
+    return showToast("Add at least one question with choices", "error");
+  }
+
+  if (mode === 'quiz') {
+    const missingCorrect = payload.questions.some(q => q.correctIndex === -1);
+    if (missingCorrect) {
+      return showToast("Quiz mode requires each question to have at least one correct choice", "error");
+    }
+  }
+
   try {
-    const res = await fetch(SCRIPT_URL, { method: "POST", body: JSON.stringify(payload) });
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body: JSON.stringify(payload)
+    });
     const data = await res.json();
+
     if (data.status === "success") {
-      showToast("Game created!", "success");
+      showToast(`Game created! (${mode === 'survey' ? 'Survey' : 'Quiz'})`, "success");
       closeGamePanel();
       loadGames(currentQnAChannelId);
     } else {
-      showToast(data.message || "Failed", "error");
+      showToast(data.message || "Failed to create game", "error");
     }
   } catch (err) {
-    showToast("Network error", "error");
+    console.error("Create game error:", err);
+    showToast("Network error – check connection", "error");
   }
 }
-
-
 
 
 

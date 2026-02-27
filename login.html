@@ -302,11 +302,11 @@
   <script>
   // Run before DOM is even parsed
   if (localStorage.getItem('userName')) {
-    window.location.replace('/home.html');  // replace → doesn't add to history
+    window.location.replace('/index.html');  // replace → doesn't add to history
   }
 
   if (localStorage.getItem('userName') && localStorage.getItem('userIdCode')) {
-  window.location.replace('/home.html');
+  window.location.replace('/index.html');
 }
 
 </script>
@@ -460,7 +460,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     localStorage.setItem('userIdCode', result.identityCode);
 showToast(`Account created! Your recovery code is: ${result.identityCode}. Save this securely.`);
     
-    window.location.href = 'home.html';
+    window.location.href = 'index.html';
   }, 800); // 0.8 seconds
 } else {
         showToast(result.message || 'Something went wrong');
@@ -509,7 +509,7 @@ document.getElementById('recoverBtn').addEventListener('click', async () => {
       localStorage.setItem('userPicLink', result.picLink);
       localStorage.setItem('userIdCode', code);
       showToast('Account recovered!');
-      setTimeout(() => window.location.href = 'home.html', 1000);
+      setTimeout(() => window.location.href = 'index.html', 1000);
     } else {
       showToast(result.message || 'Recovery failed');
       recoverBtn.disabled = false;

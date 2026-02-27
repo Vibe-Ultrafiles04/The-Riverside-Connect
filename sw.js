@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   './',
   './login.html',
   './index.html',
+  './home.html',
   './announce.html',
   './channel.html',
   './manifest.json',
@@ -169,7 +170,7 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       }).catch(() => {
         if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
+          return caches.match('./home.html');
         }
         return new Response('', { status: 503 });
       });

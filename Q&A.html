@@ -994,7 +994,7 @@ html, body {
 <body>
 <!-- Top Navigation Bar -->
 <nav class="top-nav">
-  <a href="index.html" class="back-btn-top" title="Back to main page">
+  <a href="home.html" class="back-btn-top" title="Back to main page">
     <i class="fas fa-arrow-left"></i>
   </a>
   <button id="channelsToggle" class="channels-btn">
@@ -1104,7 +1104,7 @@ let currentUserName = localStorage.getItem("userName") || "";
 let currentQnAChannelId = null;
 let allQnAChannels = [];
 let isUserApproved = false;
-if (!currentUserName) window.location.href = "index.html";
+if (!currentUserName) window.location.href = "home.html";
 const channelList = document.getElementById("channelList");
 const channelHeader = document.getElementById("channelHeader");
 const channelTitle = document.getElementById("channelTitle");

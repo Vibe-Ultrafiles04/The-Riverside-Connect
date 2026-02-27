@@ -182,11 +182,41 @@ html, body {
     .play-btn:hover {
       transform: scale(1.05);
     }
-    .leaderboard-btn {
-      color: #94a3b8;
-      cursor: pointer;
-      transition: color 0.2s;
-    }
+  /* Base style for both quiz and survey buttons */
+.leaderboard-btn {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);   /* default = quiz blue */
+  color: white;
+  border: none;
+  border-radius: 999px;               /* pill shape / fully rounded */
+  padding: 8px 18px;                  /* nice inner spacing */
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;                           /* space between icon and text */
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+  white-space: nowrap;                /* prevents text wrapping */
+  min-width: 130px;                   /* prevents shrinking too much */
+  justify-content: center;
+  text-align: center;
+}
+
+/* Hover & active states */
+.leaderboard-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+}
+
+.leaderboard-btn:active {
+  transform: scale(0.97);
+}
+
+/* Survey variant – different color */
+.leaderboard-btn.survey {
+  background: linear-gradient(135deg, #8b5cf6, #c084fc);   /* purple-ish for survey */
+}
     .leaderboard-btn:hover { color: #60a5fa; }
     .fab {
       position: fixed;
@@ -1069,7 +1099,7 @@ html, body {
 </div>
 <div id="toast-container"></div>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcBQcetkQef5rYQt_Wf1mSvIDEstU9ZkKpaTQZ_SkloyXAMmNOIk56pYRGkcG5Rai7/exec'; 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDrfYXU0nbNxgTRWC4J3xb6BCaR7GqQwEh88Eicjky00buj59Tk3AGOf1IOpCJM8pL/exec'; 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentQnAChannelId = null;
 let allQnAChannels = [];
@@ -1166,6 +1196,107 @@ function closeChannelModal() {
   document.getElementById("channelDescInput").value = "";
   selectedChannelAvatar = null;
   document.getElementById('channelAvatarPreview').src = "https://via.placeholder.com/110?text=Icon";
+}
+
+
+// ── New function: Show survey report in a modal ────────────────────────────────
+async function showSurveyReport(gameId) {
+  // Reuse the existing leaderboard modal styling (or create new if you prefer)
+  const modal = document.getElementById("leaderboardModal");
+  const list = document.getElementById("leaderboardList");
+  
+  // Change title
+  modal.querySelector('.leaderboard-header h3').textContent = "Survey Report";
+  
+  list.innerHTML = '<div class="no-leaders">Loading report...</div>';
+  modal.classList.add("active");
+
+  try {
+    // 1. Get survey summary statistics
+    const res = await fetch(`${SCRIPT_URL}?operation=getSurveyResults&gameId=${gameId}`);
+    const data = await res.json();
+
+    if (data.status !== "success" || !data.results?.length) {
+      list.innerHTML = '<div class="no-leaders">No responses yet</div>';
+      return;
+    }
+
+    // 2. Get list of participants
+    const partRes = await fetch(`${SCRIPT_URL}?operation=getSurveyParticipants&gameId=${gameId}`);
+    const partData = await partRes.json();
+    const participants = partData.participants || [];
+
+    let html = '<div style="padding: 0 16px 16px;">';
+
+    // Questions + response stats
+    data.results.forEach((q, idx) => {
+      html += `
+        <div style="margin: 24px 0; padding-bottom: 20px; ${idx < data.results.length-1 ? 'border-bottom: 1px solid rgba(96,165,250,0.18);' : ''}">
+          <div style="font-weight: 600; color: #60a5fa; margin-bottom: 8px;">
+            Q${idx+1}: ${q.questionText}
+          </div>
+          ${q.questionImage ? `<img src="${getLh3Link(q.questionImage)}" style="max-width:100%; border-radius:10px; margin:12px 0; display:block;">` : ''}
+          <div style="color: #94a3b8; margin-bottom: 16px; font-size: 0.95rem;">
+            Total responses: <strong style="color:#e2e8f0;">${q.totalResponses}</strong>
+          </div>
+      `;
+
+      q.choices.forEach(choice => {
+        const percent = Math.round(choice.percent || 0);
+        html += `
+          <div style="margin: 10px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.98rem;">
+              <span>${choice.text}</span>
+              <span style="color: #60a5fa; font-weight: 600;">${percent}% (${choice.count})</span>
+            </div>
+            <div style="height: 10px; background: rgba(255,255,255,0.08); border-radius: 5px; overflow: hidden;">
+              <div style="height: 100%; width: ${percent}%; background: #8b5cf6; transition: width 0.5s ease;"></div>
+            </div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+    });
+
+    // Participants section
+    html += `
+      <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid rgba(96,165,250,0.18);">
+        <div style="font-weight: 600; color: #60a5fa; margin-bottom: 16px;">
+          Participants (${participants.length})
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; justify-content: center;">
+    `;
+
+    if (participants.length === 0) {
+      html += '<div style="color: #94a3b8; font-style: italic;">No participants yet</div>';
+    } else {
+      participants.forEach(p => {
+        const avatar = p.picLink ? getLh3Link(p.picLink) : `https://ui-avatars.com/api/?name=${encodeURIComponent(p.username)}&background=60a5fa&color=fff&size=128`;
+        html += `
+          <div style="text-align: center; min-width: 80px;">
+            <img src="${avatar}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #60a5fa;">
+            <div style="margin-top: 6px; font-size: 0.9rem;">${p.username}</div>
+          </div>
+        `;
+      });
+    }
+
+    html += '</div></div></div>';
+
+    list.innerHTML = html;
+
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = '<div class="no-leaders">Failed to load survey report</div>';
+  }
+}
+
+// Optional: override close function so it resets title when closing
+function closeLeaderboardModal() {
+  leaderboardModal.classList.remove("active");
+  // Reset title for next time
+  leaderboardModal.querySelector('.leaderboard-header h3').textContent = "Leaderboard";
 }
 
 async function submitQnAChannel() {
@@ -1306,9 +1437,11 @@ games.forEach(game => {
     </div>
     <div class="game-footer">
       <button class="play-btn" onclick="window.location.href='play.html?gameId=${game.id}'">Play</button>
-      <span class="leaderboard-btn" onclick="showLeaderboard('${game.id}')">
-        <i class="fas fa-trophy"></i> Leaderboard
-      </span>
+     <button class="leaderboard-btn ${game.mode === 'survey' ? 'survey' : ''}"
+        onclick="${game.mode === 'survey' ? `showSurveyReport('${game.id}')` : `showLeaderboard('${game.id}')`}">
+  <i class="fas ${game.mode === 'survey' ? 'fa-chart-bar' : 'fa-trophy'}"></i>
+  ${game.mode === 'survey' ? 'Results' : 'Leaderboard'}
+</button>
 
       <button class="delete-btn"
               style="margin-left:auto; background:#ef4444aa; color:white; border:none; padding:8px 14px; border-radius:999px; font-weight:600; cursor:pointer; display:none;"

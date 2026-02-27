@@ -328,12 +328,14 @@
 
   
 
-  <button id="nextButton" class="next-btn">Next</button>
-
+ <button id="backButton" class="next-btn" style="background: linear-gradient(135deg, #6b7280, #9ca3af); margin-right: 12px; display: none;">
+  Back
+</button>
+<button id="nextButton" class="next-btn">Next</button>
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxcBQcetkQef5rYQt_Wf1mSvIDEstU9ZkKpaTQZ_SkloyXAMmNOIk56pYRGkcG5Rai7/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDrfYXU0nbNxgTRWC4J3xb6BCaR7GqQwEh88Eicjky00buj59Tk3AGOf1IOpCJM8pL/exec';
 
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
@@ -345,7 +347,14 @@ let score = 0;
 let timerInterval = null;
 let leaderboardLoaded = false;
 let surveyResponses = {};  // { questionIndex: chosenChoiceIndex }
+let hasAlreadySubmitted = false;  // Will be set after checking on load
+let quizResponses = {};   // { questionIndex: chosenChoiceIndex }
 
+document.getElementById("backButton").addEventListener("click", () => {
+  if (currentQuestionIndex > 0) {
+    showQuestion(currentQuestionIndex - 1);
+  }
+});
 
 if (!gameId || !username) {
   document.getElementById("currentQuestion").innerHTML = '<div class="empty">Invalid game or not logged in</div>';
@@ -383,6 +392,26 @@ async function loadGame() {
       return;
     }
     currentGame = gameData.game;
+
+    // ── Check if user already submitted this survey ────────────────────────
+if (currentGame.mode === "survey") {
+  try {
+    const checkRes = await fetch(
+      `${SCRIPT_URL}?operation=hasUserSubmittedSurvey&gameId=${gameId}&username=${encodeURIComponent(username)}`
+    );
+    const checkData = await checkRes.json();
+
+    if (checkData.status === "success") {
+      hasAlreadySubmitted = !!checkData.submitted;  // true/false from backend
+    } else {
+      console.warn("Submission check failed:", checkData.message);
+    }
+  } catch (err) {
+    console.warn("Could not check if already submitted:", err);
+    // Assume not submitted if check fails (safer default)
+    hasAlreadySubmitted = false;
+  }
+}
 // Dynamically create the correct button
 const actionsDiv = document.getElementById("headerActions");
 actionsDiv.innerHTML = ""; // clear
@@ -473,7 +502,6 @@ function showQuestion(index) {
 
     let html = choice.text || "";
 
-    // FIXED: use getLh3Link for choice images
     if (choice.imageLink) {
       const safeChoiceUrl = getLh3Link(choice.imageLink);
       html += `
@@ -490,60 +518,153 @@ function showQuestion(index) {
     choicesDiv.appendChild(btn);
   });
 
-  document.getElementById("nextButton").style.display = "none";
+  // ────────────────────────────────────────────────────────────────
+  //  Show / Hide Next & Back buttons
+  // ────────────────────────────────────────────────────────────────
+  const nextBtn = document.getElementById("nextButton");
+  const backBtn = document.getElementById("backButton");
+
   document.getElementById("reason").style.display = "none";
+
+  // Back button visible after first question (both modes)
+  backBtn.style.display = currentQuestionIndex > 0 ? "inline-block" : "none";
+
+  // ── Next button logic ─────────────────────────────────────────────
+  if (currentGame.mode === "survey") {
+    // Survey: always show Next (can skip / change answers)
+    nextBtn.style.display = "inline-block";
+  } else {
+    // Quiz: show Next if the question has already been answered
+    const hasAnswered = quizResponses[index] !== undefined;
+    nextBtn.style.display = hasAnswered ? "inline-block" : "none";
+  }
+
+  // ────────────────────────────────────────────────────────────────
+  //  Restore previously selected choice (for both modes)
+  // ────────────────────────────────────────────────────────────────
+  const previousChoice = (currentGame.mode === "survey")
+    ? surveyResponses[index]
+    : quizResponses[index];
+
+  if (previousChoice !== undefined) {
+    const buttons = document.querySelectorAll("#choices .choice-btn");
+
+    buttons.forEach((btn, i) => {
+      btn.classList.remove("correct", "incorrect", "selected");
+
+      if (i === previousChoice) {
+        btn.classList.add("selected");
+      }
+
+      if (currentGame.mode === "survey") {
+        btn.disabled = false;
+      } else {
+        btn.disabled = true;
+        if (i === q.correctIndex) {
+          btn.classList.add("correct");
+        }
+        if (i === previousChoice && q.correctIndex !== previousChoice) {
+          btn.classList.add("incorrect");
+        }
+        document.getElementById("reason").style.display = "block";
+      }
+    });
+  }
+
+  // Optional hint for survey
+  /*
+  if (currentGame.mode === "survey") {
+    const hint = document.createElement("p");
+    hint.style.cssText = "margin-top:16px; color:#94a3b8; font-size:0.95rem; text-align:center;";
+    hint.textContent = "You can change your answer anytime before submitting";
+    choicesDiv.after(hint);
+  }
+  */
 }
 function selectChoice(choiceIndex) {
   const q = currentGame.questions[currentQuestionIndex];
 
-  // Record selection (survey) or score (quiz)
+  // ── Remember the choice in BOTH modes ─────────────────────────────
+  // We need this so we can restore the selection when going back
   if (currentGame.mode === "survey") {
     surveyResponses[currentQuestionIndex] = choiceIndex;
   } else {
-    const correct = q.correctIndex === choiceIndex;
-    if (correct) score++;
+    // Quiz: remember what was chosen (for restore), but score only once
+    if (quizResponses[currentQuestionIndex] === undefined) {  // only first time
+      quizResponses[currentQuestionIndex] = choiceIndex;
+      const correct = q.correctIndex === choiceIndex;
+      if (correct) score++;
+    }
+    // Note: after first answer, further clicks do nothing to score
   }
 
-  // Highlight selected button — different logic per mode
-  const buttons = document.querySelectorAll(".choice-btn");
-  buttons.forEach((btn, i) => {
-    btn.disabled = true;
+  // ── Visual update ─────────────────────────────────────────────────
+  const buttons = document.querySelectorAll("#choices .choice-btn");
 
-    // Clear previous classes
+  buttons.forEach((btn, i) => {
+    // Clear previous visual states
     btn.classList.remove("correct", "incorrect", "selected");
 
     if (currentGame.mode === "survey") {
-      // Survey: highlight chosen one only (blue)
-      if (i === choiceIndex) {
+      // Survey: highlight current selection, buttons stay clickable
+      if (i === surveyResponses[currentQuestionIndex]) {
         btn.classList.add("selected");
       }
+      btn.disabled = false;
     } else {
-      // Quiz: ALWAYS highlight chosen one + show correct/incorrect
-      if (i === choiceIndex) {
-        btn.classList.add("selected");          // ← key fix: always mark chosen
-      }
-      if (i === q.correctIndex) {
-        btn.classList.add("correct");
-      }
-      if (i === choiceIndex && q.correctIndex !== choiceIndex) {
-        btn.classList.add("incorrect");
+      // Quiz: show feedback, disable buttons, but keep selected visible
+      btn.disabled = true;
+
+      const chosen = quizResponses[currentQuestionIndex];
+
+      if (chosen !== undefined) {
+        // Show what was actually chosen
+        if (i === chosen) {
+          btn.classList.add("selected");
+        }
+        // Show correct answer
+        if (i === q.correctIndex) {
+          btn.classList.add("correct");
+        }
+        // Mark incorrect if wrong choice was made
+        if (i === chosen && q.correctIndex !== chosen) {
+          btn.classList.add("incorrect");
+        }
       }
     }
   });
 
-  // Show reason ONLY in quiz
+  // Reason only for quiz
   document.getElementById("reason").style.display = 
     currentGame.mode === "survey" ? "none" : "block";
 
-  // Show Next / Finish button — this now always works
+  // Always show Next / Submit button in survey (even if changed many times)
   const nextBtn = document.getElementById("nextButton");
   nextBtn.style.display = "block";
 
+  // ── Last question logic ───────────────────────────────────────────
   if (currentQuestionIndex === currentGame.questions.length - 1) {
-    nextBtn.textContent = "Finish Game";
-    nextBtn.onclick = finishGame;
+    if (currentGame.mode === "survey") {
+      if (hasAlreadySubmitted) {
+        nextBtn.textContent = "Already Submitted";
+        nextBtn.disabled = true;
+        nextBtn.style.opacity = "0.6";
+        nextBtn.onclick = () => showToast("You have already completed this survey", "info");
+      } else {
+        nextBtn.textContent = "Submit Responses";
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+        nextBtn.onclick = finishGame;
+      }
+    } else {
+      // Quiz
+      nextBtn.textContent = "Complete Game";
+      nextBtn.disabled = false;
+      nextBtn.onclick = finishGame;
+    }
   } else {
     nextBtn.textContent = "Next";
+    nextBtn.disabled = false;
     nextBtn.onclick = () => {
       if (currentQuestionIndex + 1 < currentGame.questions.length) {
         showQuestion(currentQuestionIndex + 1);
@@ -551,31 +672,78 @@ function selectChoice(choiceIndex) {
     };
   }
 }
-function finishGame() {
+async function finishGame() {
   clearInterval(timerInterval);
 
-  if (currentGame.mode === "survey") {
-    submitSurveyResponses();                    // ← sends all answers
-    showToast("Survey submitted – thank you!", "success");
-  } else {
-    submitScore();
-  }
+  const nextBtn = document.getElementById("nextButton");
+  const originalText = nextBtn.textContent;
 
-  document.getElementById("currentQuestion").style.display = "none";
-  document.getElementById("nextButton").style.display = "none";
+  nextBtn.disabled = true;
+  nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
-  const final = document.getElementById("finalScreen");
-  final.style.display = "block";
+  // Prevent infinite loading — timeout after 12 seconds
+  const TIMEOUT_MS = 12000;
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("timeout")), TIMEOUT_MS)
+  );
 
-  if (currentGame.mode === "survey") {
-    document.getElementById("scoreText").innerHTML = 
-      "Survey submitted!<br>Results available via View Results button.";
-  } else {
-    document.getElementById("scoreText").innerHTML = 
-      `Your score: <b>${score} / ${currentGame.questions.length}</b>`;
+  try {
+    if (currentGame.mode === "survey") {
+      await Promise.race([submitSurveyResponses(), timeoutPromise]);
+
+      showToast("Responses submitted successfully!", "success");
+
+      document.getElementById("scoreText").innerHTML = `
+        <div style="color:#10b981; font-size:1.4rem; margin:16px 0;">
+          <i class="fas fa-check-circle"></i> Thank you!
+        </div>
+        Your responses have been recorded.<br>
+        <small style="color:#94a3b8;">You can now view the aggregated results.</small>
+      `;
+    } else {
+      await Promise.race([submitScore(), timeoutPromise]);
+
+      document.getElementById("scoreText").innerHTML = 
+        `Game completed!<br>Your score: <b>${score} / ${currentGame.questions.length}</b>`;
+    }
+
+    document.getElementById("currentQuestion").style.display = "none";
+    nextBtn.style.display = "none";
+    document.getElementById("finalScreen").style.display = "block";
+
+  } catch (err) {
+    console.error("Finish failed:", err);
+
+    let toastMsg = "Failed to submit – please try again";
+    let finalMsg = "";
+
+    if (err.message === "timeout") {
+      toastMsg = "Submission timed out. Check your connection.";
+    } else if (err.message.includes("already_submitted")) {
+      toastMsg = "You have already submitted this survey.";
+      finalMsg = `
+        <div style="color:#10b981; font-size:1.3rem; margin:16px 0;">
+          <i class="fas fa-check-circle"></i> Already submitted
+        </div>
+        You completed this survey earlier.<br>
+        Feel free to view the results.
+      `;
+      hasAlreadySubmitted = true; // Remember for next time
+    }
+
+    showToast(toastMsg, err.message.includes("already") ? "info" : "error");
+
+    if (finalMsg) {
+      document.getElementById("scoreText").innerHTML = finalMsg;
+      document.getElementById("finalScreen").style.display = "block";
+      nextBtn.style.display = "none";
+    } else {
+      // Allow retry
+      nextBtn.disabled = false;
+      nextBtn.innerHTML = originalText;
+    }
   }
 }
-
 async function submitScore() {
   try {
     await fetch(SCRIPT_URL, {
@@ -616,37 +784,53 @@ function startTimer(seconds) {
 }
 
 async function submitSurveyResponses() {
-  if (Object.keys(surveyResponses).length === 0) return;
+  if (Object.keys(surveyResponses).length === 0) {
+    console.warn("No responses to submit");
+    return;
+  }
 
-  console.log("Submitting survey answers one by one...");
+  console.log(`Submitting ${Object.keys(surveyResponses).length} survey answers...`);
 
   for (const [qIdxStr, cIdx] of Object.entries(surveyResponses)) {
     const qIndex = Number(qIdxStr);
     const question = currentGame.questions[qIndex];
-    
-    // Use real questionId if your backend returns it, otherwise fallback
     const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
 
     try {
       const res = await fetch(SCRIPT_URL, {
         method: "POST",
         body: JSON.stringify({
-          operation: "recordSurveyResponses",  // ← now matches backend after your change
+          operation: "recordSurveyResponses",
           gameId,
           username,
-          questionId,                          // ← single question
+          questionId,
           choiceIndex: Number(cIdx)
         })
       });
 
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} – server error`);
+      }
+
       const data = await res.json();
-      console.log(`Answer for q${qIndex}:`, data);
+
+      if (data.status !== "success") {
+        // Very important: check if backend says "already submitted"
+        if (data.message?.toLowerCase().includes("already submitted") ||
+            data.message?.toLowerCase().includes("duplicate")) {
+          throw new Error("already_submitted");
+        }
+        throw new Error(data.message || "Backend rejected submission");
+      }
+
+      console.log(`Q${qIndex + 1} submitted OK`);
     } catch (err) {
-      console.error(`Failed for question ${qIndex}:`, err);
+      console.error(`Failed Q${qIndex + 1}:`, err);
+      throw err; // Stop on first real error
     }
   }
 
-  console.log("All answers sent");
+  console.log("All responses submitted successfully");
 }
 
 function updateTimerDisplay(seconds) {

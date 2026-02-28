@@ -1,7 +1,7 @@
 // sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
 // Now caches comments, announcements, view counts & approval status
 
-const CACHE_NAME = 'Riverside-Connect-v5';   // ← bumped version for announcements + view counts
+const CACHE_NAME = 'Riverside-Connect-v8';   // ← bumped version (v5 → v8)
 
 const STATIC_ASSETS = [
   './',
@@ -10,6 +10,7 @@ const STATIC_ASSETS = [
   './home.html',
   './announce.html',
   './channel.html',
+  './Q&A.html',                 // ← added here
   './manifest.json',
   './maskable_icon_x192.png',
   './maskable_icon_x512.png'

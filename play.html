@@ -335,7 +335,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDrfYXU0nbNxgTRWC4J3xb6BCaR7GqQwEh88Eicjky00buj59Tk3AGOf1IOpCJM8pL/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsUojWQz4SE_84AWazYtVQMAa5oFy5MdZnC2kursSNhVg6GJVmCY9wrlEyP1ZxrMWV/exec';
 
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
@@ -477,13 +477,12 @@ function showQuestion(index) {
 
   let questionHTML = `<div class="question-text">${q.text || "Question missing"}</div>`;
 
-  // FIXED: use getLh3Link for question image
   if (q.imageLink) {
     const safeUrl = getLh3Link(q.imageLink);
     questionHTML += `
-      <img class="question-image" 
-           src="${safeUrl}" 
-           onerror="this.src='https://via.placeholder.com/320?text=Image+Not+Available'; this.style.opacity=0.7;" 
+      <img class="question-image"
+           src="${safeUrl}"
+           onerror="this.src='https://via.placeholder.com/320?text=Image+Not+Available'; this.style.opacity=0.7;"
            alt="Question image">
     `;
   }
@@ -499,50 +498,77 @@ function showQuestion(index) {
   (q.choices || []).forEach((choice, i) => {
     const btn = document.createElement("button");
     btn.className = "choice-btn";
-
     let html = choice.text || "";
-
     if (choice.imageLink) {
       const safeChoiceUrl = getLh3Link(choice.imageLink);
       html += `
         <br>
-        <img src="${safeChoiceUrl}" 
-             style="max-width:100%; margin-top:8px; border-radius:8px;" 
+        <img src="${safeChoiceUrl}"
+             style="max-width:100%; margin-top:8px; border-radius:8px;"
              onerror="this.src='https://via.placeholder.com/200?text=Choice+Failed'; this.style.opacity=0.7;"
              alt="Choice image">
       `;
     }
-
     btn.innerHTML = html;
     btn.onclick = () => selectChoice(i);
     choicesDiv.appendChild(btn);
   });
 
   // ────────────────────────────────────────────────────────────────
-  //  Show / Hide Next & Back buttons
+  // Navigation: Back & Next
   // ────────────────────────────────────────────────────────────────
   const nextBtn = document.getElementById("nextButton");
   const backBtn = document.getElementById("backButton");
 
-  document.getElementById("reason").style.display = "none";
-
-  // Back button visible after first question (both modes)
+  // Back: always visible when not on first question
   backBtn.style.display = currentQuestionIndex > 0 ? "inline-block" : "none";
 
-  // ── Next button logic ─────────────────────────────────────────────
-  if (currentGame.mode === "survey") {
-    // Survey: always show Next (can skip / change answers)
-    nextBtn.style.display = "inline-block";
+  // Default: Next button is visible in survey always, in quiz only if answered
+  let showNext = currentGame.mode === "survey" || quizResponses[index] !== undefined;
+  nextBtn.style.display = showNext ? "inline-block" : "none";
+
+  // ────────────────────────────────────────────────────────────────
+  // IMPORTANT: Button text & behavior depends on whether this is the last question
+  // ────────────────────────────────────────────────────────────────
+  const isLastQuestion = currentQuestionIndex === currentGame.questions.length - 1;
+
+  if (isLastQuestion) {
+    // Last question → special text & action
+    if (currentGame.mode === "survey") {
+      if (hasAlreadySubmitted) {
+        nextBtn.textContent = "Already Submitted";
+        nextBtn.disabled = true;
+        nextBtn.style.opacity = "0.6";
+        nextBtn.onclick = () => showToast("You have already completed this survey", "info");
+      } else {
+        nextBtn.textContent = "Submit Responses";
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = "1";
+        nextBtn.onclick = finishGame;
+      }
+    } else {
+      // Quiz
+      nextBtn.textContent = "Complete Game";
+      nextBtn.disabled = false;
+      nextBtn.onclick = finishGame;
+    }
   } else {
-    // Quiz: show Next if the question has already been answered
-    const hasAnswered = quizResponses[index] !== undefined;
-    nextBtn.style.display = hasAnswered ? "inline-block" : "none";
+    // Not last question → always "Next" when visible
+    nextBtn.textContent = "Next";
+    nextBtn.disabled = false;
+    nextBtn.onclick = () => {
+      if (currentQuestionIndex + 1 < currentGame.questions.length) {
+        showQuestion(currentQuestionIndex + 1);
+      }
+    };
   }
 
   // ────────────────────────────────────────────────────────────────
-  //  Restore previously selected choice (for both modes)
+  // Restore previous answer & visual state
   // ────────────────────────────────────────────────────────────────
-  const previousChoice = (currentGame.mode === "survey")
+  document.getElementById("reason").style.display = "none";
+
+  const previousChoice = currentGame.mode === "survey"
     ? surveyResponses[index]
     : quizResponses[index];
 
@@ -571,7 +597,7 @@ function showQuestion(index) {
     });
   }
 
-  // Optional hint for survey
+  // Optional survey hint
   /*
   if (currentGame.mode === "survey") {
     const hint = document.createElement("p");

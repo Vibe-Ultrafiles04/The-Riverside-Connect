@@ -8,11 +8,21 @@ const STATIC_ASSETS = [
   './login.html',
   './index.html',
   './home.html',
+  './Q&A.html',
   './announce.html',
   './channel.html',
   './manifest.json',
   './maskable_icon_x192.png',
   './maskable_icon_x512.png'
+];
+
+const API_CACHE_PATTERNS = [
+  '?operation=getAllQnAChannels',
+  '?operation=getQnAGames',
+  '?operation=getQnAQuestionsAndChoices',
+  '?operation=getQnALeaderboard',
+  '?operation=getSurveyResults',
+  '?operation=getSurveyParticipants',
 ];
 
 const EXPECTED_CACHES = [CACHE_NAME];
@@ -52,80 +62,96 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // ────────────────────────────────────────────────
-  // Handle all Google Apps Script API calls
-  // ────────────────────────────────────────────────
   if (url.href.startsWith(API_BASE)) {
 
-    // GET requests → cache-first for offline viewing (comments, announcements, status, views)
-    if (event.request.method === 'GET') {
-      event.respondWith(
-        caches.open(CACHE_NAME).then(cache => {
-          return cache.match(event.request).then(cachedResponse => {
-            // Return cached data immediately → enables offline comments/announcements/status/views
-            if (cachedResponse) {
-              // Quietly update cache in background when online
-              fetch(event.request)
-                .then(freshResponse => {
-                  if (freshResponse && freshResponse.status === 200) {
-                    cache.put(event.request, freshResponse.clone());
-                  }
-                })
-                .catch(() => {}); // silent fail
+  // ────────────────────────────────────────────────
+  // GET requests → cache-first + stale-while-revalidate pattern
+  // ────────────────────────────────────────────────
+if (event.request.method === 'GET') {
 
-              return cachedResponse;
-            }
+  // ── Only cache these specific Q&A API calls (and announcements/comments if you want)
+  const isCacheableApiCall = API_CACHE_PATTERNS.some(pattern => 
+    event.request.url.includes(pattern)
+  );
 
-            // No cache yet → fetch from network and cache if successful
-            return fetch(event.request).then(networkResponse => {
-              if (networkResponse && networkResponse.status === 200) {
-                cache.put(event.request, networkResponse.clone());
-              }
-              return networkResponse;
-            }).catch(() => {
-              // Offline fallback — safe defaults your frontend can handle
-              return new Response(
-                JSON.stringify({
-                  status: 'offline',
-                  offline: true,
-                  userStatus: 'pending',         // safe default for approval check
-                  comments: [],
-                  announcements: [],
-                  viewCounts: [],                // empty array for view badges
-                  announcementsViewCounts: [],   // fallback for announce.html
-                  message: 'Offline — showing last known data (comments, announcements, views).'
-                }),
-                {
-                  status: 200,
-                  headers: { 'Content-Type': 'application/json' }
-                }
-              );
-            });
-          });
-        })
-      );
-      return;
-    }
+  // You can also add announcement/comment patterns here if needed
+  // const isAnnouncementRelated = event.request.url.includes('getAnnouncements') || event.request.url.includes('getComments');
 
-    // POST/DELETE/PUT (postComment, deleteComment, editComment, postAnnouncement, etc.)
-    // → always network-first, fail gracefully offline
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(
-          JSON.stringify({
-            status: 'offline',
-            message: 'Cannot send, edit, delete or post while offline. Action will be attempted when you reconnect.'
-          }),
-          {
-            status: 503,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
-      })
-    );
-    return;
+  if (!isCacheableApiCall /* && !isAnnouncementRelated */) {
+    // Let it go through normal network-first or whatever your current logic is
+    // (or just skip special caching for other endpoints)
+    return; // or continue with default fetch
   }
 
+  // ── Only if it's one of our important patterns → do the cache-first logic
+  event.respondWith(
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.match(event.request).then(cachedResponse => {
+        const networkedFetch = fetch(event.request)
+          .then(freshResponse => {
+            if (freshResponse && freshResponse.status === 200 && 
+                freshResponse.headers.get('content-type')?.includes('application/json')) {
+              cache.put(event.request, freshResponse.clone());
+            }
+            return freshResponse;
+          })
+          .catch(() => {
+            // your nice fallback object here
+            return new Response(
+              JSON.stringify({
+                status: "offline",
+                offline: true,
+                userStatus: "pending",
+                comments: [],
+                announcements: [{
+                  id: "offline-notice-1",
+                  title: "Offline Mode",
+                  content: "You are currently offline.\n\nShowing last known data if previously loaded.\n\nConnect to see latest announcements, channels, games, etc.",
+                  created: new Date().toISOString(),
+                  creator: "System",
+                  pinned: true
+                }],
+                viewCounts: [],
+                announcementsViewCounts: [],
+                channels: [],
+                games: [],
+                questions: [],
+                leaders: [],
+                results: [],
+                participants: [],
+                message: "Offline — last known data or placeholder"
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            );
+          });
+
+        return cachedResponse || networkedFetch;
+      });
+    })
+  );
+  return;
+}
+  // ────────────────────────────────────────────────
+  // POST / mutations (create channel, create game, submit score, delete game, post announcement, etc.)
+  // → network-first, graceful offline failure
+  // ────────────────────────────────────────────────
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return new Response(
+        JSON.stringify({
+          status: "offline",
+          offline: true,
+          message: "Cannot create, delete, submit scores, post announcements or modify data while offline. Action will be retried when you reconnect."
+        }),
+        {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    })
+  );
+  return;
+}
   // ────────────────────────────────────────────────
   // Navigation & HTML pages → network-first + cache fallback
   // ────────────────────────────────────────────────

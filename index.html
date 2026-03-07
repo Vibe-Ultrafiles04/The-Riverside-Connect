@@ -137,45 +137,45 @@
       max-width: 480px;
     }
 
-    .circle-scroll-container {
-      width: 100%;
-      max-width: 480px;
-      overflow-x: auto;
-      overflow-y: hidden;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
-      scrollbar-color: #60a5fa #1e293b;
-      padding: 0 0 16px 0;
-      margin: 0 auto;
-      scroll-snap-type: x proximity;
-    }
+   .circle-scroll-container {
+  width: 100%;
+  max-width: 480px;                    /* or whatever max width you want */
+  overflow-x: auto;                    /* ← enables horizontal scroll */
+  overflow-y: hidden;                  /* ← prevents vertical scroll */
+  -webkit-overflow-scrolling: touch;   /* smooth momentum on iOS */
+  scrollbar-width: thin;               /* Firefox */
+  scrollbar-color: #60a5fa #1e293b;
+  padding: 0 0 16px 0;                 /* bottom padding for scrollbar */
+  margin: 0 auto;
+  scroll-snap-type: x proximity;       /* nice snap to items */
+}
 
-    .circle-scroll-container::-webkit-scrollbar {
-      height: 6px;
-    }
+.circle-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
 
-    .circle-scroll-container::-webkit-scrollbar-track {
-      background: transparent;
-    }
+.circle-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-    .circle-scroll-container::-webkit-scrollbar-thumb {
-      background: rgba(96, 165, 250, 0.5);
-      border-radius: 3px;
-    }
+.circle-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(96, 165, 250, 0.5);
+  border-radius: 3px;
+}
 
-    .circle-scroll-container::-webkit-scrollbar-thumb:hover {
-      background: #60a5fa;
-    }
+.circle-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa;
+}
 
-    .circle-grid {
-      display: inline-flex;
-      flex-direction: row;
-      flex-wrap: nowrap;
-      gap: 28px;
-      padding: 0 16px;
-      min-width: 100%;
-    }
-
+/* Keep this — makes items stay in one row */
+.circle-grid {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;          /* ← critical: no wrapping */
+  gap: 28px;
+  padding: 0 16px;
+  min-width: 100%;            /* ensures it can be wider than container */
+}
     .circle-item {
       flex: 0 0 90px;
       display: flex;
@@ -397,19 +397,23 @@ async function loadDashboard() {
       `;
 
       btnContainer.innerHTML = `
-        <div style="width:100%; max-width:420px; margin:0 auto 32px auto;">
-          <div class="button-grid">
-            <a href="home.html" class="big-btn"><i class="fas fa-home"></i> Home</a>
-            <a href="announce.html" class="big-btn"><i class="fas fa-bullhorn"></i> Announcements</a>
-          </div>
-        </div>
+  <div style="width:100%; max-width:420px; margin:0 auto 32px auto;">
+    <div class="button-grid">
+      <a href="home.html" class="big-btn"><i class="fas fa-home"></i> Home</a>
+      <a href="announce.html" class="big-btn"><i class="fas fa-bullhorn"></i> Announcements</a>
+    </div>
+  </div>
 
-        <h3 class="section-title">Q&A Space</h3>
-        <div id="qna-spaces-grid" class="circle-grid"></div>
+  <h3 class="section-title">Q&A Space</h3>
+  <div class="circle-scroll-container">
+    <div id="qna-spaces-grid" class="circle-grid"></div>
+  </div>
 
-        <h3 class="section-title" style="margin-top:40px;">Channels</h3>
-        <div id="channels-grid" class="circle-grid"></div>
-      `;
+  <h3 class="section-title" style="margin-top:40px;">Channels</h3>
+  <div class="circle-scroll-container">
+    <div id="channels-grid" class="circle-grid"></div>
+  </div>
+`;
 
       // Fetch Q&A channels
       const qnaRes = await fetch(`${scriptUrl}?operation=getAllQnAChannels`);
@@ -489,6 +493,8 @@ async function loadDashboard() {
     `;
   }
 }
+
+
 
 function getLh3Link(url) {
   if (!url) return '';

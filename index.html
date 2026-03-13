@@ -274,11 +274,26 @@
 <header>
   <div class="header-content">
     <h1>Riverside Connect</h1>
-    <div>
-      <img id="user-avatar" class="avatar" src="" alt="Profile"
-           style="width:44px;height:44px;border-radius:50%;border:2px solid #60a5fa;object-fit:cover;"
-           onerror="this.src='https://via.placeholder.com/44?text=@'">
-    </div>
+   <div>
+  <img 
+    id="user-avatar" 
+    class="avatar" 
+    src="" 
+    alt="Profile" 
+    loading="lazy"
+    onclick="window.location.href='user.html'"
+    style="
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid #60a5fa;
+      object-fit: cover;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    "
+    onerror="this.src='https://via.placeholder.com/44?text=@'"
+  >
+</div>
   </div>
 </header>
 
@@ -317,7 +332,7 @@
 // ────────────────────────────────────────────────
 //  BASIC SETUP
 // ────────────────────────────────────────────────
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbyWOzXGyr_N9_GJ2wntUq3IcdMjcsBsSHKiJ-bw0zQjhrbLB7lRi7J3eUXA0ZT7Uxhg/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbzvBB7FAG2DXmWJAimPlAGk0a6fO08mdSjpgmyGrV8gM_MNqe_G0l037TyktbVqnrcG/exec';
 const userName   = localStorage.getItem('userName');
 
 if (!userName) {
@@ -387,6 +402,7 @@ async function loadDashboard() {
     if (data.status !== 'success') throw new Error("User status failed");
 
     const isApproved = data.userStatus?.toLowerCase() === 'approved';
+    const userRole = data.role || "";
     const welcomeEl = document.getElementById('welcome-message');
     const btnContainer = document.getElementById('button-container');
 
@@ -396,13 +412,15 @@ async function loadDashboard() {
         <p>Choose where you'd like to go</p>
       `;
 
-      btnContainer.innerHTML = `
+           btnContainer.innerHTML = `
   <div style="width:100%; max-width:420px; margin:0 auto 32px auto;">
     <div class="button-grid">
       <a href="home.html" class="big-btn"><i class="fas fa-home"></i> Home</a>
       <a href="announce.html" class="big-btn"><i class="fas fa-bullhorn"></i> Announcements</a>
+      
     </div>
   </div>
+
 <h3 class="section-title" style="margin-top:40px;">Channels</h3>
   <div class="circle-scroll-container">
     <div id="channels-grid" class="circle-grid"></div>
@@ -412,7 +430,6 @@ async function loadDashboard() {
   <div class="circle-scroll-container">
     <div id="qna-spaces-grid" class="circle-grid"></div>
   </div>
-
   
 `;
 

@@ -60,6 +60,65 @@
 }
 .confirm-toast .yes { background: #ef4444; color: white; }
 .confirm-toast .no  { background: #4b5563; color: white; }
+.card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;   /* pushes content left + buttons right */
+  gap: 12px;
+  padding: 16px;
+}
+
+/* Main content (image + text) takes available space */
+.card .card-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Buttons container - stays on the far right */
+.card .actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Small, circular, subtle buttons */
+.card .actions button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 0.9rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.card .actions button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1);
+}
+
+/* Button-specific colors */
+.card .btn-edit {
+  color: #f59e0b;     /* amber/orange */
+}
+
+.card .btn-del {
+  color: #ef4444;     /* red */
+}
+
+/* Slightly cleaner icons */
+.card .actions i {
+  font-size: 0.95rem;
+}
   </style>
 </head>
 <body>
@@ -125,10 +184,37 @@
   </div>
 </div>
 
+<div id="editSetModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Contribution Set</h3>
+    <form id="editSetForm">
+      <input type="hidden" id="editSetId">
+      <div class="form-group">
+        <label>Set Name</label>
+        <input type="text" id="editSetName" required placeholder="e.g. Church Building Fund">
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="editSetDesc" rows="3" placeholder="Purpose and details..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Profile Picture (leave blank to keep current)</label>
+        <input type="file" id="editSetImage" accept="image/*" onchange="previewEditImage(event)">
+        <img id="editImagePreview" class="preview-img" src="" style="display:none;" alt="Preview">
+        <small id="currentPicNote" style="color:#94a3b8; display:block; margin-top:8px;"></small>
+      </div>
+      <div style="margin-top:24px; text-align:right;">
+        <button type="button" class="btn" onclick="document.getElementById('editSetModal').style.display='none'">Cancel</button>
+        <button type="button" class="btn btn-save" id="saveSetBtn" onclick="saveEditedSet()">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Toast Notification -->
 <div id="toast" class="toast"></div>
 <script>
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbwf1NC0HUYh9b4fd2SX9j_roTSBkkxJ72cuoEmvBqTIBbzeJpKofK58FrROHjc6MudB/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbw1P9M0nyJjA1U9Ey8_SlDP490nfZLqAZBNtzYHXweUVKFuvr5hwtiey6TzYeqEu8zg/exec';
 const currentUser = localStorage.getItem('userName');
 
 let currentOpenSet = null; // ← NEW: store current set for easy refresh
@@ -210,19 +296,163 @@ async function loadUserPage() {
   }
 
   sets.forEach(set => {
+    const isCreator = currentUser === set.creator;
+    
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = `
-      <img src="${set.picLink ? 'https://lh3.googleusercontent.com/d/' + (set.picLink.match(/[-\w]{25,}/)?.[0] || '') : 'https://via.placeholder.com/64?text=💰'}" alt="${set.name}">
-      <div>
-        <strong>${set.name}</strong><br>
-        <small style="color:#94a3b8;">${set.description || 'No description'}</small><br>
-        <small>By ${set.creator} • ${new Date(set.created).toLocaleDateString()}</small>
+   card.innerHTML = `
+  <div style="position:relative; flex-shrink:0;">
+    <img src="${set.picLink ? 'https://lh3.googleusercontent.com/d/' + (set.picLink.match(/[-\w]{25,}/)?.[0] || '') : 'https://via.placeholder.com/64?text=💰'}" 
+         alt="${set.name}">
+    ${isCreator ? `
+      <div class="actions">
+        <button class="btn btn-edit" onclick="event.stopPropagation(); openEditSetModal('${set.id}', '${set.name.replace(/'/g,"\\'")}', '${(set.description||"").replace(/'/g,"\\'")}', '${set.picLink || ''}')">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="btn btn-del" onclick="event.stopPropagation(); deleteContributionSet('${set.id}', '${set.name.replace(/'/g,"\\'")}')">
+          <i class="fas fa-trash"></i>
+        </button>
       </div>
-    `;
+    ` : ''}
+  </div>
+  <div>
+    <strong>${set.name}</strong><br>
+    <small style="color:#94a3b8;">${set.description || 'No description'}</small><br>
+    <small>By ${set.creator} • ${new Date(set.created).toLocaleDateString()}</small>
+  </div>
+`;
     card.onclick = () => openContributionModal(set);
     list.appendChild(card);
   });
+}
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+
+function openEditSetModal(id, name, desc, currentPic) {
+  document.getElementById('editSetId').value = id;
+  document.getElementById('editSetName').value = name;
+  document.getElementById('editSetDesc').value = desc || '';
+  
+  const preview = document.getElementById('editImagePreview');
+  const note    = document.getElementById('currentPicNote');
+  
+  if (currentPic) {
+    preview.src = 'https://lh3.googleusercontent.com/d/' + (currentPic.match(/[-\w]{25,}/)?.[0] || '');
+    preview.style.display = 'block';
+    note.textContent = 'Current picture shown above. Upload new one to replace.';
+  } else {
+    preview.style.display = 'none';
+    note.textContent = 'No picture set yet.';
+  }
+
+  document.getElementById('editSetModal').style.display = 'flex';
+}
+
+function previewEditImage(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const preview = document.getElementById('editImagePreview');
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+async function saveEditedSet() {
+  const btn = document.getElementById('saveSetBtn');
+  const id   = document.getElementById('editSetId').value;
+  const name = document.getElementById('editSetName').value.trim();
+  const desc = document.getElementById('editSetDesc').value.trim();
+  const fileInput = document.getElementById('editSetImage');
+
+  if (!name) {
+    showToast("Set name is required", true);
+    return;
+  }
+
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  let imageData = null, imageName = null;
+  if (fileInput.files[0]) {
+    const file = fileInput.files[0];
+    imageName = file.name;
+    const reader = new FileReader();
+    reader.onload = async e => {
+      imageData = e.target.result.split(',')[1];
+      await sendUpdateSetRequest(id, name, desc, imageData, imageName, btn);
+    };
+    reader.readAsDataURL(file);
+  } else {
+    await sendUpdateSetRequest(id, name, desc, null, null, btn);
+  }
+}
+
+async function sendUpdateSetRequest(id, name, desc, imageData, imageName, btn) {
+  try {
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        operation: 'updateContributionSet',
+        contributionId: id,
+        name,
+        description: desc,
+        imageData,
+        imageName,
+        user: currentUser   // for ownership check
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      showToast('Contribution Set updated');
+      document.getElementById('editSetModal').style.display = 'none';
+      loadUserPage(); // refresh list
+    } else {
+      showToast('Error: ' + (data.message || 'Failed'), true);
+    }
+  } catch (err) {
+    showToast('Network error', true);
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  }
+}
+
+// ─── Delete Set ───────────────────────────────────────────────────────────────
+
+function deleteContributionSet(setId, setName) {
+  customConfirm(
+    `Delete contribution set "${setName}" and ALL its entries permanently?`,
+    async () => {
+      try {
+        const res = await fetch(scriptUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            operation: 'deleteContributionSet',
+            contributionId: setId,
+            user: currentUser
+          })
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'success') {
+          showToast('Contribution Set deleted');
+          loadUserPage();
+        } else {
+          showToast('Error: ' + (data.message || 'Could not delete'), true);
+        }
+      } catch (err) {
+        showToast('Network error', true);
+      }
+    }
+  );
 }
 
 function openCreateSetModal() {
@@ -260,6 +490,7 @@ async function submitNewSet() {
     await sendCreateRequest(name, desc, null, null, btn);
   }
 }
+
 
 async function sendCreateRequest(name, desc, imageData, imageName, btn) {
   const payload = {

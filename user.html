@@ -129,11 +129,17 @@
      <a href="index.html" class="back-btn-top" title="Back to main page">
     <i class="fas fa-arrow-left"></i>
   </a>
+
+  <div style="display: flex; align-items: center; gap: 10px; color: #e2e8f0;">
+    <img id="smallAvatar" 
+         style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #60a5fa;"
+         src="" alt="Profile">
+    <span id="smallUserName" style="font-size: 1rem; font-weight: 500;"></span>
+  </div>
 </header>
 
 <main>
-  <img id="bigAvatar" class="big-avatar" src="" alt="Profile">
-  <h2 id="userName"></h2>
+  
 
   <div id="roleActions" class="section" style="display:none; text-align:center;">
     <button class="btn btn-primary" style="padding:14px 28px; font-size:1.1rem;" onclick="openCreateSetModal()">
@@ -214,7 +220,7 @@
 <!-- Toast Notification -->
 <div id="toast" class="toast"></div>
 <script>
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbw1P9M0nyJjA1U9Ey8_SlDP490nfZLqAZBNtzYHXweUVKFuvr5hwtiey6TzYeqEu8zg/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbwrYr_XkVS5ZS0B_QAFFjOpF8GSKYR0GTOZM1WnpLPcO2JpArBxmg5wMhdItGn1fk82/exec';
 const currentUser = localStorage.getItem('userName');
 
 let currentOpenSet = null; // ← NEW: store current set for easy refresh
@@ -267,10 +273,19 @@ function customConfirm(message, onConfirm) {
 
 async function loadUserPage() {
   const picLink = localStorage.getItem('userPicLink');
-  document.getElementById('bigAvatar').src = picLink 
-    ? `https://lh3.googleusercontent.com/d/${picLink.match(/[-\w]{25,}/)?.[0] || ''}` 
-    : 'https://via.placeholder.com/140?text=@';
-  document.getElementById('userName').textContent = currentUser;
+
+  // Small avatar + name in the HEADER (top nav bar)
+  const smallAvatar = document.getElementById('smallAvatar');
+  if (smallAvatar) {
+    smallAvatar.src = picLink 
+      ? `https://lh3.googleusercontent.com/d/${picLink.match(/[-\w]{25,}/)?.[0] || ''}` 
+      : 'https://via.placeholder.com/36?text=@';
+  }
+
+  const smallUserName = document.getElementById('smallUserName');
+  if (smallUserName) {
+    smallUserName.textContent = currentUser;
+  }
 
   // Fetch user status (including role)
   const statusRes = await fetch(`${scriptUrl}?operation=getUserStatus&name=${encodeURIComponent(currentUser)}`);
@@ -283,7 +298,7 @@ async function loadUserPage() {
     document.getElementById('roleActions').style.display = 'block';
   }
 
-  // Load sets (everyone can see the list, but only treasurers can manage)
+  // Load contribution sets
   const setsRes = await fetch(`${scriptUrl}?operation=getContributionSets`);
   const { sets } = await setsRes.json();
 
@@ -300,27 +315,27 @@ async function loadUserPage() {
     
     const card = document.createElement('div');
     card.className = 'card';
-   card.innerHTML = `
-  <div style="position:relative; flex-shrink:0;">
-    <img src="${set.picLink ? 'https://lh3.googleusercontent.com/d/' + (set.picLink.match(/[-\w]{25,}/)?.[0] || '') : 'https://via.placeholder.com/64?text=💰'}" 
-         alt="${set.name}">
-    ${isCreator ? `
-      <div class="actions">
-        <button class="btn btn-edit" onclick="event.stopPropagation(); openEditSetModal('${set.id}', '${set.name.replace(/'/g,"\\'")}', '${(set.description||"").replace(/'/g,"\\'")}', '${set.picLink || ''}')">
-          <i class="fas fa-edit"></i>
-        </button>
-        <button class="btn btn-del" onclick="event.stopPropagation(); deleteContributionSet('${set.id}', '${set.name.replace(/'/g,"\\'")}')">
-          <i class="fas fa-trash"></i>
-        </button>
+    card.innerHTML = `
+      <div style="position:relative; flex-shrink:0;">
+        <img src="${set.picLink ? 'https://lh3.googleusercontent.com/d/' + (set.picLink.match(/[-\w]{25,}/)?.[0] || '') : 'https://via.placeholder.com/64?text=💰'}" 
+             alt="${set.name}">
+        ${isCreator ? `
+          <div class="actions">
+            <button class="btn btn-edit" onclick="event.stopPropagation(); openEditSetModal('${set.id}', '${set.name.replace(/'/g,"\\'")}', '${(set.description||"").replace(/'/g,"\\'")}', '${set.picLink || ''}')">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-del" onclick="event.stopPropagation(); deleteContributionSet('${set.id}', '${set.name.replace(/'/g,"\\'")}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        ` : ''}
       </div>
-    ` : ''}
-  </div>
-  <div>
-    <strong>${set.name}</strong><br>
-    <small style="color:#94a3b8;">${set.description || 'No description'}</small><br>
-    <small>By ${set.creator} • ${new Date(set.created).toLocaleDateString()}</small>
-  </div>
-`;
+      <div>
+        <strong>${set.name}</strong><br>
+        <small style="color:#94a3b8;">${set.description || 'No description'}</small><br>
+        <small>By ${set.creator} • ${new Date(set.created).toLocaleDateString()}</small>
+      </div>
+    `;
     card.onclick = () => openContributionModal(set);
     list.appendChild(card);
   });

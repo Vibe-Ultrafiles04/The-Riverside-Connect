@@ -335,7 +335,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWOzXGyr_N9_GJ2wntUq3IcdMjcsBsSHKiJ-bw0zQjhrbLB7lRi7J3eUXA0ZT7Uxhg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycLt12lG2zhmEU9EFJpTuTwn-jbegE_7MoCX55nvGYGGzk_DqRhkwSf1kqmq6cYgn4/exec';
 
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
@@ -812,77 +812,49 @@ function startTimer(seconds) {
 }
 
 async function submitSurveyResponses() {
-  if (Object.keys(surveyResponses).length === 0) {
-    console.warn("No responses to submit");
-    return;
-  }
+  if (Object.keys(surveyResponses).length === 0) return;
 
-  console.log(`Submitting ${Object.keys(surveyResponses).length} survey answers...`);
+  const payload = {
+    operation: "recordSurveyResponsesBulk",   // ← new operation name
+    gameId,
+    username,
+    responses: Object.entries(surveyResponses).map(([qIndexStr, choiceIndex]) => {
+      const qIndex = Number(qIndexStr);
+      const question = currentGame.questions[qIndex];
+      const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
+      
+      return {
+        questionId,
+        choiceIndex: Number(choiceIndex)
+      };
+    })
+  };
 
-  const failedQuestions = [];
+  try {
+    const res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-  for (const [qIdxStr, cIdx] of Object.entries(surveyResponses)) {
-    const qIndex = Number(qIdxStr);
-    const question = currentGame.questions[qIndex];
-    const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout per request
-
-      const res = await fetch(SCRIPT_URL, {
-        method: "POST",
-        signal: controller.signal,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          operation: "recordSurveyResponse",   // ← changed to singular to match function name
-          gameId,
-          username,
-          questionId,
-          choiceIndex: Number(cIdx)
-        })
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.status !== "success") {
+      if (data.message?.includes("already")) {
+        throw new Error("already_submitted");
       }
-
-      const data = await res.json();
-
-      if (data.status !== "success") {
-        if (data.message?.toLowerCase().includes("already submitted")) {
-          throw new Error("already_submitted");
-        }
-        throw new Error(data.message || "Submission rejected");
-      }
-
-      console.log(`Q${qIndex + 1} submitted OK`);
-
-    } catch (err) {
-      console.error(`Failed submitting Q${qIndex + 1}:`, err);
-
-      if (err.name === "AbortError") {
-        failedQuestions.push(qIndex + 1);
-        showToast(`Question ${qIndex + 1} timed out`, "error");
-      } else if (err.message === "already_submitted") {
-        showToast("You have already submitted this survey", "info");
-        hasAlreadySubmitted = true;
-        return; // stop submitting further
-      } else {
-        failedQuestions.push(qIndex + 1);
-        showToast(`Failed to submit Question ${qIndex + 1}`, "error");
-      }
+      throw new Error(data.message || "Submission failed");
     }
-  }
 
-  if (failedQuestions.length > 0) {
-    throw new Error(`Failed questions: ${failedQuestions.join(", ")}`);
-  }
+    console.log("Bulk submission successful");
+    return true;
 
-  console.log("All responses submitted successfully");
-  return true; // success flag
+  } catch (err) {
+    console.error("Bulk submit failed:", err);
+    showToast("Failed to submit survey – please try again", "error");
+    throw err;
+  }
 }
 function updateTimerDisplay(seconds) {
   const display = document.getElementById("timerDisplay");

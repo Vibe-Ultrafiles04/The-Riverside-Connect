@@ -119,13 +119,122 @@
 .card .actions i {
   font-size: 0.95rem;
 }
+
+/* ─── Modern toggle button (no visible checkbox) ──────────────────────── */
+.list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.list-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.toggle-label {
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle-track {
+  position: relative;
+  display: inline-block;
+  width: 54px;
+  height: 28px;
+  background: #4b5563;           /* off = gray */
+  border-radius: 999px;
+  transition: background 0.35s ease;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toggle-knob {
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#toggle-contrib:checked + .toggle-track {
+  background: #22c55e;           /* on = green */
+}
+
+#toggle-contrib:checked + .toggle-track .toggle-knob {
+  transform: translateX(26px);
+}
+
+/* Optional: tiny icons or text inside knob/track for clarity */
+.toggle-track::before {
+  content: "Hide";
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 10px;
+  font-weight: bold;
+  color: white;
+  opacity: 0.9;
+  transition: opacity 0.4s;
+}
+
+#toggle-contrib:checked + .toggle-track::before {
+  content: "Show";
+  right: auto;
+  left: 8px;
+}
+
+/* ─── Smooth show/hide animation for the list ──────────────────────────── */
+.contrib-container {
+  transition: all 0.38s ease;
+  transform-origin: top;
+}
+
+.contrib-container.hidden {
+  opacity: 0;
+  transform: translateY(-12px);
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+#roleActions .btn-primary {
+    font-size:          0.78rem;
+    letter-spacing:     -0.5px;            /* aggressive squeeze */
+    font-weight:        500;
+    padding:            6px 16px;
+    min-width:          210px;
+    line-height:        1.15;
+    white-space:        nowrap;
+    border-radius:      999px;
+    display:            inline-flex;
+    align-items:        center;
+    gap:                6px;
+    text-transform:     none;              /* remove uppercase if you had it */
+}
+
+/* Optional: allow slight wrapping only as last resort */
+@media (max-width: 480px) {
+    #roleActions .btn-primary {
+        font-size:      0.76rem;
+        padding:        6px 12px;
+        letter-spacing: -0.4px;
+        line-height:    1.18;
+    }
+}
   </style>
 </head>
 <body>
 
 <header>
     
-    <h1>My Profile</h1>
+   
      <a href="index.html" class="back-btn-top" title="Back to main page">
     <i class="fas fa-arrow-left"></i>
   </a>
@@ -143,14 +252,26 @@
 
   <div id="roleActions" class="section" style="display:none; text-align:center;">
     <button class="btn btn-primary" style="padding:14px 28px; font-size:1.1rem;" onclick="openCreateSetModal()">
-      <i class="fas fa-hand-holding-dollar"></i> Create New Contribution Set
+      <i class="fas fa-heart me-1 text-danger"></i> Create New Contribution Set
     </button>
   </div>
 
   <div class="section">
+  <div class="list-header">
     <h3>All Contribution Sets</h3>
-    <div id="contribList"></div>
+    
+    <label class="toggle-label" for="toggle-contrib">
+      <!-- Remove checked attribute so it starts OFF (hidden) -->
+      <input type="checkbox" id="toggle-contrib" hidden>
+      <span class="toggle-track">
+        <span class="toggle-knob"></span>
+      </span>
+    </label>
   </div>
+
+  <!-- Add class="hidden" here so it starts collapsed -->
+  <div id="contribList" class="contrib-container hidden"></div>
+</div>
 </main>
 
 <!-- Modal: View/Edit Contribution Set -->
@@ -540,95 +661,6 @@ async function sendCreateRequest(name, desc, imageData, imageName, btn) {
   }
 }
 
-async function openContributionModal(set) {
-  currentOpenSet = set;
-
-  const modal = document.getElementById('contribModal');
-  const title = document.getElementById('modalTitle');
-  const container = document.getElementById('tableContainer');
-
-  const canManage = userRole === "treasurer";
-
-  title.textContent = set.name + (canManage ? ' (Editable)' : ' (Read-only)');
-
-  const entriesRes = await fetch(`${scriptUrl}?operation=getContributionEntries&contributionId=${set.id}`);
-  const { entries } = await entriesRes.json();
-
-  // Store original values for cancel
-  window.originalEntries = {}; // global for this modal
-
-  let html = '<table id="entriesTable"><thead><tr>';
-  html += '<th>Name</th><th>Pledged</th><th>Contributed</th><th>Remaining</th><th>Notes</th>';
-  if (canManage) html += '<th style="width:160px">Actions</th>';
-  html += '</tr></thead><tbody id="entriesBody">';
-
-  let totalPledged = 0, totalContributed = 0;
-
-  entries.forEach(e => {
-    const pledged     = Number(e.pledged) || 0;
-    const contributed = Number(e.contributed) || 0;
-    const remaining   = pledged - contributed;
-
-    totalPledged     += pledged;
-    totalContributed += contributed;
-
-    // Save original for cancel
-    window.originalEntries[e.id] = {
-      participant: e.participant,
-      pledged,
-      contributed,
-      notes: e.notes || ''
-    };
-
-    html += `
-      <tr data-id="${e.id}" class="entry-row">
-        <td>${e.participant}</td>
-        <td>${pledged.toFixed(2)}</td>
-        <td>${contributed.toFixed(2)}</td>
-        <td style="color:${remaining > 0 ? '#ef4444' : '#22c55e'}">${remaining.toFixed(2)}</td>
-        <td>${e.notes || '—'}</td>`;
-
-    if (canManage) {
-      html += `<td><button class="btn btn-del" onclick="deleteEntry('${e.id}')">Delete</button></td>`;
-    }
-    html += '</tr>';
-  });
-
-  html += `
-    <tr class="total-row">
-      <td><strong>Totals</strong></td>
-      <td>${totalPledged.toFixed(2)}</td>
-      <td>${totalContributed.toFixed(2)}</td>
-      <td>${(totalPledged - totalContributed).toFixed(2)}</td>
-      ${canManage ? '<td></td>' : ''}
-    </tr>
-  </tbody></table>`;
-
-  if (canManage) {
-    html += `
-      <div style="margin: 24px 0; text-align: center; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-        <button class="btn btn-add" onclick="addNewBlankRow('${set.id}')">
-          <i class="fas fa-plus"></i> New Row
-        </button>
-        <button class="btn btn-save" id="bulkSaveBtn" style="display:none;" onclick="saveAllPendingEntries('${set.id}')">
-          <i class="fas fa-save"></i> Add Entries
-        </button>
-        <button class="btn btn-primary" id="editModeBtn" onclick="toggleEditMode()">
-          <i class="fas fa-edit"></i> Edit All
-        </button>
-        <button class="btn btn-save" id="bulkUpdateBtn" style="display:none;" onclick="saveAllEditedEntries('${set.id}')">
-          <i class="fas fa-save"></i> Save All Changes
-        </button>
-      </div>
-
-      <div id="pendingNotice" style="color:#f59e0b; text-align:center; font-size:0.9rem; display:none; margin-top:8px;">
-        You have unsaved rows — click "Add Entries" to save them
-      </div>`;
-  }
-
-  container.innerHTML = html;
-  modal.style.display = 'flex';
-}
 
 // ─── NEW ROW + BULK SAVE (unchanged from your last version) ──────────────────
 function addNewBlankRow(contribId) {
@@ -756,7 +788,6 @@ function deleteEntry(entryId) {
   );
 }
 
-// ─── Inside openContributionModal (replace the whole function) ───────────────
 async function openContributionModal(set) {
   currentOpenSet = set;
 
@@ -764,19 +795,24 @@ async function openContributionModal(set) {
   const title = document.getElementById('modalTitle');
   const container = document.getElementById('tableContainer');
 
-  const canManage = userRole === "treasurer";
+  // IMPORTANT: Only the creator of the SET gets edit permissions
+  const isSetCreator = currentUser === set.creator;
+  const isTreasurer = userRole === "treasurer";
 
-  title.textContent = set.name + (canManage ? ' (Editable)' : ' (Read-only)');
+  // Title shows edit status only if you're the set creator
+  title.textContent = set.name + (isSetCreator ? ' (Editable)' : ' (View only)');
 
   const entriesRes = await fetch(`${scriptUrl}?operation=getContributionEntries&contributionId=${set.id}`);
   const { entries } = await entriesRes.json();
 
-  // Store original values for cancel
-  window.originalEntries = {}; // global for this modal
+  window.originalEntries = {};
 
   let html = '<table id="entriesTable"><thead><tr>';
   html += '<th>Name</th><th>Pledged</th><th>Contributed</th><th>Remaining</th><th>Notes</th>';
-  if (canManage) html += '<th style="width:160px">Actions</th>';
+
+  // Actions column ONLY for the set creator
+  if (isSetCreator) html += '<th style="width:160px">Actions</th>';
+
   html += '</tr></thead><tbody id="entriesBody">';
 
   let totalPledged = 0, totalContributed = 0;
@@ -789,7 +825,6 @@ async function openContributionModal(set) {
     totalPledged     += pledged;
     totalContributed += contributed;
 
-    // Save original for cancel
     window.originalEntries[e.id] = {
       participant: e.participant,
       pledged,
@@ -805,9 +840,11 @@ async function openContributionModal(set) {
         <td style="color:${remaining > 0 ? '#ef4444' : '#22c55e'}">${remaining.toFixed(2)}</td>
         <td>${e.notes || '—'}</td>`;
 
-    if (canManage) {
+    // Individual Delete/Edit buttons ONLY visible to set creator
+    if (isSetCreator) {
       html += `<td><button class="btn btn-del" onclick="deleteEntry('${e.id}')">Delete</button></td>`;
     }
+
     html += '</tr>';
   });
 
@@ -817,11 +854,12 @@ async function openContributionModal(set) {
       <td>${totalPledged.toFixed(2)}</td>
       <td>${totalContributed.toFixed(2)}</td>
       <td>${(totalPledged - totalContributed).toFixed(2)}</td>
-      ${canManage ? '<td></td>' : ''}
+      ${isSetCreator ? '<td></td>' : ''}
     </tr>
   </tbody></table>`;
 
-  if (canManage) {
+  // Bulk controls (New Row, Edit All, Save All, etc.) ONLY for set creator
+  if (isSetCreator) {
     html += `
       <div style="margin: 24px 0; text-align: center; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
         <button class="btn btn-add" onclick="addNewBlankRow('${set.id}')">
@@ -846,7 +884,6 @@ async function openContributionModal(set) {
   container.innerHTML = html;
   modal.style.display = 'flex';
 }
-
 // ─── Toggle Edit Mode ────────────────────────────────────────────────────────
 function toggleEditMode() {
   const editBtn = document.getElementById('editModeBtn');
@@ -989,6 +1026,42 @@ async function saveAllEditedEntries(contribId) {
     btn.textContent = 'Save All Changes';
   }
 }
+
+// Smooth toggle for contribution sets list
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('toggle-contrib');
+  const container = document.getElementById('contribList');
+
+  if (!toggle || !container) return;
+
+  // Make sure it starts hidden (just in case CSS class was missed)
+  if (!toggle.checked) {
+    container.classList.add('hidden');
+  }
+
+  toggle.addEventListener('change', () => {
+    if (toggle.checked) {
+      // Show
+      container.classList.remove('hidden');
+      // Trigger reflow
+      container.offsetHeight;
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(-12px)';
+      // Animate in
+      requestAnimationFrame(() => {
+        container.style.opacity = '1';
+        container.style.transform = 'translateY(0)';
+      });
+    } else {
+      // Hide
+      container.style.opacity = '0';
+      container.style.transform = 'translateY(-12px)';
+      setTimeout(() => {
+        container.classList.add('hidden');
+      }, 380);
+    }
+  });
+});
 // ─── LOAD PAGE ────────────────────────────────────────────────────────────────
 loadUserPage();
 </script>

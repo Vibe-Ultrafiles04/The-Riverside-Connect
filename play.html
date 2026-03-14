@@ -707,28 +707,30 @@ async function finishGame() {
   nextBtn.disabled = true;
   nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
-  // Prevent infinite loading — timeout after 12 seconds
-  const TIMEOUT_MS = 12000;
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("timeout")), TIMEOUT_MS)
-  );
-
   try {
     if (currentGame.mode === "survey") {
-      await Promise.race([submitSurveyResponses(), timeoutPromise]);
+      if (hasAlreadySubmitted) {
+        throw new Error("already_submitted");
+      }
 
-      showToast("Responses submitted successfully!", "success");
+      await submitSurveyResponses();
+
+      showToast("Thank you! Your responses have been recorded.", "success");
 
       document.getElementById("scoreText").innerHTML = `
         <div style="color:#10b981; font-size:1.4rem; margin:16px 0;">
           <i class="fas fa-check-circle"></i> Thank you!
         </div>
         Your responses have been recorded.<br>
-        <small style="color:#94a3b8;">You can now view the aggregated results.</small>
+        <small style="color:#94a3b8;">View the aggregated results below.</small>
       `;
-    } else {
-      await Promise.race([submitScore(), timeoutPromise]);
 
+      // Auto-show results after submission
+      setTimeout(() => showSurveyResults(), 1200);
+
+    } else {
+      // Quiz mode
+      await submitScore();
       document.getElementById("scoreText").innerHTML = 
         `Game completed!<br>Your score: <b>${score} / ${currentGame.questions.length}</b>`;
     }
@@ -745,7 +747,7 @@ async function finishGame() {
 
     if (err.message === "timeout") {
       toastMsg = "Submission timed out. Check your connection.";
-    } else if (err.message.includes("already_submitted")) {
+    } else if (err.message === "already_submitted") {
       toastMsg = "You have already submitted this survey.";
       finalMsg = `
         <div style="color:#10b981; font-size:1.3rem; margin:16px 0;">
@@ -754,7 +756,7 @@ async function finishGame() {
         You completed this survey earlier.<br>
         Feel free to view the results.
       `;
-      hasAlreadySubmitted = true; // Remember for next time
+      hasAlreadySubmitted = true;
     }
 
     showToast(toastMsg, err.message.includes("already") ? "info" : "error");
@@ -817,16 +819,23 @@ async function submitSurveyResponses() {
 
   console.log(`Submitting ${Object.keys(surveyResponses).length} survey answers...`);
 
+  const failedQuestions = [];
+
   for (const [qIdxStr, cIdx] of Object.entries(surveyResponses)) {
     const qIndex = Number(qIdxStr);
     const question = currentGame.questions[qIndex];
     const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout per request
+
       const res = await fetch(SCRIPT_URL, {
         method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          operation: "recordSurveyResponses",
+          operation: "recordSurveyResponse",   // ← changed to singular to match function name
           gameId,
           username,
           questionId,
@@ -834,31 +843,47 @@ async function submitSurveyResponses() {
         })
       });
 
+      clearTimeout(timeoutId);
+
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status} – server error`);
+        throw new Error(`HTTP ${res.status}`);
       }
 
       const data = await res.json();
 
       if (data.status !== "success") {
-        // Very important: check if backend says "already submitted"
-        if (data.message?.toLowerCase().includes("already submitted") ||
-            data.message?.toLowerCase().includes("duplicate")) {
+        if (data.message?.toLowerCase().includes("already submitted")) {
           throw new Error("already_submitted");
         }
-        throw new Error(data.message || "Backend rejected submission");
+        throw new Error(data.message || "Submission rejected");
       }
 
       console.log(`Q${qIndex + 1} submitted OK`);
+
     } catch (err) {
-      console.error(`Failed Q${qIndex + 1}:`, err);
-      throw err; // Stop on first real error
+      console.error(`Failed submitting Q${qIndex + 1}:`, err);
+
+      if (err.name === "AbortError") {
+        failedQuestions.push(qIndex + 1);
+        showToast(`Question ${qIndex + 1} timed out`, "error");
+      } else if (err.message === "already_submitted") {
+        showToast("You have already submitted this survey", "info");
+        hasAlreadySubmitted = true;
+        return; // stop submitting further
+      } else {
+        failedQuestions.push(qIndex + 1);
+        showToast(`Failed to submit Question ${qIndex + 1}`, "error");
+      }
     }
   }
 
-  console.log("All responses submitted successfully");
-}
+  if (failedQuestions.length > 0) {
+    throw new Error(`Failed questions: ${failedQuestions.join(", ")}`);
+  }
 
+  console.log("All responses submitted successfully");
+  return true; // success flag
+}
 function updateTimerDisplay(seconds) {
   const display = document.getElementById("timerDisplay");
   const mins = Math.floor(seconds / 60);

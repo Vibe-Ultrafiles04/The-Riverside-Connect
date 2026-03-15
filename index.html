@@ -487,22 +487,22 @@ async function loadDashboard() {
             `;
           }).join('');
 
-    } else {
-      const statusText = data.userStatus?.toLowerCase() === 'pending' ? 'pending approval' : 'not active';
+   } else {
+  const statusText = data.userStatus?.toLowerCase() === 'pending' 
+    ? 'pending approval' 
+    : 'not active';
 
-      welcomeEl.innerHTML = `
-        <h2>Welcome, ${userName}</h2>
-        <p>Your account is currently <span class="status-pending">${statusText}</span></p>
-      `;
+  welcomeEl.innerHTML = `
+    <h2>Welcome, ${userName}</h2>
+    <p>Your account is currently <span class="status-pending">${statusText}</span>.</p>
+    <p style="margin-top: 1.2rem; color: #94a3b8; font-size: 1.05rem;">
+      Full access (Home, Announcements, Channels, Q&A) will be available once approved.
+    </p>
+  `;
 
-      btnContainer.innerHTML = `
-        <div class="button-grid">
-          <a href="Q&A.html" class="big-btn"><i class="fas fa-question-circle"></i> Q & A</a>
-          <a href="channel.html" class="big-btn"><i class="fas fa-users"></i> Channels</a>
-        </div>
-      `;
-    }
-
+  // ─── Most important line ───
+  btnContainer.innerHTML = '';   // ← removes all buttons / content
+}
   } catch (err) {
     console.error("Dashboard load failed:", err);
     document.getElementById('welcome-message').innerHTML = `

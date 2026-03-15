@@ -335,7 +335,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycLt12lG2zhmEU9EFJpTuTwn-jbegE_7MoCX55nvGYGGzk_DqRhkwSf1kqmq6cYgn4/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaUlYkUCWykKqmOauBR8dMi8IfpwJoF8ioKK5wMIiMDPkJdRKJ_xuycnEnigs2jVoa/exec';
 
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
@@ -375,6 +375,29 @@ document.getElementById("showLeaderboardBtn").addEventListener("click", () => {
     }
   }
 });
+
+function showToast(message, type = "info") {
+  const toast = document.createElement("div");
+  toast.textContent = message;
+  toast.style.cssText = `
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    padding: 12px 24px; border-radius: 8px; color: white; font-weight: 500;
+    z-index: 9999; min-width: 240px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  `;
+
+  if (type === "success") toast.style.background = "#10b981";
+  else if (type === "error")   toast.style.background = "#ef4444";
+  else if (type === "info")    toast.style.background = "#3b82f6";
+  else                         toast.style.background = "#6b7280";
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transition = "opacity 0.6s";
+    setTimeout(() => toast.remove(), 600);
+  }, 2800);
+}
 
 function getLh3Link(url) {
   if (!url) return '';
@@ -707,30 +730,28 @@ async function finishGame() {
   nextBtn.disabled = true;
   nextBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
 
+  // Prevent infinite loading — timeout after 12 seconds
+  const TIMEOUT_MS = 12000;
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("timeout")), TIMEOUT_MS)
+  );
+
   try {
     if (currentGame.mode === "survey") {
-      if (hasAlreadySubmitted) {
-        throw new Error("already_submitted");
-      }
+      await Promise.race([submitSurveyResponses(), timeoutPromise]);
 
-      await submitSurveyResponses();
-
-      showToast("Thank you! Your responses have been recorded.", "success");
+      showToast("Responses submitted successfully!", "success");
 
       document.getElementById("scoreText").innerHTML = `
         <div style="color:#10b981; font-size:1.4rem; margin:16px 0;">
           <i class="fas fa-check-circle"></i> Thank you!
         </div>
         Your responses have been recorded.<br>
-        <small style="color:#94a3b8;">View the aggregated results below.</small>
+        <small style="color:#94a3b8;">You can now view the aggregated results.</small>
       `;
-
-      // Auto-show results after submission
-      setTimeout(() => showSurveyResults(), 1200);
-
     } else {
-      // Quiz mode
-      await submitScore();
+      await Promise.race([submitScore(), timeoutPromise]);
+
       document.getElementById("scoreText").innerHTML = 
         `Game completed!<br>Your score: <b>${score} / ${currentGame.questions.length}</b>`;
     }
@@ -747,7 +768,7 @@ async function finishGame() {
 
     if (err.message === "timeout") {
       toastMsg = "Submission timed out. Check your connection.";
-    } else if (err.message === "already_submitted") {
+    } else if (err.message.includes("already_submitted")) {
       toastMsg = "You have already submitted this survey.";
       finalMsg = `
         <div style="color:#10b981; font-size:1.3rem; margin:16px 0;">
@@ -756,7 +777,7 @@ async function finishGame() {
         You completed this survey earlier.<br>
         Feel free to view the results.
       `;
-      hasAlreadySubmitted = true;
+      hasAlreadySubmitted = true; // Remember for next time
     }
 
     showToast(toastMsg, err.message.includes("already") ? "info" : "error");
@@ -812,49 +833,64 @@ function startTimer(seconds) {
 }
 
 async function submitSurveyResponses() {
-  if (Object.keys(surveyResponses).length === 0) return;
+  if (Object.keys(surveyResponses).length === 0) {
+    console.warn("No responses to submit");
+    return;
+  }
 
-  const payload = {
-    operation: "recordSurveyResponsesBulk",   // ← new operation name
-    gameId,
-    username,
-    responses: Object.entries(surveyResponses).map(([qIndexStr, choiceIndex]) => {
-      const qIndex = Number(qIndexStr);
-      const question = currentGame.questions[qIndex];
-      const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
-      
-      return {
-        questionId,
-        choiceIndex: Number(choiceIndex)
-      };
-    })
-  };
+  console.log(`Submitting ${Object.keys(surveyResponses).length} survey answers...`);
 
-  try {
-    const res = await fetch(SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+  for (const [qIdxStr, cIdx] of Object.entries(surveyResponses)) {
+    const qIndex = Number(qIdxStr);
+    const question = currentGame.questions[qIndex];
+    const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
 
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const data = await res.json();
-    if (data.status !== "success") {
-      if (data.message?.includes("already")) {
-        throw new Error("already_submitted");
-      }
-      throw new Error(data.message || "Submission failed");
+    // ── NEW: Get the actual text of the chosen answer ───────────────────────
+    let choiceText = "";
+    const selectedChoice = question.choices[Number(cIdx)];
+    if (selectedChoice && selectedChoice.text) {
+      choiceText = selectedChoice.text.trim();
+    } else {
+      console.warn(`No text found for choice ${cIdx} on question ${qIndex + 1}`);
+      // Optional: fallback or skip — but better to send empty string
     }
 
-    console.log("Bulk submission successful");
-    return true;
+    try {
+      const res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          operation: "recordSurveyResponses",
+          gameId,
+          username,
+          questionId,
+          choiceIndex: Number(cIdx),
+          choiceText: choiceText   // ← ADD THIS LINE
+        })
+      });
 
-  } catch (err) {
-    console.error("Bulk submit failed:", err);
-    showToast("Failed to submit survey – please try again", "error");
-    throw err;
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status} – server error`);
+      }
+
+      const data = await res.json();
+
+      if (data.status !== "success") {
+        if (data.message?.toLowerCase().includes("already submitted") ||
+            data.message?.toLowerCase().includes("duplicate") ||
+            data.message?.toLowerCase().includes("already answered")) {
+          throw new Error("already_submitted");
+        }
+        throw new Error(data.message || "Backend rejected submission");
+      }
+
+      console.log(`Q${qIndex + 1} submitted OK`);
+    } catch (err) {
+      console.error(`Failed Q${qIndex + 1}:`, err);
+      throw err; // Stop on first real error
+    }
   }
+
+  console.log("All responses submitted successfully");
 }
 function updateTimerDisplay(seconds) {
   const display = document.getElementById("timerDisplay");
@@ -1080,4 +1116,5 @@ function showSurveyResults() {
 }
 </script>
 </body>
+
 </html>

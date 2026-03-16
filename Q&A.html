@@ -1030,15 +1030,19 @@ html, body {
     <h2 class="channel-title" id="channelTitle"></h2>
     <div class="channel-meta" id="channelMeta"></div>
   </header>
-  <div class="feed-wrapper">
-    <div class="feed" id="feed">
-      <div class="empty" id="emptyState">
-        <i class="fas fa-question-circle" style="font-size:5rem; opacity:0.4; margin-bottom:24px;"></i><br>
-        No games yet<br>
-        <small>Click the + button to create one</small>
+ <div class="feed-wrapper">
+  <div class="feed" id="feed">
+    <div class="empty initial-state" id="emptyState">
+      <i class="fas fa-dice" style="font-size:5.5rem; opacity:0.45; margin-bottom:28px; color:#60a5fa;"></i><br>
+      <div style="font-size:1.3rem; color:#cbd5e1; margin:12px 0;">
+        Preparing games list...
       </div>
+      <small style="color:#94a3b8; font-size:1rem; opacity:0.85;">
+        Loading available games — one moment please
+      </small>
     </div>
   </div>
+</div>
 </main>
 <!-- Floating + Button -->
 <div class="fab" id="fabGame" onclick="openGamePanel()" style="display:none;">

@@ -3,6 +3,53 @@
 
 const CACHE_NAME = 'Riverside-Connect-v5';   // ← bumped version for announcements + view counts
 
+// sw.js — Custom service worker for Riverside Connect (handles push + optional caching)
+
+
+// ────────────────────────────────────────────────
+// FIREBASE MESSAGING — REQUIRED for background push notifications
+// This block MUST be at the very top
+// ────────────────────────────────────────────────
+importScripts('https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCuB56TTi5COJnuDm6fPigsOsJTwvQwPPNo",
+  authDomain: "riverside-connect-a8458.firebaseapp.com",
+  projectId: "riverside-connect-a8458",
+  storageBucket: "riverside-connect-a8458.firebasestorage.app",
+  messagingSenderId: "9388830806378",
+  appId: "1:9388830806378:web:254ed56cba3dc02290f913"
+});
+
+const messaging = firebase.messaging();
+
+// Handle background push notifications (when app is closed or in background)
+messaging.onBackgroundMessage((payload) => {
+  console.log('[sw.js] Received background message: ', payload);
+
+  // Customize the notification (you can pull from payload.data too)
+  const notificationTitle = payload.notification?.title || 'New post in channel';
+  const notificationOptions = {
+    body: payload.notification?.body || 'Check the latest update',
+    icon: '/maskable_icon_x192.png',     // your app icon (must exist in root)
+    badge: '/maskable_icon_x192.png',
+    data: payload.data || {}             // pass channelId etc. for click handling later
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Optional: your own SW lifecycle events (good for debugging)
+self.addEventListener('install', event => {
+  console.log('[sw.js] Installed');
+  // You can add caching logic here later if needed
+});
+
+self.addEventListener('activate', event => {
+  console.log('[sw.js] Activated');
+});
+
 const STATIC_ASSETS = [
   './',
   './login.html',

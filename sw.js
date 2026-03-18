@@ -31,7 +31,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwsbPqeRiqW2it0f1UpTNMRba_YQ5KO7wo2syRn_u7CvxM5oEyct6n9zq0lntfbRTm4/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbztUadUxa8fM-TdldddAgHFR9Fo73Rr9pxZekyzRwcKnkUfTexrPki5LOYxmAb3YLE/exec';
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -220,3 +220,40 @@ async function syncPendingMessages() {
   console.log('[SW] Background sync triggered — attempting to send pending messages/announcements');
   // → Add IndexedDB queue + retry logic here in future if needed
 }
+
+// ────────────────────────────────────────────────
+// FCM PUSH NOTIFICATIONS
+// ────────────────────────────────────────────────
+self.addEventListener('push', event => {
+  let payload = {};
+  if (event.data) payload = event.data.json();
+
+  const notif = payload.notification || {};
+  const data = payload.data || {};
+
+  const title = notif.title || 'Riverside Connect';
+  const options = {
+    body: notif.body || 'New channel post',
+    icon: notif.icon || './maskable_icon_x192.png',
+    data: data   // contains url & channelId
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(title, options)
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification.data.url || './channel.html';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(clientList => {
+        if (clientList.length > 0) {
+          return clientList[0].focus().then(c => c.navigate(url));
+        }
+        return clients.openWindow(url);
+      })
+  );
+});

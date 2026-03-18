@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZ4R0jDdQWWHfqi2vWQAcA1zRKmuI5w5916_a0KBSj3n8I0bZFMoKVFCK8bomIPUql/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztUadUxa8fM-TdldddAgHFR9Fo73Rr9pxZekyzRwcKnkUfTexrPki5LOYxmAb3YLE/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3853,5 +3853,8 @@ document.addEventListener('click', function(e) {
     .catch(err => console.error('❌ SW registration failed:', err));
 }
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+<script src="fcm.js"></script>
 </body>
 </html>

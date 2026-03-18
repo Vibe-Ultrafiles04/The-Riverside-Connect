@@ -373,7 +373,7 @@
 // ────────────────────────────────────────────────
 //  BASIC SETUP
 // ────────────────────────────────────────────────
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbzvBB7FAG2DXmWJAimPlAGk0a6fO08mdSjpgmyGrV8gM_MNqe_G0l037TyktbVqnrcG/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbztUadUxa8fM-TdldddAgHFR9Fo73Rr9pxZekyzRwcKnkUfTexrPki5LOYxmAb3YLE/exec';
 const userName   = localStorage.getItem('userName');
 
 if (!userName) {
@@ -625,6 +625,8 @@ loadDashboard().then(() => {
   }
 });
 </script>
-
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+<script src="fcm.js"></script>
 </body>
 </html>

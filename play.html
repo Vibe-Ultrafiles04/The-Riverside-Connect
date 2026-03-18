@@ -335,7 +335,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaUlYkUCWykKqmOauBR8dMi8IfpwJoF8ioKK5wMIiMDPkJdRKJ_xuycnEnigs2jVoa/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztUadUxa8fM-TdldddAgHFR9Fo73Rr9pxZekyzRwcKnkUfTexrPki5LOYxmAb3YLE/exec';
 
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
@@ -1115,6 +1115,10 @@ function showSurveyResults() {
   });
 }
 </script>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+<script src="fcm.js"></script>
 </body>
 
 </html>

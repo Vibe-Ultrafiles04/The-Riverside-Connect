@@ -1113,7 +1113,7 @@ html, body {
 </div>
 <div id="toast-container"></div>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycLt12lG2zhmEU9EFJpTuTwn-jbegE_7MoCX55nvGYGGzk_DqRhkwSf1kqmq6cYgn4/exec'; 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztUadUxa8fM-TdldddAgHFR9Fo73Rr9pxZekyzRwcKnkUfTexrPki5LOYxmAb3YLE/exec'; 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentQnAChannelId = null;
 let allQnAChannels = [];
@@ -2048,5 +2048,8 @@ document.getElementById('closeChannels')?.addEventListener('click', () => {
       .catch(err => console.error('❌ SW registration failed:', err));
   }
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+<script src="fcm.js"></script>
 </body>
 </html>

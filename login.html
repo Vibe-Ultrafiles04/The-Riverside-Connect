@@ -380,7 +380,7 @@
 
   <script>
     // Your existing JavaScript remains 100% unchanged and works perfectly
-    const scriptUrl = 'https://script.google.com/macros/s/AKfycbxsUojWQz4SE_84AWazYtVQMAa5oFy5MdZnC2kursSNhVg6GJVmCY9wrlEyP1ZxrMWV/exec';
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbztUadUxa8fM-TdldddAgHFR9Fo73Rr9pxZekyzRwcKnkUfTexrPki5LOYxmAb3YLE/exec';
 function showToast(message) {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -459,6 +459,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
     localStorage.setItem('userIdCode', result.identityCode);
 showToast(`Account created! Your recovery code is: ${result.identityCode}. Save this securely.`);
+registerPushNotifications(name);   // ← use 'name' (from form input)
     
     window.location.href = 'index.html';
   }, 800); // 0.8 seconds
@@ -512,6 +513,7 @@ document.getElementById('recoverBtn').addEventListener('click', async () => {
       setTimeout(() => window.location.href = 'index.html', 1000);
     } else {
       showToast(result.message || 'Recovery failed');
+      registerPushNotifications(result.name);   // ← use result.name from server
       recoverBtn.disabled = false;
       recoverBtn.innerHTML = 'Recover Account';
     }
@@ -533,5 +535,8 @@ document.getElementById('recoverBtn').addEventListener('click', async () => {
     .catch(err => console.error('❌ SW registration failed:', err));
 }
 </script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+<script src="fcm.js"></script>
 </body>
 </html>

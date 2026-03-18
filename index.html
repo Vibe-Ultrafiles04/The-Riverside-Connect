@@ -291,12 +291,41 @@
 .big-btn {
   position: relative;              /* ← important! makes badge position relative to button */
 }
+
+#notifications-knob:hover {
+  transform: scale(1.15);
+  background: rgba(96,165,250,0.15);
+}
+
+#notifications-knob.granted i {
+  color: #34d399; /* green when allowed */
+}
+
+#notifications-knob.denied {
+  color: #ef4444; /* red when blocked */
+  cursor: not-allowed;
+}
+
+#notifications-knob.denied:hover {
+  transform: none;
+}
+
+#notif-status-dot.granted {
+  background: #34d399;
+  display: block;
+}
+
+#notif-status-dot.default {
+  background: #f59e0b;
+  display: block;
+}
   </style>
 </head>
 <body>
 
 <header>
   <div class="header-content">
+    
     <h1>Riverside Connect</h1>
    <div>
     <div style="display:flex; align-items:center; gap:16px;">
@@ -334,7 +363,29 @@
     "
     onerror="this.src='https://via.placeholder.com/44?text=@'"
   >
+
+  <!-- Notifications Knob Button -->
+<button id="notifications-knob" 
+        title="Enable notifications for new posts"
+        style="
+          background: none;
+          border: none;
+          color: #60a5fa;
+          font-size: 1.4rem;
+          cursor: pointer;
+          padding: 8px;
+          border-radius: 50%;
+          transition: all 0.2s;
+          position: relative;
+          display: none; /* hidden until user is approved/logged in */
+        ">
+  <i id="bell-icon" class="far fa-bell"></i>
+  <!-- Small status dot -->
+  <span id="notif-status-dot" 
+        style="position:absolute; bottom:4px; right:4px; width:8px; height:8px; border-radius:50%; background:#ef4444; display:none;"></span>
+</button>
 </div>
+
   </div>
 </header>
 
@@ -373,7 +424,7 @@
 // ────────────────────────────────────────────────
 //  BASIC SETUP
 // ────────────────────────────────────────────────
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbztUadUxa8fM-TdldddAgHFR9Fo73Rr9pxZekyzRwcKnkUfTexrPki5LOYxmAb3YLE/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbynSMvzEopWq4tZvDWFba4Olv7Hse_3YBdFkExAw_g_GaJWEhVB2hJnSh6mnTt33Ge5/exec';
 const userName   = localStorage.getItem('userName');
 
 if (!userName) {
@@ -623,6 +674,97 @@ loadDashboard().then(() => {
     updateAnnBadge();                    // show right away
     setInterval(updateAnnBadge, 20000);  // refresh every 20 seconds
   }
+});
+
+// ────────────────────────────────────────────────
+//  NOTIFICATIONS KNOB – Enable / Disable with one click
+// ────────────────────────────────────────────────
+const notifKnob = document.getElementById('notifications-knob');
+const bellIcon = document.getElementById('bell-icon');
+const statusDot = document.getElementById('notif-status-dot');
+
+function updateNotifButton() {
+  if (!userName || !notifKnob) {
+    if (notifKnob) notifKnob.style.display = 'none';
+    return;
+  }
+
+  notifKnob.style.display = 'block'; // show for logged-in users
+
+  const perm = Notification.permission;
+
+  if (perm === 'granted') {
+    bellIcon.className = 'fas fa-bell';           // solid bell = enabled
+    notifKnob.classList.add('granted');
+    notifKnob.classList.remove('denied');
+    statusDot.className = 'granted';
+    statusDot.style.display = 'block';
+    notifKnob.title = 'Notifications enabled – click to disable';
+  } else if (perm === 'denied') {
+    bellIcon.className = 'fas fa-bell-slash';     // slashed = blocked
+    notifKnob.classList.add('denied');
+    notifKnob.classList.remove('granted');
+    statusDot.style.display = 'none';
+    notifKnob.title = 'Notifications blocked – check browser settings to re-enable';
+  } else {
+    // default (not asked yet)
+    bellIcon.className = 'far fa-bell';           // hollow = not decided
+    notifKnob.classList.remove('granted', 'denied');
+    statusDot.className = 'default';
+    statusDot.style.display = 'block';
+    notifKnob.title = 'Enable notifications for new posts';
+  }
+}
+
+// Single click handler – smart toggle
+notifKnob.addEventListener('click', async () => {
+  const perm = Notification.permission;
+
+  if (perm === 'default') {
+    // First time → request permission
+    try {
+      const permission = await Notification.requestPermission();
+      updateNotifButton();
+
+      if (permission === 'granted') {
+        registerPushNotifications(userName);
+        showToast('Notifications enabled! You’ll get alerts for new posts.');
+      } else if (permission === 'denied') {
+        showToast('Notifications blocked. You can enable them later in browser settings.');
+      }
+    } catch (err) {
+      console.error('Notification permission error:', err);
+      showToast('Could not enable notifications right now.');
+    }
+  } 
+  else if (perm === 'granted') {
+    // Already enabled → ask to disable
+    if (confirm('Disable notifications? You won’t receive alerts for new posts.')) {
+      // Browsers don’t allow revoking via JS – guide user to settings
+      showToast('To disable notifications:\n1. Click the lock icon next to the URL\n2. Find "Notifications"\n3. Set to "Block"');
+      // Optional: open settings page (Chrome/Edge only)
+      if (confirm('Open browser settings now?')) {
+        window.open('chrome://settings/content/notifications', '_blank');
+      }
+    }
+  } 
+  else if (perm === 'denied') {
+    // Blocked → guide to re-enable
+    showToast('Notifications are blocked.\nTo re-enable:\n1. Click the lock icon next to the URL\n2. Find "Notifications"\n3. Allow this site');
+    if (confirm('Open browser settings now?')) {
+      window.open('chrome://settings/content/notifications', '_blank');
+    }
+  }
+});
+
+// Run on page load + after dashboard
+loadDashboard().then(() => {
+  updateNotifButton();
+
+  // Re-check when tab becomes visible (user might have changed settings)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) updateNotifButton();
+  });
 });
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>

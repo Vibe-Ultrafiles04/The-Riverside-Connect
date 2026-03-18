@@ -424,7 +424,7 @@
 // ────────────────────────────────────────────────
 //  BASIC SETUP
 // ────────────────────────────────────────────────
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbynSMvzEopWq4tZvDWFba4Olv7Hse_3YBdFkExAw_g_GaJWEhVB2hJnSh6mnTt33Ge5/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbzWJI6JMJHjlNbAwAVewiHvT4vMgXu6FYjaEXa_zL3o_TrtPHLlU-Ix18Fo3CGiHrwX/exec';
 const userName   = localStorage.getItem('userName');
 
 if (!userName) {
@@ -677,98 +677,168 @@ loadDashboard().then(() => {
 });
 
 // ────────────────────────────────────────────────
-//  NOTIFICATIONS KNOB – Enable / Disable with one click
+//  NOTIFICATIONS KNOB – Real Enable/Disable Toggle
 // ────────────────────────────────────────────────
 const notifKnob = document.getElementById('notifications-knob');
 const bellIcon = document.getElementById('bell-icon');
 const statusDot = document.getElementById('notif-status-dot');
 
+let isTokenSaved = false; // We'll check this from backend
+
+// ── Update button look & title based on state ─────────────────────────────
 function updateNotifButton() {
   if (!userName || !notifKnob) {
     if (notifKnob) notifKnob.style.display = 'none';
     return;
   }
 
-  notifKnob.style.display = 'block'; // show for logged-in users
+  notifKnob.style.display = 'block';
 
   const perm = Notification.permission;
 
-  if (perm === 'granted') {
-    bellIcon.className = 'fas fa-bell';           // solid bell = enabled
+  if (isTokenSaved) {
+    // Token exists in backend → treat as ENABLED
+    bellIcon.className = 'fas fa-bell';
     notifKnob.classList.add('granted');
     notifKnob.classList.remove('denied');
     statusDot.className = 'granted';
     statusDot.style.display = 'block';
     notifKnob.title = 'Notifications enabled – click to disable';
-  } else if (perm === 'denied') {
-    bellIcon.className = 'fas fa-bell-slash';     // slashed = blocked
-    notifKnob.classList.add('denied');
-    notifKnob.classList.remove('granted');
-    statusDot.style.display = 'none';
-    notifKnob.title = 'Notifications blocked – check browser settings to re-enable';
   } else {
-    // default (not asked yet)
-    bellIcon.className = 'far fa-bell';           // hollow = not decided
-    notifKnob.classList.remove('granted', 'denied');
-    statusDot.className = 'default';
-    statusDot.style.display = 'block';
-    notifKnob.title = 'Enable notifications for new posts';
+    // No token in backend → treat as DISABLED
+    if (perm === 'denied') {
+      bellIcon.className = 'fas fa-bell-slash';
+      notifKnob.classList.add('denied');
+      notifKnob.classList.remove('granted');
+      statusDot.style.display = 'none';
+      notifKnob.title = 'Notifications blocked – check browser settings';
+    } else {
+      bellIcon.className = 'far fa-bell';
+      notifKnob.classList.remove('granted', 'denied');
+      statusDot.className = 'default';
+      statusDot.style.display = 'block';
+      notifKnob.title = 'Enable notifications for new posts';
+    }
   }
 }
 
-// Single click handler – smart toggle
-notifKnob.addEventListener('click', async () => {
-  const perm = Notification.permission;
+// ── Check real token status from backend on load ───────────────────────────
+async function checkTokenStatus() {
+  try {
+    const res = await fetch(`${scriptUrl}?operation=getUserFCMToken&name=${encodeURIComponent(userName)}`);
+    const data = await res.json();
+    isTokenSaved = !!(data.token && data.token.trim() !== '');
+    updateNotifButton();
+  } catch (err) {
+    console.warn("Could not check FCM token status", err);
+    isTokenSaved = false;
+    updateNotifButton();
+  }
+}
 
-  if (perm === 'default') {
-    // First time → request permission
-    try {
-      const permission = await Notification.requestPermission();
+// ── Enable: request permission + save token ────────────────────────────────
+async function enableNotifications() {
+  try {
+    const permission = await Notification.requestPermission();
+    updateNotifButton();
+
+    if (permission === 'granted') {
+      registerPushNotifications(userName);
+      isTokenSaved = true;
       updateNotifButton();
-
-      if (permission === 'granted') {
-        registerPushNotifications(userName);
-        showToast('Notifications enabled! You’ll get alerts for new posts.');
-      } else if (permission === 'denied') {
-        showToast('Notifications blocked. You can enable them later in browser settings.');
-      }
-    } catch (err) {
-      console.error('Notification permission error:', err);
-      showToast('Could not enable notifications right now.');
+      showToast('Notifications enabled! You’ll get alerts for new posts.');
+    } else if (permission === 'denied') {
+      showToast('Notifications blocked. Enable them in browser settings later.');
     }
-  } 
-  else if (perm === 'granted') {
-    // Already enabled → ask to disable
+  } catch (err) {
+    console.error('Enable error:', err);
+    showToast('Could not enable notifications.');
+  }
+}
+
+// ── Disable: clear token from backend ──────────────────────────────────────
+async function disableNotifications() {
+  try {
+    const response = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        operation: 'registerFCMToken',
+        name: userName,
+        token: ''  // empty = clear
+      })
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      isTokenSaved = false;
+      updateNotifButton();
+      showToast('Notifications disabled. No more alerts.');
+    } else {
+      showToast('Failed to disable on server.');
+    }
+  } catch (err) {
+    console.error('Disable error:', err);
+    showToast('Network error while disabling.');
+  }
+}
+
+// ── Click handler ──────────────────────────────────────────────────────────
+notifKnob.addEventListener('click', async () => {
+  if (isTokenSaved) {
+    // Currently enabled → disable
     if (confirm('Disable notifications? You won’t receive alerts for new posts.')) {
-      // Browsers don’t allow revoking via JS – guide user to settings
-      showToast('To disable notifications:\n1. Click the lock icon next to the URL\n2. Find "Notifications"\n3. Set to "Block"');
-      // Optional: open settings page (Chrome/Edge only)
-      if (confirm('Open browser settings now?')) {
+      await disableNotifications();
+    }
+  } else {
+    // Currently disabled → enable
+    if (Notification.permission === 'denied') {
+      showToast('Notifications are blocked by browser.\nTo re-allow:\n1. Click lock icon → Notifications → Allow');
+      if (confirm('Open settings now?')) {
         window.open('chrome://settings/content/notifications', '_blank');
       }
-    }
-  } 
-  else if (perm === 'denied') {
-    // Blocked → guide to re-enable
-    showToast('Notifications are blocked.\nTo re-enable:\n1. Click the lock icon next to the URL\n2. Find "Notifications"\n3. Allow this site');
-    if (confirm('Open browser settings now?')) {
-      window.open('chrome://settings/content/notifications', '_blank');
+    } else {
+      await enableNotifications();
     }
   }
 });
 
-// Run on page load + after dashboard
-loadDashboard().then(() => {
-  updateNotifButton();
-
-  // Re-check when tab becomes visible (user might have changed settings)
+// ── Initialize ─────────────────────────────────────────────────────────────
+loadDashboard().then(async () => {
+  await checkTokenStatus(); // Check real backend state first
+  // Re-check when tab becomes visible
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) updateNotifButton();
+    if (!document.hidden) checkTokenStatus();
   });
 });
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
-<script src="fcm.js"></script>
+<script type="module">
+  import { registerPushNotifications } from './fcm.js';
+
+  window.registerPushNotifications = registerPushNotifications;
+
+  // ── Auto-register on every page load (handles token refresh) ──
+  async function tryAutoRegister() {
+    if (!userName) return;
+    
+    console.log("[Auto] Checking notification permission...");
+    if (Notification.permission === "granted") {
+      console.log("[Auto] Permission already granted → registering token");
+      await registerPushNotifications(userName);
+    } else if (Notification.permission === "default") {
+      console.log("[Auto] Permission default → will ask on bell click");
+    } else {
+      console.log("[Auto] Permission denied → user must unblock manually");
+    }
+  }
+
+  // Run on load + when tab becomes visible again
+  tryAutoRegister();
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) tryAutoRegister();
+  });
+</script>
 </body>
 </html>

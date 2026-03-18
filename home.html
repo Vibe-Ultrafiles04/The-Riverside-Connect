@@ -889,7 +889,7 @@ html, body {
 </div>
 
  <script>
-  const scriptUrl = 'https://script.google.com/macros/s/AKfycbynSMvzEopWq4tZvDWFba4Olv7Hse_3YBdFkExAw_g_GaJWEhVB2hJnSh6mnTt33Ge5/exec';
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbzWJI6JMJHjlNbAwAVewiHvT4vMgXu6FYjaEXa_zL3o_TrtPHLlU-Ix18Fo3CGiHrwX/exec';
 
  let userName = localStorage.getItem('userName');
 
@@ -1826,7 +1826,11 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
 
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
-<script src="fcm.js"></script>
+<script type="module">
+  import { registerPushNotifications } from './fcm.js';
 
+  // Make it globally available if needed (your current code calls it directly)
+  window.registerPushNotifications = registerPushNotifications;
+</script>
 </body>
 </html>

@@ -335,7 +335,7 @@
 </div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynSMvzEopWq4tZvDWFba4Olv7Hse_3YBdFkExAw_g_GaJWEhVB2hJnSh6mnTt33Ge5/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzR81XMvvwBz8CW-j_Oq3j6ww9kmBssVeCwW9gFnHfZlbwlfUUbNgGsapdPDWhZkaRh/exec';
 
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get('gameId');
@@ -1118,7 +1118,12 @@ function showSurveyResults() {
 
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
-<script src="fcm.js"></script>
+<script type="module">
+  import { registerPushNotifications } from './fcm.js';
+
+  // Make it globally available if needed (your current code calls it directly)
+  window.registerPushNotifications = registerPushNotifications;
+</script>
 </body>
 
 </html>

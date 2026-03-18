@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynSMvzEopWq4tZvDWFba4Olv7Hse_3YBdFkExAw_g_GaJWEhVB2hJnSh6mnTt33Ge5/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzWJI6JMJHjlNbAwAVewiHvT4vMgXu6FYjaEXa_zL3o_TrtPHLlU-Ix18Fo3CGiHrwX/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3855,6 +3855,11 @@ document.addEventListener('click', function(e) {
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
-<script src="fcm.js"></script>
+<script type="module">
+  import { registerPushNotifications } from './fcm.js';
+
+  // Make it globally available if needed (your current code calls it directly)
+  window.registerPushNotifications = registerPushNotifications;
+</script>
 </body>
 </html>

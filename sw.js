@@ -3,53 +3,6 @@
 
 const CACHE_NAME = 'Riverside-Connect-v5';   // ← bumped version for announcements + view counts
 
-// sw.js — Custom service worker for Riverside Connect (handles push + optional caching)
-
-
-// ────────────────────────────────────────────────
-// FIREBASE MESSAGING — REQUIRED for background push notifications
-// This block MUST be at the very top
-// ────────────────────────────────────────────────
-importScripts('https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js');
-
-firebase.initializeApp({
-  apiKey: "AIzaSyCuB56TTi5COJnuDm6fPigsOsJTwvQwPPNo",
-  authDomain: "riverside-connect-a8458.firebaseapp.com",
-  projectId: "riverside-connect-a8458",
-  storageBucket: "riverside-connect-a8458.firebasestorage.app",
-  messagingSenderId: "9388830806378",
-  appId: "1:9388830806378:web:254ed56cba3dc02290f913"
-});
-
-const messaging = firebase.messaging();
-
-// Handle background push notifications (when app is closed or in background)
-messaging.onBackgroundMessage((payload) => {
-  console.log('[sw.js] Received background message: ', payload);
-
-  // Customize the notification (you can pull from payload.data too)
-  const notificationTitle = payload.notification?.title || 'New post in channel';
-  const notificationOptions = {
-    body: payload.notification?.body || 'Check the latest update',
-    icon: '/maskable_icon_x192.png',     // your app icon (must exist in root)
-    badge: '/maskable_icon_x192.png',
-    data: payload.data || {}             // pass channelId etc. for click handling later
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-// Optional: your own SW lifecycle events (good for debugging)
-self.addEventListener('install', event => {
-  console.log('[sw.js] Installed');
-  // You can add caching logic here later if needed
-});
-
-self.addEventListener('activate', event => {
-  console.log('[sw.js] Activated');
-});
-
 const STATIC_ASSETS = [
   './',
   './login.html',
@@ -78,7 +31,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbzR81XMvvwBz8CW-j_Oq3j6ww9kmBssVeCwW9gFnHfZlbwlfUUbNgGsapdPDWhZkaRh/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwsbPqeRiqW2it0f1UpTNMRba_YQ5KO7wo2syRn_u7CvxM5oEyct6n9zq0lntfbRTm4/exec';
 
 self.addEventListener('install', event => {
   event.waitUntil(
@@ -267,40 +220,3 @@ async function syncPendingMessages() {
   console.log('[SW] Background sync triggered — attempting to send pending messages/announcements');
   // → Add IndexedDB queue + retry logic here in future if needed
 }
-
-// ────────────────────────────────────────────────
-// FCM PUSH NOTIFICATIONS
-// ────────────────────────────────────────────────
-self.addEventListener('push', event => {
-  let payload = {};
-  if (event.data) payload = event.data.json();
-
-  const notif = payload.notification || {};
-  const data = payload.data || {};
-
-  const title = notif.title || 'Riverside Connect';
-  const options = {
-    body: notif.body || 'New channel post',
-    icon: notif.icon || './maskable_icon_x192.png',
-    data: data   // contains url & channelId
-  };
-
-  event.waitUntil(
-    self.registration.showNotification(title, options)
-  );
-});
-
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-  const url = event.notification.data.url || './channel.html';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clientList => {
-        if (clientList.length > 0) {
-          return clientList[0].focus().then(c => c.navigate(url));
-        }
-        return clients.openWindow(url);
-      })
-  );
-});

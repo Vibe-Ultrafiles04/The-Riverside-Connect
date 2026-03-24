@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZ4R0jDdQWWHfqi2vWQAcA1zRKmuI5w5916_a0KBSj3n8I0bZFMoKVFCK8bomIPUql/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzdsBfaTAr1ipt82Q6DP7dDfaefPHqTER3h5EVthGBNnH0GozCR-jZksfPqHFcjhfVW/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -2185,6 +2185,8 @@ async function openChannelTab(channelId, name, description, creator, created, pi
 
     await checkChannelAuthorisation(channelId);
   await loadPosts(channelId);
+  // Inside openChannelTab() function, at the end:
+addSubscribeButton();
 
   // ── Record view for all visible posts (once per user per post) ────────
   async function recordViewsForCurrentChannel() {
@@ -3651,6 +3653,135 @@ async function deleteCurrentChannel() {
       deleteBtn.style.opacity = "1";
       deleteBtn.style.cursor = "pointer";
     }
+  }
+}
+
+// ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────
+// Make sure SCRIPT_URL is already defined at the top of your file.
+// If not, add it once at the very top:
+// const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZ4R0jDdQWWHfqi2vWQAcA1zRKmuI5w5916_a0KBSj3n8I0bZFMoKVFCK8bomIPUql/exec';
+
+// ── PUSH NOTIFICATIONS ──────────────────────────────────────────────────────
+
+async function subscribeToChannelNotifications() {
+  if (!currentChannelId) {
+    showToast("Please select a channel first", "error");
+    return;
+  }
+
+  try {
+    // 1. Ask for permission
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      showToast("Please allow notifications in your browser settings", "error");
+      return;
+    }
+
+    const vapidKey = 'BKknSjWOEsGh9Js3fgOP157ItxarDOfwXq8DWo6Xx02QEZbd2ff96il4FR8bNY91hTLK5rY8k2nH2WO0sKQ6rFluA';
+
+    // 2. Import Firebase modular SDK
+    const { initializeApp } = await import("https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js");
+    const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js");
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+      authDomain: "riverside-connect-a8458.firebaseapp.com",
+      projectId: "riverside-connect-a8458",
+      storageBucket: "riverside-connect-a8458.firebasestorage.app",
+      messagingSenderId: "938830806378",
+      appId: "1:938830806378:web:254ed56cba3dc02290f913"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const messaging = getMessaging(app);
+
+    // 3. CRITICAL: Manually register the service worker with correct subfolder path
+    const swUrl = '/The-Riverside-Connect/firebase-messaging-sw.js';
+    const swRegistration = await navigator.serviceWorker.register(swUrl, {
+      scope: '/The-Riverside-Connect/'
+    });
+
+    console.log('✅ FCM Service Worker registered with scope:', swRegistration.scope);
+
+    // 4. Get token using our manually registered SW
+    const token = await getToken(messaging, {
+      vapidKey: vapidKey,
+      serviceWorkerRegistration: swRegistration   // ← This fixes the 404
+    });
+
+    if (!token) {
+      showToast("Could not generate notification token", "error");
+      return;
+    }
+
+    // 5. Save token to your Apps Script
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        operation: "saveToken",
+        category: 'channel_' + currentChannelId,
+        token: token,
+        userId: currentUserName
+      })
+    });
+
+    showToast(`✅ Subscribed to notifications for this channel!`, "success");
+    localStorage.setItem(`subscribed_${currentChannelId}`, 'true');
+    addSubscribeButton();
+
+  } catch (err) {
+    console.error('Subscribe failed:', err);
+    showToast("Failed to subscribe. Check console for details.", "error");
+  }
+}
+
+async function unsubscribeFromChannelNotifications() {
+  if (!currentChannelId) return;
+
+  localStorage.removeItem(`subscribed_${currentChannelId}`);
+  showToast("Unsubscribed from this channel", "success");
+  addSubscribeButton();
+}
+
+// Improved Subscribe Button
+function addSubscribeButton() {
+  const header = document.getElementById('channelHeader');
+  if (!header) return;
+
+  let btn = header.querySelector('#subscribe-notif-btn');
+
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'subscribe-notif-btn';
+    btn.style.cssText = `
+      margin-left: auto;
+      padding: 8px 16px;
+      background: rgba(96,165,250,0.2);
+      color: #60a5fa;
+      border: 1px solid #60a5fa;
+      border-radius: 999px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    `;
+    header.appendChild(btn);
+  }
+
+  const isSubscribed = localStorage.getItem(`subscribed_${currentChannelId}`) === 'true';
+
+  if (isSubscribed) {
+    btn.innerHTML = '<i class="fas fa-bell-slash"></i> Unsubscribe';
+    btn.style.background = 'rgba(239,68,68,0.15)';
+    btn.style.color = '#ef4444';
+    btn.style.borderColor = '#ef4444';
+    btn.onclick = unsubscribeFromChannelNotifications;
+  } else {
+    btn.innerHTML = '<i class="fas fa-bell"></i> Notify me';
+    btn.style.background = 'rgba(96,165,250,0.2)';
+    btn.style.color = '#60a5fa';
+    btn.style.borderColor = '#60a5fa';
+    btn.onclick = subscribeToChannelNotifications;
   }
 }
 function startChannelPolling() {

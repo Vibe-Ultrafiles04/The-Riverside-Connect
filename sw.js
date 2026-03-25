@@ -1,7 +1,6 @@
 // sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
-// Now caches comments, announcements, view counts & approval status + FCM Push
 
-const CACHE_NAME = 'Riverside-Connect-v6';   // bumped for FCM
+const CACHE_NAME = 'Riverside-Connect-v7';   // bumped version after removing FCM from main SW
 
 const STATIC_ASSETS = [
   './',
@@ -33,54 +32,8 @@ const EXPECTED_CACHES = [CACHE_NAME];
 
 const API_BASE = 'https://script.google.com/macros/s/AKfycbwkGvAQ7ck-jdjC4oXUDYSTe9NvdZGzE15c5iddMXVqJ3mP7iriqbuR60mVpDwSkSX4/exec';
 
-// ====================== FIREBASE MESSAGING (MUST BE AT TOP) ======================
-importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js");
-importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js");
+// ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 
-const firebaseConfig = {
-  apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
-  authDomain: "riverside-connect-a8458.firebaseapp.com",
-  projectId: "riverside-connect-a8458",
-  storageBucket: "riverside-connect-a8458.firebasestorage.app",
-  messagingSenderId: "938830806378",
-  appId: "1:938830806378:web:254ed56cba3dc02290f913"
-};
-
-firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  console.log("Background message received:", payload);
-
-  const notificationTitle = payload.notification?.title || "New Post in Riverside";
-  const notificationOptions = {
-    body: payload.notification?.body || "Someone posted something new!",
-    icon: "/maskable_icon_x192.png",
-    badge: "/maskable_icon_x192.png",
-    data: { 
-      url: payload.data?.click_action || location.origin + "/channel.html?channelId=" + (payload.data?.channelId || "") 
-    }
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
-
-// Handle notification click
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const urlToOpen = event.notification.data?.url || location.origin + "/channel.html";
-
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url === urlToOpen && "focus" in client) return client.focus();
-      }
-      if (clients.openWindow) return clients.openWindow(urlToOpen);
-    })
-  );
-});
-
-// ====================== YOUR ORIGINAL CODE (UNCHANGED) ======================
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -116,79 +69,82 @@ self.addEventListener('fetch', event => {
 
   if (url.href.startsWith(API_BASE)) {
 
-  if (event.request.method === 'GET') {
+    if (event.request.method === 'GET') {
 
-  const isCacheableApiCall = API_CACHE_PATTERNS.some(pattern => 
-    event.request.url.includes(pattern)
-  );
+      const isCacheableApiCall = API_CACHE_PATTERNS.some(pattern => 
+        event.request.url.includes(pattern)
+      );
 
-  if (!isCacheableApiCall) {
+      if (!isCacheableApiCall) {
+        return;
+      }
+
+      event.respondWith(
+        caches.open(CACHE_NAME).then(cache => {
+          return cache.match(event.request).then(cachedResponse => {
+            const networkedFetch = fetch(event.request)
+              .then(freshResponse => {
+                if (freshResponse && freshResponse.status === 200 && 
+                    freshResponse.headers.get('content-type')?.includes('application/json')) {
+                  cache.put(event.request, freshResponse.clone());
+                }
+                return freshResponse;
+              })
+              .catch(() => {
+                return new Response(
+                  JSON.stringify({
+                    status: "offline",
+                    offline: true,
+                    userStatus: "pending",
+                    comments: [],
+                    announcements: [{
+                      id: "offline-notice-1",
+                      title: "Offline Mode",
+                      content: "You are currently offline.\n\nShowing last known data if previously loaded.\n\nConnect to see latest announcements, channels, games, etc.",
+                      created: new Date().toISOString(),
+                      creator: "System",
+                      pinned: true
+                    }],
+                    viewCounts: [],
+                    announcementsViewCounts: [],
+                    channels: [],
+                    games: [],
+                    questions: [],
+                    leaders: [],
+                    results: [],
+                    participants: [],
+                    message: "Offline — last known data or placeholder"
+                  }),
+                  { status: 200, headers: { 'Content-Type': 'application/json' } }
+                );
+              });
+
+            return cachedResponse || networkedFetch;
+          });
+        })
+      );
+      return;
+    }
+
+    // POST requests when offline
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return new Response(
+          JSON.stringify({
+            status: "offline",
+            offline: true,
+            message: "Cannot create, delete, submit scores, post announcements or modify data while offline. Action will be retried when you reconnect."
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      })
+    );
     return;
   }
 
-  event.respondWith(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.match(event.request).then(cachedResponse => {
-        const networkedFetch = fetch(event.request)
-          .then(freshResponse => {
-            if (freshResponse && freshResponse.status === 200 && 
-                freshResponse.headers.get('content-type')?.includes('application/json')) {
-              cache.put(event.request, freshResponse.clone());
-            }
-            return freshResponse;
-          })
-          .catch(() => {
-            return new Response(
-              JSON.stringify({
-                status: "offline",
-                offline: true,
-                userStatus: "pending",
-                comments: [],
-                announcements: [{
-                  id: "offline-notice-1",
-                  title: "Offline Mode",
-                  content: "You are currently offline.\n\nShowing last known data if previously loaded.\n\nConnect to see latest announcements, channels, games, etc.",
-                  created: new Date().toISOString(),
-                  creator: "System",
-                  pinned: true
-                }],
-                viewCounts: [],
-                announcementsViewCounts: [],
-                channels: [],
-                games: [],
-                questions: [],
-                leaders: [],
-                results: [],
-                participants: [],
-                message: "Offline — last known data or placeholder"
-              }),
-              { status: 200, headers: { 'Content-Type': 'application/json' } }
-            );
-          });
-
-        return cachedResponse || networkedFetch;
-      });
-    })
-  );
-  return;
-}
-  event.respondWith(
-    fetch(event.request).catch(() => {
-      return new Response(
-        JSON.stringify({
-          status: "offline",
-          offline: true,
-          message: "Cannot create, delete, submit scores, post announcements or modify data while offline. Action will be retried when you reconnect."
-        }),
-        {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
-    })
-  );
-  return;
-}
   if (event.request.mode === 'navigate' || 
       url.pathname.endsWith('.html') || 
       url.pathname === '/') {

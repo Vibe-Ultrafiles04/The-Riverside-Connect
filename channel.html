@@ -3847,11 +3847,13 @@ document.addEventListener('click', function(e) {
 
 <script>
   if ('serviceWorker' in navigator) {
-  // Use './' to stay inside the /The-Riverside-Connect/ subfolder
-  navigator.serviceWorker.register('./sw.js', { scope: './' })
-    .then(reg => console.log('✅ SW registered in subfolder scope'))
-    .catch(err => console.error('❌ SW registration failed:', err));
-}
+    // Register our main caching SW
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(reg => {
+        console.log('✅ Main SW registered:', reg.scope);
+      })
+      .catch(err => console.error('❌ Main SW registration failed:', err));
+  }
 </script>
 
 <script type="module">
@@ -3870,7 +3872,7 @@ document.addEventListener('click', function(e) {
   const app = initializeApp(firebaseConfig);
   const messaging = getMessaging(app);
 
-  const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8"; // ← keep your real key
+  const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
 
   async function requestNotificationPermissionAndToken() {
     try {
@@ -3880,15 +3882,16 @@ document.addEventListener('click', function(e) {
         return;
       }
 
+      // Wait for service worker to be ready
       const swReg = await navigator.serviceWorker.ready;
 
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: swReg   // ← This tells Firebase to use your sw.js
+        serviceWorkerRegistration: swReg
       });
 
       if (token) {
-        console.log("FCM Token:", token.substring(0, 40) + "...");
+        console.log("FCM Token obtained:", token.substring(0, 40) + "...");
         
         await fetch(SCRIPT_URL, {
           method: "POST",
@@ -3905,7 +3908,7 @@ document.addEventListener('click', function(e) {
     }
   }
 
-  // Foreground messages
+  // Foreground messages (keep this)
   onMessage(messaging, (payload) => {
     console.log("Foreground message received:", payload);
     showToast(payload.notification?.title || "New post in channel!", "success");

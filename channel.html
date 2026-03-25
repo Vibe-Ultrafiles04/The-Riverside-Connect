@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwK1KaUlTvNrunRaJ_OhhBiqWfykiUQuIkXXvmLO_Y3eNuLA_ohPXOfKozeMKAiRuTq/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwJ43raoP3b4-dyejfcGUuk2vYqguXJnLsWaq-LOLChyAwJVEV7-xbE_-bwG4MPkacj/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3868,7 +3868,7 @@ document.addEventListener('click', function(e) {
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js";
+  import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
@@ -3895,14 +3895,19 @@ document.addEventListener('click', function(e) {
       // Wait for service worker to be ready
       const swReg = await navigator.serviceWorker.ready;
 
-      const token = await getToken(messaging, {
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: swReg
-      });
+      // Delete any old token first to avoid SenderId mismatch
+      const oldToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+      if (oldToken) {
+        await deleteToken(messaging);
+        console.log("Old FCM token deleted");
+      }
 
+      // Request a fresh token
+      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
       if (token) {
         console.log("FCM Token obtained:", token.substring(0, 40) + "...");
-        
+
+        // Send new token to your server
         await fetch(SCRIPT_URL, {
           method: "POST",
           body: JSON.stringify({

@@ -13,39 +13,46 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background messages
+// ==================== BACKGROUND MESSAGE (This shows the notification) ====================
 messaging.onBackgroundMessage((payload) => {
   console.log("Background message received:", payload);
 
-  const title = payload.data?.title || "Riverside Connect";
-  const body = payload.data?.body || "New post in a channel";
+  const title     = payload.data?.title     || "Riverside Connect";
+  const body      = payload.data?.body      || "New post in a channel";
   const channelId = payload.data?.channelId || "";
+  const iconUrl   = payload.data?.icon      || "./maskable_icon_x192.png";   // ← Channel profile pic
 
-  const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
+  // Build the correct URL that opens the exact channel
+  const url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=${channelId}`;
 
   self.registration.showNotification(title, {
     body: body,
-    icon: "./maskable_icon_x192.png",
-    badge: "./maskable_icon_x192.png",
-    data: { url }
+    icon: iconUrl,                    // ← This is the small circular channel avatar
+    badge: "./maskable_icon_x192.png", // optional small badge
+    data: { url: url },               // ← Important: used on click
+    tag: channelId,                   // prevents duplicate notifications for same channel
+    vibrate: [200, 100, 200]
   });
 });
 
+// ==================== NOTIFICATION CLICK (Opens the actual channel) ====================
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const urlToOpen = event.notification.data?.url;
 
+  if (!urlToOpen) return;
+
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-
+      // If user already has the app open, focus + navigate to the channel
       for (const client of clientList) {
         if (client.url.includes("channel.html") && "focus" in client) {
           client.navigate(urlToOpen);
           return client.focus();
         }
       }
-
+      // Otherwise open new window/tab with the correct channel
       return clients.openWindow(urlToOpen);
     })
   );
@@ -82,7 +89,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbzRGHXPAm0-hDcrw13e_7OA8WmMDF96eRNpsEd8z0zUQl2kNWE7N08KL2r23OEqJwtK/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbyQJk-fjMb6Ki9L63Rki9WzkT51402uv7m9gq-4H-l3xhhNqoU4tbmKy2TWM3Qgebib/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

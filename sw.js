@@ -20,6 +20,7 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.data?.title || "Riverside Connect";
   const body = payload.data?.body || "New post in a channel";
   const channelId = payload.data?.channelId || "";
+  const channelIcon = payload.data?.icon || "./maskable_icon_x192.png";
 
   const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
 
@@ -82,7 +83,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycby9wz_gj2zQbsG-y0NLVgped0A2ou44j6I0VApfEfCQ46laq7mXXYsZ2R3gpATZbDq7/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbxjZtlfG8pqm2IL2ELE-YpV_hxxcgftYg2msqChLVGSCWwSuto0yRbNniyjutsvf7i2/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

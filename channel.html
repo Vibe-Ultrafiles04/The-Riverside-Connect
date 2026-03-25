@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9wz_gj2zQbsG-y0NLVgped0A2ou44j6I0VApfEfCQ46laq7mXXYsZ2R3gpATZbDq7/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxjZtlfG8pqm2IL2ELE-YpV_hxxcgftYg2msqChLVGSCWwSuto0yRbNniyjutsvf7i2/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3907,77 +3907,6 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
-    authDomain: "riverside-connect-a8458.firebaseapp.com",
-    projectId: "riverside-connect-a8458",
-    storageBucket: "riverside-connect-a8458.firebasestorage.app",
-    messagingSenderId: "938830806378",
-    appId: "1:938830806378:web:254ed56cba3dc02290f913"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const messaging = getMessaging(app);
-
-  const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
-
-  async function requestNotificationPermissionAndToken() {
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
-        console.warn("Notification permission denied");
-        return;
-      }
-
-      // Wait for service worker to be ready
-      const swReg = await navigator.serviceWorker.ready;
-
-      // Delete any old token first to avoid SenderId mismatch
-      const oldToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-      if (oldToken) {
-        await deleteToken(messaging);
-        console.log("Old FCM token deleted");
-      }
-
-      // Request a fresh token
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-      if (token) {
-        console.log("FCM Token obtained:", token.substring(0, 40) + "...");
-
-        // Send new token to your server
-        await fetch(SCRIPT_URL, {
-          method: "POST",
-          body: JSON.stringify({
-            operation: "saveFcmToken",
-            username: currentUserName,
-            fcmToken: token
-          })
-        });
-        console.log("✅ FCM token saved to backend");
-      }
-    } catch (err) {
-      console.error("FCM Error:", err);
-    }
-  }
-
-  // Foreground messages (keep this)
-  onMessage(messaging, (payload) => {
-    console.log("Foreground message received:", payload);
-    showToast(payload.notification?.title || "New post in channel!", "success");
-    if (currentChannelId) loadPosts(currentChannelId);
-  });
-
-  // Run on load
-  window.addEventListener("load", () => {
-    if (currentUserName) {
-      requestNotificationPermissionAndToken();
-    }
-  });
-</script>
 
 </body>
 </html>

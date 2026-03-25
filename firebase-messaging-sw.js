@@ -1,4 +1,4 @@
-// firebase-messaging-sw.js   ← Place this in the same folder as sw.js and channel.html
+// firebase-messaging-sw.js
 importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging-compat.js");
 
@@ -13,6 +13,7 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log("[firebase-messaging-sw.js] Background message received:", payload);
 
@@ -21,17 +22,20 @@ messaging.onBackgroundMessage((payload) => {
     {
       body: payload.notification?.body || "Someone posted something new in a channel!",
       icon: "./maskable_icon_x192.png",
-badge: "./maskable_icon_x192.png",
+      badge: "./maskable_icon_x192.png",
       data: {
-        url: "/my-pwa-demo/channel.html"                   // ← Fixed path
+        // Updated to your true PWA URL
+        url: "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html"
       }
     }
   );
 });
 
+// Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const urlToOpen = event.notification.data?.url || "/my-pwa-demo/channel.html";
+
+  const urlToOpen = event.notification.data?.url || "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {

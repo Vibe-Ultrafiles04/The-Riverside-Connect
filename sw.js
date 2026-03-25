@@ -31,7 +31,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbx8r6KuCSMv_ycXjcrMEV-JT8q4jgRtxHzeyMqXq2Fzn2yeegR4HZtq0gbvmOabQg5l/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwkGvAQ7ck-jdjC4oXUDYSTe9NvdZGzE15c5iddMXVqJ3mP7iriqbuR60mVpDwSkSX4/exec';
 
 // ====================== FIREBASE MESSAGING (MUST BE AT TOP) ======================
 importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js");

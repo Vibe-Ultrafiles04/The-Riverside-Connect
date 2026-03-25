@@ -20,8 +20,8 @@ messaging.onBackgroundMessage((payload) => {
     payload.notification?.title || "New post in Riverside Connect",
     {
       body: payload.notification?.body || "Someone posted something new in a channel!",
-      icon: "/my-pwa-demo/maskable_icon_x192.png",        // ← Fixed path
-      badge: "/my-pwa-demo/maskable_icon_x192.png",
+      icon: "./maskable_icon_x192.png",
+badge: "./maskable_icon_x192.png",
       data: {
         url: "/my-pwa-demo/channel.html"                   // ← Fixed path
       }

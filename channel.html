@@ -3854,13 +3854,7 @@ document.addEventListener('click', function(e) {
       })
       .catch(err => console.error('❌ Main SW registration failed:', err));
 
-      navigator.serviceWorker.register('./firebase-messaging-sw.js')
-  .then(reg => {
-    console.log("✅ Firebase Messaging SW registered");
-  })
-  .catch(err => {
-    console.error("❌ Firebase Messaging SW failed:", err);
-  });
+     
   }
 
   

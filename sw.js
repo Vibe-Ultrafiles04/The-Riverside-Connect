@@ -17,39 +17,34 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log("Background message received:", payload);
 
-  const title     = payload.data?.title     || "Riverside Connect";
-  const body      = payload.data?.body      || "New post in a channel";
+  const title = payload.data?.title || "Riverside Connect";
+  const body = payload.data?.body || "New post in a channel";
   const channelId = payload.data?.channelId || "";
-  const iconUrl   = payload.data?.icon      || "./maskable_icon_x192.png";   // ← Channel profile pic
 
   const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
 
   self.registration.showNotification(title, {
     body: body,
-    icon: iconUrl,                    // ← Now uses the real channel picture
+    icon: "./maskable_icon_x192.png",
     badge: "./maskable_icon_x192.png",
-    data: { url: url },               // ← Ensures correct URL is passed
-    tag: channelId,                   // Prevents duplicate notifications for same channel
-    vibrate: [200, 100, 200]
+    data: { url }
   });
 });
 
+// Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url;
+  const urlToOpen = event.notification.data?.url || "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
 
   event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-
+    clients.matchAll({ type: "window" }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes("channel.html") && "focus" in client) {
-          client.navigate(urlToOpen);
+        if (client.url.includes(urlToOpen) && "focus" in client) {
           return client.focus();
         }
       }
-
-      return clients.openWindow(urlToOpen);
+      if (clients.openWindow) return clients.openWindow(urlToOpen);
     })
   );
 });
@@ -85,7 +80,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbzRGHXPAm0-hDcrw13e_7OA8WmMDF96eRNpsEd8z0zUQl2kNWE7N08KL2r23OEqJwtK/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbx2vB5UX1oSA5oGfLrUoRt4AoDiHbKpnSuUlPj9H8yHEoXWajgZuxQ0z1OHZ-FSokmv/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

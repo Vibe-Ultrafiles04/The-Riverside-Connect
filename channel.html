@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxiKsXmiJ8snU_fUXj46Q088oW3jqkdT2Ubgi-eH1MmDp8ayAYfGjKEb-Uyxb0R8b06/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx8r6KuCSMv_ycXjcrMEV-JT8q4jgRtxHzeyMqXq2Fzn2yeegR4HZtq0gbvmOabQg5l/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3852,6 +3852,71 @@ document.addEventListener('click', function(e) {
     .then(reg => console.log('✅ SW registered in subfolder scope'))
     .catch(err => console.error('❌ SW registration failed:', err));
 }
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js";
+
+  const app = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
+
+  // === YOUR VAPID KEY (from Firebase Console → Cloud Messaging → Web Push certificates) ===
+  const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";   // ← Replace with real key
+
+  async function requestNotificationPermissionAndToken() {
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        console.log("Notification permission denied");
+        return;
+      }
+
+      // Tell Firebase to use YOUR existing sw.js instead of the default one
+      const token = await getToken(messaging, { 
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: await navigator.serviceWorker.ready   // ← This is the key fix
+      });
+
+      if (token) {
+        console.log("FCM Token received:", token);
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            operation: "saveFcmToken",
+            username: currentUserName,
+            fcmToken: token
+          })
+        });
+        console.log("FCM token saved to backend");
+      }
+    } catch (err) {
+      console.error("FCM token error:", err);
+    }
+  }
+
+  // Foreground messages
+  onMessage(messaging, (payload) => {
+    console.log("Foreground message:", payload);
+    showToast(payload.notification?.title || "New post!", "success");
+    if (currentChannelId) loadPosts(currentChannelId);
+  });
+
+  // Run when page loads
+  window.addEventListener("load", () => {
+    requestNotificationPermissionAndToken();
+  });
+</script>
+<script>
+  // Make sure firebaseConfig is defined globally
+  const firebaseConfig = {
+    apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+    authDomain: "riverside-connect-a8458.firebaseapp.com",
+    projectId: "riverside-connect-a8458",
+    storageBucket: "riverside-connect-a8458.firebasestorage.app",
+    messagingSenderId: "938830806378",
+    appId: "1:938830806378:web:254ed56cba3dc02290f913"
+  };
 </script>
 </body>
 </html>

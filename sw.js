@@ -1,7 +1,7 @@
 // sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
-// Now caches comments, announcements, view counts & approval status
+// Now caches comments, announcements, view counts & approval status + FCM Push
 
-const CACHE_NAME = 'Riverside-Connect-v5';   // ← bumped version for announcements + view counts
+const CACHE_NAME = 'Riverside-Connect-v6';   // bumped for FCM
 
 const STATIC_ASSETS = [
   './',
@@ -31,8 +31,56 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwsbPqeRiqW2it0f1UpTNMRba_YQ5KO7wo2syRn_u7CvxM5oEyct6n9zq0lntfbRTm4/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbx8r6KuCSMv_ycXjcrMEV-JT8q4jgRtxHzeyMqXq2Fzn2yeegR4HZtq0gbvmOabQg5l/exec';
 
+// ====================== FIREBASE MESSAGING (MUST BE AT TOP) ======================
+importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js");
+importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js");
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+  authDomain: "riverside-connect-a8458.firebaseapp.com",
+  projectId: "riverside-connect-a8458",
+  storageBucket: "riverside-connect-a8458.firebasestorage.app",
+  messagingSenderId: "938830806378",
+  appId: "1:938830806378:web:254ed56cba3dc02290f913"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  console.log("Background message received:", payload);
+
+  const notificationTitle = payload.notification?.title || "New Post in Riverside";
+  const notificationOptions = {
+    body: payload.notification?.body || "Someone posted something new!",
+    icon: "./maskable_icon_x192.png",
+    badge: "./maskable_icon_x192.png",
+    data: { 
+      url: payload.data?.click_action || location.origin + "/channel.html?channelId=" + (payload.data?.channelId || "") 
+    }
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Handle notification click
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const urlToOpen = event.notification.data?.url || location.origin + "/channel.html";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url === urlToOpen && "focus" in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow(urlToOpen);
+    })
+  );
+});
+
+// ====================== YOUR ORIGINAL CODE (UNCHANGED) ======================
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -68,26 +116,16 @@ self.addEventListener('fetch', event => {
 
   if (url.href.startsWith(API_BASE)) {
 
-  // ────────────────────────────────────────────────
-  // GET requests → cache-first + stale-while-revalidate pattern
-  // ────────────────────────────────────────────────
-if (event.request.method === 'GET') {
+  if (event.request.method === 'GET') {
 
-  // ── Only cache these specific Q&A API calls (and announcements/comments if you want)
   const isCacheableApiCall = API_CACHE_PATTERNS.some(pattern => 
     event.request.url.includes(pattern)
   );
 
-  // You can also add announcement/comment patterns here if needed
-  // const isAnnouncementRelated = event.request.url.includes('getAnnouncements') || event.request.url.includes('getComments');
-
-  if (!isCacheableApiCall /* && !isAnnouncementRelated */) {
-    // Let it go through normal network-first or whatever your current logic is
-    // (or just skip special caching for other endpoints)
-    return; // or continue with default fetch
+  if (!isCacheableApiCall) {
+    return;
   }
 
-  // ── Only if it's one of our important patterns → do the cache-first logic
   event.respondWith(
     caches.open(CACHE_NAME).then(cache => {
       return cache.match(event.request).then(cachedResponse => {
@@ -100,7 +138,6 @@ if (event.request.method === 'GET') {
             return freshResponse;
           })
           .catch(() => {
-            // your nice fallback object here
             return new Response(
               JSON.stringify({
                 status: "offline",
@@ -135,10 +172,6 @@ if (event.request.method === 'GET') {
   );
   return;
 }
-  // ────────────────────────────────────────────────
-  // POST / mutations (create channel, create game, submit score, delete game, post announcement, etc.)
-  // → network-first, graceful offline failure
-  // ────────────────────────────────────────────────
   event.respondWith(
     fetch(event.request).catch(() => {
       return new Response(
@@ -156,9 +189,6 @@ if (event.request.method === 'GET') {
   );
   return;
 }
-  // ────────────────────────────────────────────────
-  // Navigation & HTML pages → network-first + cache fallback
-  // ────────────────────────────────────────────────
   if (event.request.mode === 'navigate' || 
       url.pathname.endsWith('.html') || 
       url.pathname === '/') {
@@ -168,9 +198,6 @@ if (event.request.method === 'GET') {
     return;
   }
 
-  // ────────────────────────────────────────────────
-  // All other requests (images, CSS, JS, fonts…) → cache-first + revalidate
-  // ────────────────────────────────────────────────
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       if (cachedResponse) {
@@ -208,7 +235,6 @@ if (event.request.method === 'GET') {
   );
 });
 
-// Future: background sync for pending actions (messages/announcements)
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-pending-messages') {
     event.waitUntil(syncPendingMessages());
@@ -218,5 +244,4 @@ self.addEventListener('sync', event => {
 
 async function syncPendingMessages() {
   console.log('[SW] Background sync triggered — attempting to send pending messages/announcements');
-  // → Add IndexedDB queue + retry logic here in future if needed
 }

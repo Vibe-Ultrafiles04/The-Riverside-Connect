@@ -15,36 +15,38 @@ const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
-  console.log("[firebase-messaging-sw.js] Background message received:", payload);
+  console.log("Background message received:", payload);
 
-  self.registration.showNotification(
-    payload.notification?.title || "New post in Riverside Connect",
-    {
-      body: payload.notification?.body || "Someone posted something new in a channel!",
-      icon: "./maskable_icon_x192.png",
-      badge: "./maskable_icon_x192.png",
-      data: {
-        // Updated to your true PWA URL
-        url: "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html"
-      }
-    }
-  );
+  const title = payload.data?.title || "Riverside Connect";
+  const body = payload.data?.body || "New post in a channel";
+  const channelId = payload.data?.channelId || "";
+
+  const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
+
+  self.registration.showNotification(title, {
+    body: body,
+    icon: "./maskable_icon_x192.png",
+    badge: "./maskable_icon_x192.png",
+    data: { url }
+  });
 });
 
-// Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
+  const urlToOpen = event.notification.data?.url;
 
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+
       for (const client of clientList) {
-        if (client.url.includes(urlToOpen) && "focus" in client) {
+        if (client.url.includes("channel.html") && "focus" in client) {
+          client.navigate(urlToOpen);
           return client.focus();
         }
       }
-      if (clients.openWindow) return clients.openWindow(urlToOpen);
+
+      return clients.openWindow(urlToOpen);
     })
   );
 });
@@ -80,7 +82,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwKUyHOJTNbyUL5nSM-HEubBvBdY5lZnKlquctz58LrZSTDbJu-pdBhQXNVLN_NiTBi/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycby9wz_gj2zQbsG-y0NLVgped0A2ou44j6I0VApfEfCQ46laq7mXXYsZ2R3gpATZbDq7/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

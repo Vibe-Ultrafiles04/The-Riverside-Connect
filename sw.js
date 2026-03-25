@@ -55,8 +55,8 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification?.title || "New Post in Riverside";
   const notificationOptions = {
     body: payload.notification?.body || "Someone posted something new!",
-    icon: "./maskable_icon_x192.png",
-    badge: "./maskable_icon_x192.png",
+    icon: "/maskable_icon_x192.png",
+    badge: "/maskable_icon_x192.png",
     data: { 
       url: payload.data?.click_action || location.origin + "/channel.html?channelId=" + (payload.data?.channelId || "") 
     }

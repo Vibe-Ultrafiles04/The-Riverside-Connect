@@ -11,6 +11,7 @@
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "categories": ["social", "communication", "education"],
+   "gcm_sender_id": "938830806378",
   "icons": [
     {
       "src": "./maskable_icon_x192.png",

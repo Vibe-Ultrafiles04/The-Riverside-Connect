@@ -17,18 +17,20 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log("Background message received:", payload);
 
-  const title = payload.data?.title || "Riverside Connect";
-  const body = payload.data?.body || "New post in a channel";
+  const title     = payload.data?.title     || "Riverside Connect";
+  const body      = payload.data?.body      || "New post in a channel";
   const channelId = payload.data?.channelId || "";
-  const channelIcon = payload.data?.icon || "./maskable_icon_x192.png";
+  const iconUrl   = payload.data?.icon      || "./maskable_icon_x192.png";   // ← THIS IS THE KEY
 
   const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
 
   self.registration.showNotification(title, {
     body: body,
-    icon: "./maskable_icon_x192.png",
-    badge: "./maskable_icon_x192.png",
-    data: { url }
+    icon: iconUrl,                    // ← Now uses the channel profile picture!
+    badge: "./badge.png",             // Optional small badge (you can keep or change)
+    data: { url: url },
+    vibrate: [200, 100, 200],         // Nice vibration on supported devices
+    tag: channelId                    // So notifications from same channel replace each other
   });
 });
 
@@ -83,7 +85,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbxjZtlfG8pqm2IL2ELE-YpV_hxxcgftYg2msqChLVGSCWwSuto0yRbNniyjutsvf7i2/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbzFjGLxnqD5dG_h8IYVppL-4l11rBP6PxS9hmTnH9-49CKgERp_f_FhXRj2_mNTcvmh/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJ--qHSUdh9U0CJD7GLVZiivTLdaU9YgzbOSOZhTLbKXy7b42d9b5RA1PITqwchLWE/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyOUDeMfnvFgfcSek2ez9lWposO63I1XbLM8PvhPkMVhBIYJ2xiWNcVddsXjQoOdqBu/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3908,7 +3908,7 @@ const url = payload.data?.click_action || "/";
 const notification = new Notification(title, {
   body: body,
   icon: payload.data?.icon || "./maskable_icon_x192.png",
-  image: payload.data?.image || "",
+  image: payload.data?.mediaThumbnail || payload.data?.image || "",
 });
 
 // ✅ Make it clickable

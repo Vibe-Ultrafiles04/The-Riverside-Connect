@@ -1722,7 +1722,7 @@ function renderChannelList(channels) {
       <div style="display:flex; align-items:center; gap:12px;">
         <img src="${avatarSrc}"
              style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid rgba(96,165,250,0.4); flex-shrink:0;"
-             onerror="this.src='https://via.placeholder.com/48?text=@'">
+            onerror="this.src='https://picsum.photos/id/64/48/48'"
         <div>
           <div class="channel-tab-name">${ch.name}</div>
           <div class="channel-tab-desc">${ch.description || "No description"}</div>
@@ -2008,7 +2008,7 @@ async function openChannelTab(channelId, name, description, creator, created, pi
                position: relative;
                z-index: 2;
              "
-             onerror="this.src='https://via.placeholder.com/64?text=@'"
+             onerror="this.src='https://picsum.photos/id/64/48/48'"
              alt="${name} icon">
              
 
@@ -2287,7 +2287,7 @@ if (post.media?.link) {
   if (post.media.type?.startsWith('image')) {
     mediaHtml = `
       <div class="post-media" style="overflow-x:auto; display:flex; gap:8px; padding:8px 0; scroll-snap-type:x mandatory;">
-        <img src="${mediaSrc}" loading="lazy" style="max-height:500px; border-radius:12px; scroll-snap-align:start;" onerror="this.src='https://via.placeholder.com/400?text=Image'">
+        <img src="${mediaSrc}" loading="lazy" style="max-height:500px; border-radius:12px; scroll-snap-align:start;" onerror="this.src='https://picsum.photos/id/64/48/48'"'">
       </div>`;
   } else {
     mediaHtml = `
@@ -2487,7 +2487,7 @@ function openViewersModal(postId) {
         const avatarSrc = v.picLink ? getLh3Link(v.picLink) : 'https://via.placeholder.com/44?text=@';
         
         item.innerHTML = `
-          <img class="viewer-avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/44?text=@'">
+          <img class="viewer-avatar" src="${avatarSrc}" onerror="this.src='https://picsum.photos/id/64/48/48'">
           <div class="viewer-info">
             <div class="viewer-name">${v.username}</div>
             <div class="viewer-time">Viewed ${new Date(v.viewedAt).toLocaleString([], {
@@ -2768,7 +2768,7 @@ function showEventsForDate(dateStr, dayEvents) {
               <img src="https://lh3.googleusercontent.com/d/${id}" 
                    style="width:100%; height:auto; display:block;" 
                    alt="Event image" loading="lazy"
-                   onerror="this.src='https://via.placeholder.com/400x200/1e293b/94a3b8?text=Failed';">
+                   onerror="this.src='https://picsum.photos/id/64/48/48';">
             </div>`;
         }
       }
@@ -3138,7 +3138,7 @@ comments.reverse().forEach(c => {
   ` : '';
 
   msg.innerHTML = `
-    <img class="avatar" src="${avatarSrc}" onerror="this.src='https://via.placeholder.com/38?text=@'">
+    <img class="avatar" src="${avatarSrc}" onerror="this.src='https://picsum.photos/id/64/48/48'">
     <div class="message-content">
       <div class="name" style="display: flex; justify-content: space-between; align-items:center;">
         ${c.author}
@@ -3606,7 +3606,7 @@ async function deleteCurrentChannel() {
             <div style="display:flex; align-items:center; gap:12px;">
               <img src="${avatarSrc}"
                    style="width:48px; height:48px; border-radius:50%; object-fit:cover; border:2px solid rgba(96,165,250,0.4);"
-                   onerror="this.src='https://via.placeholder.com/48?text=@'">
+onerror="this.src='https://picsum.photos/id/64/48/48'">
               <div>
                 <div class="channel-tab-name">${ch.name}</div>
                 <div class="channel-tab-desc">${ch.description || "No description"}</div>
@@ -3894,11 +3894,24 @@ if ('serviceWorker' in navigator) {
       }
 
       // Foreground messages
-      onMessage(messaging, (payload) => {
-        console.log("Foreground message received:", payload);
-        showToast(payload.notification?.title || "New post in channel!", "success");
-        if (currentChannelId) loadPosts(currentChannelId);
-      });
+    onMessage(messaging, (payload) => {
+  console.log("Foreground message received:", payload);
+
+  const title = payload.data?.title || "New post in channel!";
+  const body  = payload.data?.body || "";
+
+  showToast(title + " — " + body, "success");
+
+  if (payload.data?.image) {
+    new Notification(title, {
+      body: body,
+      icon: payload.data.icon,
+      image: payload.data.image
+    });
+  }
+
+  if (currentChannelId) loadPosts(currentChannelId);
+});
 
     } catch (err) {
       console.error("❌ FCM/Service Worker registration error:", err);

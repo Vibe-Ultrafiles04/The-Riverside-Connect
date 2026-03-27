@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1LJ_38NfA9NIw4JwYI0lsp1LiZDgd5XZ4tVozNq7POFDhcMXyXNPixHQtqm0Sru8-/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbye-Tii-b5irm38mOPkKNU1KH3xOBzh6wB86AZe1ve4-U3WGDapTbGXtPDtEdHL4eAQ/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -2790,14 +2790,19 @@ async function submitPost() {
   const file = mediaInput.files[0];
 
   let fileData = null;
-  const driveRegex = /(?:drive\.google\.com\/(?:file\/d\/|open\?id=))([a-zA-Z0-9_-]+)/;
+
+  // ── Improved Drive Video Link Detection ─────────────────────────────
+  const driveRegex = /https?:\/\/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9_-]+)/i;
   const match = content.match(driveRegex);
   const parsedLink = match ? match[1] : null;
 
   if (parsedLink && !file) {
-    content = content.replace(match[0], '').trim();
+    // User pasted a Google Drive video link → send as file.link
+    content = content.replace(driveRegex, '').trim();   // Remove link from visible text
     fileData = { link: parsedLink };
-  } else if (file) {
+  } 
+  else if (file) {
+    // User selected a file (image or video) from device
     fileData = await new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = () => resolve({
@@ -2813,7 +2818,6 @@ async function submitPost() {
   let events = [];
   const eventsContainer = document.getElementById('eventsContainer');
 
-  // Temporarily make visible so querySelectorAll can find elements
   const wasHidden = eventsContainer.style.display === 'none';
   if (wasHidden) eventsContainer.style.display = 'block';
 
@@ -2830,7 +2834,6 @@ async function submitPost() {
         title: titleVal
       };
 
-      // Attach image if present
       if (row.dataset.imageBase64) {
         eventObj.image = {
           base64: row.dataset.imageBase64,
@@ -2843,10 +2846,9 @@ async function submitPost() {
     }
   });
 
-  // Restore original visibility
   if (wasHidden) eventsContainer.style.display = 'none';
 
-  // Clean up empty/invalid rows
+  // Clean up empty rows
   eventsContainer.querySelectorAll('div').forEach(row => {
     const d = row.querySelector('input[type="date"]')?.value?.trim();
     const t = row.querySelector('textarea')?.value?.trim();
@@ -2883,7 +2885,6 @@ async function submitPost() {
     if (data.status === "success") {
       showToast("Posted!", "success");
       closePostPanel();
-      // Clear events after success
       eventsContainer.innerHTML = '';
       loadPosts(currentChannelId);
     } else {

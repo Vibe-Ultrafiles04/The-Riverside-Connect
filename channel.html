@@ -3894,31 +3894,32 @@ if ('serviceWorker' in navigator) {
       }
 
       // Foreground messages
-    onMessage(messaging, (payload) => {
+   onMessage(messaging, (payload) => {
   console.log("Foreground message received:", payload);
 
- const title = payload.data?.title || "New post in channel!";
-const body  = payload.data?.body || "";
+  const title = payload.data?.title || "New post in channel!";
+  const body  = payload.data?.body || "";
 
-showToast(title + " — " + body, "success");
+  showToast(title + " — " + body, "success");
 
-// ✅ Always show notification (with safe fallbacks)
-const url = payload.data?.click_action || "/";
+  const url = payload.data?.click_action || "/";
 
-const notification = new Notification(title, {
-  body: body,
-  icon: payload.data?.icon || "./maskable_icon_x192.png",
-  image: payload.data?.image || "",
+  const notification = new Notification(title, {
+    body: body,
+    icon: payload.data?.icon || "./maskable_icon_x192.png",
+    badge: "./badge.png",     // ← Add this line for foreground too
+    image: payload.data?.image || "",
+  });
+
+  // Make notification clickable
+  notification.onclick = () => {
+    window.open(url, "_blank");
+  };
+
+  // Refresh posts if user is inside channel
+  if (currentChannelId) loadPosts(currentChannelId);
 });
 
-// ✅ Make it clickable
-notification.onclick = () => {
-  window.open(url, "_blank");
-};
-
-// Refresh posts if user is inside channel
-if (currentChannelId) loadPosts(currentChannelId);
-});
 
     } catch (err) {
       console.error("❌ FCM/Service Worker registration error:", err);

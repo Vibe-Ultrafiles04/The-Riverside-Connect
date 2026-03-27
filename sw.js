@@ -23,16 +23,16 @@ messaging.onBackgroundMessage((payload) => {
 
   const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
 
- const icon = payload.data?.icon || "./maskable_icon_x192.png";
-const image = payload.data?.image || "";
+  const icon = payload.data?.icon || "./maskable_icon_x192.png";
+  const badge = "./badge.png";        // ← Your small badge icon
 
-self.registration.showNotification(title, {
-  body: body,
-  icon: icon,
-  badge: icon,
-  image: image,
-  data: { url }
-});
+  self.registration.showNotification(title, {
+    body: body,
+    icon: icon,      // Large icon shown in the notification
+    badge: badge,    // Small icon at the very top (status bar)
+    image: payload.data?.image || "",
+    data: { url }
+  });
 });
 
 // Handle notification click

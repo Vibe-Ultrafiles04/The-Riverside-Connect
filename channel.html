@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyExb2jR7bpLL3mtXwenHKqFfn1-WPL5Y-8YOyL1wSY_5geTIPhT4FYFar9z0X1H6b4/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxj3iVLXJuDUfl_cujrba_8vyp1KjEnN-__MWUa-uepw5l-BEsJx0UqGQsMJwPmD4N/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -1557,6 +1557,7 @@ let currentUserName = localStorage.getItem("userName") || "";
 let currentChannelId = null;
 let allChannels      = [];
 let isUserApproved   = false;
+let targetPostId = null;   // ← ADD THIS
 
 if (!currentUserName) window.location.href = "index.html";
 
@@ -1668,14 +1669,16 @@ async function loadAllChannels(forceFresh = false) {
     await fetchAndRenderChannels();
   }
 
-  // ── Auto-open logic (same as before) ─────────────────────────────────────
+   // ── Auto-open logic with deep link support from notifications ─────────────
   let channelToOpen = null;
 
   const urlParams = new URLSearchParams(window.location.search);
   const urlChannelId = urlParams.get('channelId');
+  const urlPostId = urlParams.get('postId');        // ← NEW: Support post deep link
 
   if (urlChannelId) {
     channelToOpen = (channels || allChannels).find(ch => ch.id === urlChannelId);
+    if (urlPostId) targetPostId = urlPostId;        // ← NEW: Save postId for scrolling
   }
 
   if (!channelToOpen) {
@@ -1699,6 +1702,11 @@ async function loadAllChannels(forceFresh = false) {
       channelToOpen.picLink
     );
     localStorage.setItem("lastChannelId", channelToOpen.id);
+
+    // Scroll to specific post if notification had postId
+    if (targetPostId) {
+      setTimeout(() => scrollToPost(targetPostId), 800);
+    }
   }
 }
 
@@ -1948,6 +1956,35 @@ function closeChannelModal() {
   // Reset avatar
   selectedChannelAvatar = null;
   document.getElementById('channelAvatarPreview').src = "https://via.placeholder.com/110?text=Icon";
+}
+
+
+// Scroll to and highlight specific post from notification
+function scrollToPost(postId) {
+  if (!postId) return;
+
+  const postElement = document.querySelector(`.post[data-post-id="${postId}"]`);
+  
+  if (postElement) {
+    postElement.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // Temporary highlight
+    postElement.style.transition = "background 2s";
+    postElement.style.background = "rgba(59, 130, 246, 0.3)";
+    
+    setTimeout(() => {
+      postElement.style.background = "";
+    }, 2800);
+
+    console.log("✅ Scrolled to post from notification:", postId);
+  } else {
+    console.warn("Post not found yet:", postId);
+    // Retry once after more delay
+    setTimeout(() => {
+      const retry = document.querySelector(`.post[data-post-id="${postId}"]`);
+      if (retry) retry.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 1200);
+  }
 }
 
 async function openChannelTab(channelId, name, description, creator, created, picLink) {
@@ -2256,29 +2293,6 @@ async function checkChannelAuthorisation(channelId) {
   }
 }
 
-function scrollToPostFromUrl() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const postIdFromUrl = urlParams.get('postId');
-
-  if (!postIdFromUrl) return;
-
-  // Wait a bit for posts to render
-  setTimeout(() => {
-    const postElement = document.getElementById(`post-${postIdFromUrl}`) || 
-                        document.querySelector(`[data-post-id="${postIdFromUrl}"]`);
-
-    if (postElement) {
-      postElement.scrollIntoView({ behavior: "smooth", block: "center" });
-      
-      // Optional: highlight the post temporarily
-      postElement.style.transition = "background-color 2s";
-      postElement.style.backgroundColor = "#fff3cd";
-      setTimeout(() => {
-        postElement.style.backgroundColor = "";
-      }, 3000);
-    }
-  }, 800); // give time for posts to load and render
-}
 async function loadPosts(channelId) {
   feed.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading posts...</div>';
 
@@ -2448,14 +2462,17 @@ if (countSpan) {
   if (viewsElement) {
     viewsElement.onclick = () => openViewersModal(post.postId);
   }
+
+      // ← ADD THIS after the posts.forEach loop ends
+    if (targetPostId) {
+      setTimeout(() => scrollToPost(targetPostId), 400);
+    }
+
 });
 
 
 
-// NEW: Scroll to the specific post if opened from notification
-    scrollToPostFromUrl();
-
-    // ── ADD THIS BLOCK HERE ────────────────────────────────────────────────
+// ── ADD THIS BLOCK HERE ────────────────────────────────────────────────
     const wrapper = document.querySelector('.feed-wrapper');
     if (wrapper) {
       // Go to top (newest posts usually appear at the top in feeds)
@@ -3870,6 +3887,26 @@ document.addEventListener('click', function(e) {
   showEventsForDate(dateStr, dayEvents);
 });
 
+
+// Handle message from service worker when notification is clicked while app is open
+navigator.serviceWorker?.addEventListener('message', (event) => {
+  if (event.data?.type === "NOTIFICATION_CLICK") {
+    const url = new URL(event.data.url || event.data);
+    const newChannelId = url.searchParams.get('channelId');
+    const newPostId = url.searchParams.get('postId');
+
+    if (newChannelId && newChannelId !== currentChannelId) {
+      const ch = allChannels.find(c => c.id === newChannelId);
+      if (ch) {
+        openChannelTab(ch.id, ch.name, ch.description, ch.creator, ch.created, ch.picLink);
+      }
+    }
+
+    if (newPostId) {
+      setTimeout(() => scrollToPost(newPostId), 600);
+    }
+  }
+});
 </script>
 
 

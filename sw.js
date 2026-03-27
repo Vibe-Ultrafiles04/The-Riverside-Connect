@@ -21,32 +21,43 @@ messaging.onBackgroundMessage((payload) => {
   const body = payload.data?.body || "New post in a channel";
   const channelId = payload.data?.channelId || "";
 
-  const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
+  const url = payload.data?.click_action || "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
 
- const icon = payload.data?.icon || "./maskable_icon_x192.png";
-const image = payload.data?.mediaThumbnail || payload.data?.image || "";
+  const icon = payload.data?.icon || "./maskable_icon_x192.png";
+  const mediaLink = payload.data?.image || "";
+  const mediaType = payload.data?.mediaType || "";
 
-self.registration.showNotification(title, {
-  body: body,
-  icon: icon,
-  badge: icon,
-  image: image,
-  data: { url }
-});
+  // For images, use `image` field; for videos, you can either include as a click URL or fallback image
+  let notificationOptions = {
+    body,
+    icon,
+    badge: icon,
+    data: { url }
+  };
+
+  if (mediaLink) {
+    if (mediaType.startsWith("image/")) {
+      notificationOptions.image = mediaLink; // show inline image
+    } else if (mediaType.startsWith("video/")) {
+      // For videos, you can't embed in notification, but provide a thumbnail or link
+      notificationOptions.data.videoUrl = mediaLink;
+      notificationOptions.image = payload.data?.thumbnail || "./maskable_icon_x192.png"; // optional fallback
+    }
+  }
+
+  self.registration.showNotification(title, notificationOptions);
 });
 
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
+  const urlToOpen = event.notification.data?.videoUrl || event.notification.data?.url || "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes(urlToOpen) && "focus" in client) {
-          return client.focus();
-        }
+        if (client.url.includes(urlToOpen) && "focus" in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(urlToOpen);
     })
@@ -84,7 +95,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbytWanH2eYxu1fHtFd6i6S7BDDOGYRUK8GCn6hiYlpK6gMlW_Z0iuRoKY-spFPuNa3B/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbz9ZxuyzIEmtNb-7jklC6TGgi8A1VADY1EQvHpsSKAx0R1R14CXJLn_AtdUwkjBDz_u/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

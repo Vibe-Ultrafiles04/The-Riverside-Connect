@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbytWanH2eYxu1fHtFd6i6S7BDDOGYRUK8GCn6hiYlpK6gMlW_Z0iuRoKY-spFPuNa3B/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9ZxuyzIEmtNb-7jklC6TGgi8A1VADY1EQvHpsSKAx0R1R14CXJLn_AtdUwkjBDz_u/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3897,27 +3897,34 @@ if ('serviceWorker' in navigator) {
     onMessage(messaging, (payload) => {
   console.log("Foreground message received:", payload);
 
- const title = payload.data?.title || "New post in channel!";
-const body  = payload.data?.body || "";
+  const title = payload.data?.title || "New post in channel!";
+  const body  = payload.data?.body || "";
+  const mediaLink = payload.data?.image || "";
+  const mediaType = payload.data?.mediaType || "";
+  const url = payload.data?.click_action || "/";
 
-showToast(title + " — " + body, "success");
+  showToast(title + " — " + body, "success");
 
-// ✅ Always show notification (with safe fallbacks)
-const url = payload.data?.click_action || "/";
+  // Create notification
+  const notificationOptions = {
+    body,
+    icon: payload.data?.icon || "./maskable_icon_x192.png",
+    image: mediaType.startsWith("image/") ? mediaLink : undefined
+  };
 
-const notification = new Notification(title, {
-  body: body,
-  icon: payload.data?.icon || "./maskable_icon_x192.png",
-  image: payload.data?.mediaThumbnail || payload.data?.image || "",
-});
+  const notification = new Notification(title, notificationOptions);
 
-// ✅ Make it clickable
-notification.onclick = () => {
-  window.open(url, "_blank");
-};
+  notification.onclick = () => {
+    if (mediaType.startsWith("video/")) {
+      // Open video link directly
+      window.open(mediaLink, "_blank");
+    } else {
+      window.open(url, "_blank");
+    }
+  };
 
-// Refresh posts if user is inside channel
-if (currentChannelId) loadPosts(currentChannelId);
+  // If user is inside the channel, refresh posts
+  if (currentChannelId) loadPosts(currentChannelId);
 });
 
     } catch (err) {

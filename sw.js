@@ -23,12 +23,16 @@ messaging.onBackgroundMessage((payload) => {
 
   const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
 
-  self.registration.showNotification(title, {
-    body: body,
-    icon: "./maskable_icon_x192.png",
-    badge: "./maskable_icon_x192.png",
-    data: { url }
-  });
+ const icon = payload.data?.icon || "./maskable_icon_x192.png";
+const image = payload.data?.image || "";
+
+self.registration.showNotification(title, {
+  body: body,
+  icon: icon,
+  badge: icon,
+  image: image,
+  data: { url }
+});
 });
 
 // Handle notification click
@@ -80,7 +84,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbx2vB5UX1oSA5oGfLrUoRt4AoDiHbKpnSuUlPj9H8yHEoXWajgZuxQ0z1OHZ-FSokmv/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwJGc0gbFF-CCkjOJWy61YRy-WaQ3gMQ-jN03Axrlot6vf_AfbgUycZpOloI8tVFkGB/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

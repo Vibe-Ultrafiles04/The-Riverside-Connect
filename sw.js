@@ -14,24 +14,28 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages
+// Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log("Background message received:", payload);
 
   const title = payload.data?.title || "Riverside Connect";
   const body = payload.data?.body || "New post in a channel";
   const channelId = payload.data?.channelId || "";
+  const postId = payload.data?.postId || "";        // ← NEW
 
-  const url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channel=" + channelId;
+  // Build URL with both channelId and postId
+  let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=" + channelId;
+  if (postId) url += "&postId=" + postId;
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
-  const badge = "./badge.png";        // ← Your small badge icon
+  const badge = "./badge.png";
 
   self.registration.showNotification(title, {
     body: body,
-    icon: icon,      // Large icon shown in the notification
-    badge: badge,    // Small icon at the very top (status bar)
+    icon: icon,
+    badge: badge,
     image: payload.data?.image || "",
-    data: { url }
+    data: { url, postId }   // ← pass postId in data too
   });
 });
 
@@ -39,12 +43,13 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
+  const urlToOpen = event.notification.data?.url || 
+                    "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes(urlToOpen) && "focus" in client) {
+        if (client.url.includes("channel.html") && "focus" in client) {
           return client.focus();
         }
       }
@@ -84,7 +89,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbyIS1Vbjjd7rT4MeH5ZumG6GZQf_7UB0crozh9I9PL12Tq3y9EW3II_EYoor8VsLfbW/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbyExb2jR7bpLL3mtXwenHKqFfn1-WPL5Y-8YOyL1wSY_5geTIPhT4FYFar9z0X1H6b4/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

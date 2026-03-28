@@ -1762,6 +1762,69 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
 }
 </script>
 <script>
+  let deferredPrompt;
+  const installBtn = document.getElementById('installAppBtn');
+  const installModal = document.getElementById('installModal');
+
+  // --- NEW: Hide button immediately if already in "standalone" (installed) mode ---
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+    if (installBtn) installBtn.style.display = 'none';
+  }
+
+  // 1. Register Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('SW registered'))
+        .catch(err => console.error('SW failed:', err));
+    });
+  }
+
+  // 2. Capture the install event
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Only show button if not already installed
+    if (installBtn) installBtn.style.display = 'block';
+  });
+
+  // 3. The "Yes" Button Logic
+  document.getElementById('installYes').addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted install');
+        if (installBtn) installBtn.style.display = 'none'; // Hide button
+      }
+      deferredPrompt = null;
+      installModal.style.display = 'none';
+    }
+  });
+
+  // 4. Manual Modal Trigger
+  if (installBtn) {
+    installBtn.addEventListener('click', () => {
+      installModal.style.display = 'flex';
+    });
+  }
+
+  // 5. Cancel Button
+  document.getElementById('installNo').addEventListener('click', () => {
+    installModal.style.display = 'none';
+  });
+
+  // 6. --- NEW: Final safeguard to hide button when installation finishes ---
+  window.addEventListener('appinstalled', () => {
+    console.log('App installed successfully');
+    if (installBtn) installBtn.style.display = 'none';
+    installModal.style.display = 'none';
+    deferredPrompt = null;
+  });
+</script>
+
+<script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {

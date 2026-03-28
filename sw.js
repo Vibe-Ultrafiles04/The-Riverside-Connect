@@ -89,7 +89,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbyxj3iVLXJuDUfl_cujrba_8vyp1KjEnN-__MWUa-uepw5l-BEsJx0UqGQsMJwPmD4N/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwLUrsUbKynouvto8Aup6PiE5TqObPl8aWB82zZgIF884iu7cc_u5xIdVCf2cRHVQ-C/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

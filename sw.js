@@ -15,17 +15,26 @@ const messaging = firebase.messaging();
 
 // Handle background messages
 // Handle background messages
+// Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log("Background message received:", payload);
 
   const title = payload.data?.title || "Riverside Connect";
-  const body = payload.data?.body || "New post in a channel";
+  const body = payload.data?.body || "New activity";
   const channelId = payload.data?.channelId || "";
-  const postId = payload.data?.postId || "";        // ← NEW
+  const postId = payload.data?.postId || "";
 
-  // Build URL with both channelId and postId
-  let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=" + channelId;
-  if (postId) url += "&postId=" + postId;
+  // ── IMPROVED URL LOGIC (works for both posts AND comments) ─────────────────
+  let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
+
+  if (channelId) {
+    url += "?channelId=" + encodeURIComponent(channelId);
+    if (postId) {
+      url += "&postId=" + encodeURIComponent(postId);
+    }
+  }
+  // If no channelId (e.g. pure comment), just go to main page or comments section
+  // You can change this later if you create a dedicated comments page
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
@@ -35,7 +44,7 @@ messaging.onBackgroundMessage((payload) => {
     icon: icon,
     badge: badge,
     image: payload.data?.image || "",
-    data: { url, postId }   // ← pass postId in data too
+    data: { url, postId, channelId }   // ← added channelId too
   });
 });
 
@@ -89,7 +98,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwLUrsUbKynouvto8Aup6PiE5TqObPl8aWB82zZgIF884iu7cc_u5xIdVCf2cRHVQ-C/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbxmxw7p_Db_fsTSqdrQ86-OgXovI_9j8QhqH78KegxQ9pk-st_2esSjQO4T8OKDVRXJ/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

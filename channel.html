@@ -1548,7 +1548,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwLUrsUbKynouvto8Aup6PiE5TqObPl8aWB82zZgIF884iu7cc_u5xIdVCf2cRHVQ-C/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxmxw7p_Db_fsTSqdrQ86-OgXovI_9j8QhqH78KegxQ9pk-st_2esSjQO4T8OKDVRXJ/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -3957,10 +3957,11 @@ if ('serviceWorker' in navigator) {
       }
 
       // Foreground messages
-   onMessage(messaging, (payload) => {
+  // Foreground messages
+onMessage(messaging, (payload) => {
   console.log("Foreground message received:", payload);
 
-  const title = payload.data?.title || "New post in channel!";
+  const title = payload.data?.title || "New activity";
   const body  = payload.data?.body || "";
 
   showToast(title + " — " + body, "success");
@@ -3970,7 +3971,7 @@ if ('serviceWorker' in navigator) {
   const notification = new Notification(title, {
     body: body,
     icon: payload.data?.icon || "./maskable_icon_x192.png",
-    badge: "./badge.png",     // ← Add this line for foreground too
+    badge: "./badge.png",
     image: payload.data?.image || "",
   });
 
@@ -3979,11 +3980,15 @@ if ('serviceWorker' in navigator) {
     window.open(url, "_blank");
   };
 
-  // Refresh posts if user is inside channel
-  if (currentChannelId) loadPosts(currentChannelId);
+  // Refresh logic — improved
+  if (currentChannelId) {
+    loadPosts(currentChannelId);           // refresh posts
+    // Optional: also refresh comments if you have a loadComments() function
+    if (typeof loadComments === "function") {
+      loadComments();   // ← add this if you have comment loading function
+    }
+  }
 });
-
-
     } catch (err) {
       console.error("❌ FCM/Service Worker registration error:", err);
     }

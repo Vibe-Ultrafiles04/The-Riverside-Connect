@@ -889,7 +889,7 @@ html, body {
 </div>
 
  <script>
-  const scriptUrl = 'https://script.google.com/macros/s/AKfycbxmxw7p_Db_fsTSqdrQ86-OgXovI_9j8QhqH78KegxQ9pk-st_2esSjQO4T8OKDVRXJ/exec';
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbwM5eWla2f1SgfljI96OhR4qgfRyHUQHXQ6jilm3HnwlsVoBRc-gx2Z51XyVPEsO3Iq/exec';
 
  let userName = localStorage.getItem('userName');
 
@@ -1824,133 +1824,96 @@ document.getElementById('copy-recovery-btn')?.addEventListener('click', () => {
   });
 </script>
 
+<!-- ==================== FCM PUSH NOTIFICATION REGISTRATION ==================== -->
+<!-- ==================== FCM PUSH NOTIFICATION REGISTRATION (Home) ==================== -->
 <script>
-async function initializeFCM() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    console.warn("❌ Push notifications not supported in this browser");
-    return;
-  }
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwM5eWla2f1SgfljI96OhR4qgfRyHUQHXQ6jilm3HnwlsVoBRc-gx2Z51XyVPEsO3Iq/exec';
 
-  try {
-    // Register your main service worker (offline + FCM)
-    const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
-    console.log('✅ Service Worker registered:', swReg.scope);
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        // Register service worker (same sw.js used by channel)
+        const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+        console.log('✅ Service Worker registered for home.html:', swReg.scope);
 
-    // Dynamic import Firebase (modern way)
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
-    const { getMessaging, getToken, deleteToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
+        // Dynamically import Firebase modular SDK
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
+        const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
-      authDomain: "riverside-connect-a8458.firebaseapp.com",
-      projectId: "riverside-connect-a8458",
-      storageBucket: "riverside-connect-a8458.firebasestorage.app",
-      messagingSenderId: "938830806378",
-      appId: "1:938830806378:web:254ed56cba3dc02290f913"
-    };
+        const firebaseConfig = {
+          apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+          authDomain: "riverside-connect-a8458.firebaseapp.com",
+          projectId: "riverside-connect-a8458",
+          storageBucket: "riverside-connect-a8458.firebasestorage.app",
+          messagingSenderId: "938830806378",
+          appId: "1:938830806378:web:254ed56cba3dc02290f913"
+        };
 
-    const app = initializeApp(firebaseConfig);
-    const messaging = getMessaging(app);
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
 
-    const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
+        const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
 
-    // Request permission
-    const permission = await Notification.requestPermission();
-    if (permission !== "granted") {
-      console.warn("⚠️ Notification permission denied");
-      return;
-    }
+        // Request permission
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          console.warn("Notification permission denied");
+          return;
+        }
 
-    // Delete old token first (helps with Sender ID / VAPID mismatches)
-    try {
-      const oldToken = await getToken(messaging, { 
-        vapidKey: VAPID_KEY, 
-        serviceWorkerRegistration: swReg 
-      });
-      if (oldToken) await deleteToken(messaging);
-    } catch (e) {
-      console.log("No old token to delete or already invalid");
-    }
+        // Get FCM Token
+        const token = await getToken(messaging, { 
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: swReg 
+        });
 
-    // Get fresh token
-    const token = await getToken(messaging, { 
-      vapidKey: VAPID_KEY, 
-      serviceWorkerRegistration: swReg 
-    });
+        if (token) {
+          console.log("✅ FCM Token obtained for home:", token.substring(0, 40) + "...");
 
-    if (!token) {
-      console.error("❌ Failed to get FCM token");
-      return;
-    }
+          // Save token to backend (using correct field name)
+          const payload = {
+            operation: "saveFcmToken",
+            username: userName,
+            fcmToken: token
+          };
 
-    console.log("✅ FCM Token:", token.substring(0, 40) + "...");
+          const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
 
-    // Save to backend (only if user is logged in)
-    if (typeof currentUserName !== "undefined" && currentUserName && typeof SCRIPT_URL !== "undefined") {
-      const response = await fetch(SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          operation: "saveFcmToken", 
-          username: currentUserName, 
-          fcmToken: token 
-        })
-      });
+          const result = await response.json();
+          if (result.status === "success") {
+            console.log("✅ FCM Token saved to backend successfully");
+            localStorage.setItem('fcmTokenSaved', 'true');
+          } else {
+            console.warn("Failed to save token:", result.message);
+          }
+        }
 
-      if (response.ok) {
-        console.log("✅ FCM token saved to backend");
-      } else {
-        console.warn("⚠️ Failed to save token to backend");
-      }
-    } else {
-      console.warn("⚠️ currentUserName or SCRIPT_URL not available — token not saved");
-    }
+        // Handle foreground messages
+        onMessage(messaging, (payload) => {
+          console.log("Foreground message received (home):", payload);
 
-    // Handle foreground messages
-    onMessage(messaging, (payload) => {
-      console.log("📩 Foreground message:", payload);
+          const title = payload.data?.title || "Riverside Connect";
+          const body  = payload.data?.body  || "New message";
 
-      const title = payload.data?.title || "New activity";
-      const body  = payload.data?.body || payload.notification?.body || "";
+          // Use your existing toast function
+          showToast(`${title}: ${body}`, "info");
 
-      // Use your custom toast if available (defined in home/channel)
-      if (typeof showToast === "function") {
-        showToast(`${title} — ${body}`, "success");
-      }
+          // Refresh the chat
+          if (isApproved) {
+            loadComments(false);
+          }
+        });
 
-      const url = payload.data?.click_action || "/";
-
-      // Fallback system notification
-      const notification = new Notification(title, {
-        body: body,
-        icon: payload.data?.icon || "./maskable_icon_x192.png",
-        badge: "./badge.png",
-        image: payload.data?.image || ""
-      });
-
-      notification.onclick = () => window.open(url, "_blank");
-
-      // Refresh content if on channel/home page
-      if (typeof currentChannelId !== "undefined" && currentChannelId) {
-        if (typeof loadPosts === "function") loadPosts(currentChannelId);
-        if (typeof loadComments === "function") loadComments();
-      }
-
-      if (typeof refreshDashboard === "function") {
-        refreshDashboard();
+      } catch (err) {
+        console.error("❌ FCM registration error in home.html:", err);
       }
     });
-
-  } catch (err) {
-    console.error("❌ FCM initialization failed:", err);
+  } else {
+    console.warn("Service Worker not supported in this browser");
   }
-}
-
-// Run when the page is fully loaded and user variables are ready
-window.addEventListener('load', () => {
-  // Small delay to ensure your page scripts (currentUserName, etc.) have run
-  setTimeout(initializeFCM, 800);
-});
 </script>
 
 </body>

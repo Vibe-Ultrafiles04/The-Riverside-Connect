@@ -14,27 +14,27 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 // Handle background messages
-// Handle background messages
-// Handle background messages
 messaging.onBackgroundMessage((payload) => {
   console.log("Background message received:", payload);
 
   const title = payload.data?.title || "Riverside Connect";
-  const body = payload.data?.body || "New activity";
-  const channelId = payload.data?.channelId || "";
-  const postId = payload.data?.postId || "";
+  const body  = payload.data?.body  || "New activity";
 
-  // ── IMPROVED URL LOGIC (works for both posts AND comments) ─────────────────
-  let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
+  const channelId = payload.data?.channelId || "";
+  const postId    = payload.data?.postId    || "";
+
+  // ── SMART URL LOGIC - Supports BOTH home.html and channel.html ─────────────────
+  let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (channelId) {
-    url += "?channelId=" + encodeURIComponent(channelId);
+    // If channelId exists → it's a channel-related notification
+    url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
+    
     if (postId) {
-      url += "&postId=" + encodeURIComponent(postId);
+      url += `&postId=${encodeURIComponent(postId)}`;
     }
   }
-  // If no channelId (e.g. pure comment), just go to main page or comments section
-  // You can change this later if you create a dedicated comments page
+  // If no channelId → default to main home chat (comments)
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
@@ -44,7 +44,11 @@ messaging.onBackgroundMessage((payload) => {
     icon: icon,
     badge: badge,
     image: payload.data?.image || "",
-    data: { url, postId, channelId }   // ← added channelId too
+    data: { 
+      url: url,
+      channelId: channelId,
+      postId: postId 
+    }
   });
 });
 
@@ -53,16 +57,23 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   const urlToOpen = event.notification.data?.url || 
-                    "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html";
+                    "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
+      // Try to focus existing window/tab if it matches the target URL
       for (const client of clientList) {
-        if (client.url.includes("channel.html") && "focus" in client) {
+        if (client.url === urlToOpen || 
+            (channelId && client.url.includes("channel.html")) || 
+            "focus" in client) {
           return client.focus();
         }
       }
-      if (clients.openWindow) return clients.openWindow(urlToOpen);
+
+      // Otherwise open the correct URL
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
     })
   );
 });
@@ -98,7 +109,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbxmxw7p_Db_fsTSqdrQ86-OgXovI_9j8QhqH78KegxQ9pk-st_2esSjQO4T8OKDVRXJ/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwM5eWla2f1SgfljI96OhR4qgfRyHUQHXQ6jilm3HnwlsVoBRc-gx2Z51XyVPEsO3Iq/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

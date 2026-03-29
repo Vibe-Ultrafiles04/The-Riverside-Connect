@@ -626,7 +626,108 @@ loadDashboard().then(() => {
 });
 </script>
 
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      // Register your merged service worker (sw.js) for offline + FCM
+      const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+      console.log('✅ Merged SW registered:', swReg.scope);
 
+      // Now request FCM permission & token
+      const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
+      const { getMessaging, getToken, deleteToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+        authDomain: "riverside-connect-a8458.firebaseapp.com",
+        projectId: "riverside-connect-a8458",
+        storageBucket: "riverside-connect-a8458.firebasestorage.app",
+        messagingSenderId: "938830806378",
+        appId: "1:938830806378:web:254ed56cba3dc02290f913"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const messaging = getMessaging(app);
+
+      const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
+
+      // Request notification permission
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") return console.warn("Notification permission denied");
+
+      // Delete old token to avoid SenderId mismatch
+      const oldToken = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+      if (oldToken) await deleteToken(messaging);
+
+      // Get new token
+      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+      console.log("✅ FCM token obtained:", token?.substring(0, 40) + "...");
+
+      // Send token to backend — FIXED: Use correct variable names
+      if (token && typeof currentUserName !== "undefined" && typeof SCRIPT_URL !== "undefined") {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify({ 
+            operation: "saveFcmToken", 
+            username: currentUserName, 
+            fcmToken: token 
+          })
+        });
+        console.log("✅ FCM token saved to backend");
+      } else {
+        console.warn("Missing SCRIPT_URL or currentUserName for token save");
+      }
+
+      // Foreground messages — IMPROVED: More robust handling
+      onMessage(messaging, (payload) => {
+        console.log("Foreground message received:", payload);
+
+        const title = payload.data?.title || "New activity";
+        const body  = payload.data?.body || "";
+
+        // Try to show toast if function exists (works on home.html, channel.html, etc.)
+        if (typeof showToast === "function") {
+          showToast(title + " — " + body, "success");
+        }
+
+        const url = payload.data?.click_action || "/";
+
+        // Show system notification as fallback
+        const notification = new Notification(title, {
+          body: body,
+          icon: payload.data?.icon || "./maskable_icon_x192.png",
+          badge: "./badge.png",
+          image: payload.data?.image || "",
+        });
+
+        // Make notification clickable
+        notification.onclick = () => {
+          window.open(url, "_blank");
+        };
+
+        // Refresh logic — improved & safer
+        if (typeof currentChannelId !== "undefined" && currentChannelId) {
+          if (typeof loadPosts === "function") {
+            loadPosts(currentChannelId);
+          }
+          if (typeof loadComments === "function") {
+            loadComments();
+          }
+        }
+
+        // Additional refresh for dashboard / home if functions exist
+        if (typeof refreshDashboard === "function") {
+          refreshDashboard();
+        }
+      });
+
+    } catch (err) {
+      console.error("❌ FCM/Service Worker registration error:", err);
+    }
+  });
+}
+</script>
 
 
 </body>

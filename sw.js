@@ -39,10 +39,10 @@ messaging.onBackgroundMessage((payload) => {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
   } 
-  else if (payload.data?.isAnnouncement === "true" || payload.data?.isAnnouncement === true) {
-    // Announcement notification
-    url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
-  }
+  else if (String(payload.data?.isAnnouncement).toLowerCase() === "true") {
+  // Announcement notification - Most reliable check
+  url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
+}
   // If none of the above → default to home.html (main chat comments)
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";

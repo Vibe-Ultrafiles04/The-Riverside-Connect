@@ -746,7 +746,7 @@
     <input type="file" id="file-input" accept="image/*,video/*" multiple style="display:none;">
 
     <script>
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbwJiN73uwRHB2ki-7fqPZvUSq4sjChdw7DRvVno-HUfcjzPF7bumfSd8ULmTdGZkxEm/exec';
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbzTgjmsVBvPXAHWKm3xxGKCr2VDkzZV5LyS2muGj3FoD4GQqz5rHWuPTAeVacxaBJY/exec';
       let userName = localStorage.getItem('userName');
 
         if (!userName) {
@@ -1159,93 +1159,7 @@ markAnnSeen();
     .catch(err => console.error('❌ SW registration failed:', err));
 }
 </script>
-<!-- ==================== FCM PUSH NOTIFICATION REGISTRATION (announce.html) ==================== -->
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', async () => {
-      try {
-        // Register the same merged service worker
-        const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
-        console.log('✅ Service Worker registered for announce.html:', swReg.scope);
 
-        // Dynamically import Firebase
-        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
-        const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
-
-        const firebaseConfig = {
-          apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
-          authDomain: "riverside-connect-a8458.firebaseapp.com",
-          projectId: "riverside-connect-a8458",
-          storageBucket: "riverside-connect-a8458.firebasestorage.app",
-          messagingSenderId: "938830806378",
-          appId: "1:938830806378:web:254ed56cba3dc02290f913"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const messaging = getMessaging(app);
-
-        const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
-
-        // Request notification permission
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") {
-          console.warn("Notification permission denied in announce.html");
-          return;
-        }
-
-        // Get FCM Token
-        const token = await getToken(messaging, { 
-          vapidKey: VAPID_KEY,
-          serviceWorkerRegistration: swReg 
-        });
-
-        if (token) {
-          console.log("✅ FCM Token obtained for announce.html:", token.substring(0, 40) + "...");
-
-          const payload = {
-            operation: "saveFcmToken",
-            username: userName,           // ← using your existing userName variable
-            fcmToken: token
-          };
-
-          const response = await fetch(scriptUrl, {   // ← using your existing scriptUrl
-            method: "POST",
-            body: JSON.stringify(payload)
-          });
-
-          const result = await response.json();
-          if (result.status === "success") {
-            console.log("✅ FCM Token saved successfully from announce.html");
-            localStorage.setItem('fcmTokenSaved', 'true');
-          } else {
-            console.warn("Failed to save token from announce.html:", result.message);
-          }
-        }
-
-        // Handle foreground messages
-        onMessage(messaging, (payload) => {
-          console.log("Foreground message received in announce.html:", payload);
-
-          const title = payload.data?.title || "New Announcement";
-          const body  = payload.data?.body  || "New update";
-
-          // Use your existing toast function
-          showToast(`${title}: ${body}`, "info");
-
-          // Refresh announcements list
-          if (typeof loadAnnouncements === "function") {
-            loadAnnouncements(false);   // force refresh
-          }
-        });
-
-      } catch (err) {
-        console.error("❌ FCM registration error in announce.html:", err);
-      }
-    });
-  } else {
-    console.warn("Service Worker not supported in this browser");
-  }
-</script>
    
 </body>
 </html>

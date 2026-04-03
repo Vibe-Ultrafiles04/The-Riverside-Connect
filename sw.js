@@ -22,24 +22,24 @@ messaging.onBackgroundMessage((payload) => {
 
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
-  const gameId    = payload.data?.gameId    || "";   
-  const isAnnouncement = payload.data?.isAnnouncement;   // ← can be boolean or string
+  const gameId    = payload.data?.gameId    || "";   // ← Added for Q&A Games
 
-  // ── SMART URL LOGIC ─────────────────
+  // ── SMART URL LOGIC - Supports home.html, channel.html, and Q&A.html ─────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (gameId) {
+    // Q&A Game notification → ONLY gameId (as requested)
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
   } 
   else if (channelId) {
+    // Normal Channel post
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
+    
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
-  } 
-  else if (String(isAnnouncement).toLowerCase() === "true") {   // ← THIS IS THE REAL FIX
-    url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
+  // If neither → default to main home chat
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
@@ -53,11 +53,11 @@ messaging.onBackgroundMessage((payload) => {
       url: url,
       channelId: channelId,
       postId: postId,
-      gameId: gameId,
-      isAnnouncement: isAnnouncement
+      gameId: gameId
     }
   });
 });
+
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
@@ -67,16 +67,17 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
+      // Try to focus existing window/tab if it matches the target URL
       for (const client of clientList) {
         if (client.url === urlToOpen || 
             (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
             (event.notification.data?.channelId && client.url.includes("channel.html")) ||
-            (event.notification.data?.isAnnouncement && client.url.includes("announce.html")) ||  // ← weak
             "focus" in client) {
           return client.focus();
         }
       }
 
+      // Otherwise open the correct URL
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -115,7 +116,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwJiN73uwRHB2ki-7fqPZvUSq4sjChdw7DRvVno-HUfcjzPF7bumfSd8ULmTdGZkxEm/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbzTgjmsVBvPXAHWKm3xxGKCr2VDkzZV5LyS2muGj3FoD4GQqz5rHWuPTAeVacxaBJY/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

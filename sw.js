@@ -22,24 +22,28 @@ messaging.onBackgroundMessage((payload) => {
 
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
-  const gameId    = payload.data?.gameId    || "";   // ← Added for Q&A Games
+  const gameId    = payload.data?.gameId    || "";
+  const announcement = payload.data?.announcement || "";   // ← NEW for announcements
 
-  // ── SMART URL LOGIC - Supports home.html, channel.html, and Q&A.html ─────────────────
+  // ── SMART URL LOGIC ─────────────────────────────────────────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (gameId) {
-    // Q&A Game notification → ONLY gameId (as requested)
+    // Q&A Game
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
   } 
   else if (channelId) {
-    // Normal Channel post
+    // Channel Post
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
-    
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
   }
-  // If neither → default to main home chat
+  else if (announcement) {
+    // Announcement → opens announce.html (just like comments open home.html)
+    url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
+  }
+  // Default falls back to home.html (for normal comments)
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
@@ -53,7 +57,8 @@ messaging.onBackgroundMessage((payload) => {
       url: url,
       channelId: channelId,
       postId: postId,
-      gameId: gameId
+      gameId: gameId,
+      announcement: announcement   // ← NEW
     }
   });
 });
@@ -67,17 +72,18 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
-      // Try to focus existing window/tab if it matches the target URL
+      // Try to focus existing window/tab
       for (const client of clientList) {
         if (client.url === urlToOpen || 
             (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
             (event.notification.data?.channelId && client.url.includes("channel.html")) ||
+            (event.notification.data?.announcement && client.url.includes("announce.html")) ||
             "focus" in client) {
           return client.focus();
         }
       }
 
-      // Otherwise open the correct URL
+      // Open new window/tab with correct URL
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -116,7 +122,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbzTgjmsVBvPXAHWKm3xxGKCr2VDkzZV5LyS2muGj3FoD4GQqz5rHWuPTAeVacxaBJY/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbyTrKVnhxQd0susNqEySBmYGhBXHJXyJT2gHkBysBnbFqaJ_HG_Q0gXF4khrCeTtay4/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

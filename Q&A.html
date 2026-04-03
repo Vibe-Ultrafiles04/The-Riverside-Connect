@@ -1113,7 +1113,7 @@ html, body {
 </div>
 <div id="toast-container"></div>
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyIS1Vbjjd7rT4MeH5ZumG6GZQf_7UB0crozh9I9PL12Tq3y9EW3II_EYoor8VsLfbW/exec'; 
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynq-lFjMA0fd-VwcK5w2yxdSAuftiNp76WXvuPkXXhAGbpZiys3uKFH57BXjqEnT-T/exec'; 
 let currentUserName = localStorage.getItem("userName") || "";
 let currentQnAChannelId = null;
 let allQnAChannels = [];
@@ -2048,5 +2048,97 @@ document.getElementById('closeChannels')?.addEventListener('click', () => {
       .catch(err => console.error('❌ SW registration failed:', err));
   }
 </script>
+<!-- ==================== FCM PUSH NOTIFICATION REGISTRATION (Q&A.html) ==================== -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        // Register the same merged service worker
+        const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+        console.log('✅ Service Worker registered for Q&A.html:', swReg.scope);
+
+        // Dynamically import Firebase
+        const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
+        const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+          authDomain: "riverside-connect-a8458.firebaseapp.com",
+          projectId: "riverside-connect-a8458",
+          storageBucket: "riverside-connect-a8458.firebasestorage.app",
+          messagingSenderId: "938830806378",
+          appId: "1:938830806378:web:254ed56cba3dc02290f913"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const messaging = getMessaging(app);
+
+        const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
+
+        // Request notification permission
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          console.warn("Notification permission denied in Q&A.html");
+          return;
+        }
+
+        // Get FCM Token
+        const token = await getToken(messaging, { 
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: swReg 
+        });
+
+        if (token) {
+          console.log("✅ FCM Token obtained for Q&A.html:", token.substring(0, 40) + "...");
+
+          const payload = {
+            operation: "saveFcmToken",
+            username: currentUserName,
+            fcmToken: token
+          };
+
+          const response = await fetch(SCRIPT_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+          });
+
+          const result = await response.json();
+          if (result.status === "success") {
+            console.log("✅ FCM Token saved successfully from Q&A.html");
+            localStorage.setItem('fcmTokenSaved', 'true');
+          } else {
+            console.warn("Failed to save token from Q&A.html:", result.message);
+          }
+        }
+
+        // Handle foreground messages
+       // Inside onMessage handler in Q&A.html
+onMessage(messaging, (payload) => {
+  console.log("Foreground message received in Q&A.html:", payload);
+
+  const title = payload.data?.title || "New Q&A Game";
+  const body  = payload.data?.body  || "A new game was added";
+  const incomingGameId = payload.data?.gameId;
+  const incomingChannelId = payload.data?.channelId;
+
+  showToast(`${title}: ${body}`, "info");
+
+  // Smart refresh: only if user is currently viewing the same channel
+  if (currentQnAChannelId && incomingChannelId === currentQnAChannelId && typeof loadGames === "function") {
+    loadGames(currentQnAChannelId);
+  }
+});
+
+      } catch (err) {
+        console.error("❌ FCM registration error in Q&A.html:", err);
+      }
+    });
+  } else {
+    console.warn("Service Worker not supported in this browser");
+  }
+</script>
+
+
+
 </body>
 </html>

@@ -22,13 +22,13 @@ messaging.onBackgroundMessage((payload) => {
 
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
-  const gameId    = payload.data?.gameId    || "";   // ← Added for Q&A Games
+  const gameId    = payload.data?.gameId    || "";   
 
-  // ── SMART URL LOGIC - Supports home.html, channel.html, and Q&A.html ─────────────────
+  // ── SMART URL LOGIC - Supports home.html, channel.html, Q&A.html, and announce.html ─────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (gameId) {
-    // Q&A Game notification → ONLY gameId (as requested)
+    // Q&A Game notification → ONLY gameId
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
   } 
   else if (channelId) {
@@ -38,8 +38,12 @@ messaging.onBackgroundMessage((payload) => {
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
+  } 
+  else if (payload.data?.isAnnouncement === "true" || payload.data?.isAnnouncement === true) {
+    // Announcement notification
+    url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
-  // If neither → default to main home chat
+  // If none of the above → default to home.html (main chat comments)
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
@@ -53,7 +57,8 @@ messaging.onBackgroundMessage((payload) => {
       url: url,
       channelId: channelId,
       postId: postId,
-      gameId: gameId
+      gameId: gameId,
+      isAnnouncement: payload.data?.isAnnouncement || false
     }
   });
 });
@@ -72,6 +77,7 @@ self.addEventListener("notificationclick", (event) => {
         if (client.url === urlToOpen || 
             (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
             (event.notification.data?.channelId && client.url.includes("channel.html")) ||
+            (event.notification.data?.isAnnouncement && client.url.includes("announce.html")) ||
             "focus" in client) {
           return client.focus();
         }
@@ -116,7 +122,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbxaHF9z9UkxDxZPtY8h4ujyB9NvPJaukEec7pyJfH0lX29fA7P24Be7eGbNS0goy1pq/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbz1saTNG2ZpTQpkCurRS439vv-i6qsG7yrn4PYo3xiJVFIMeLHHmK6cabKrcrC3p72z/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

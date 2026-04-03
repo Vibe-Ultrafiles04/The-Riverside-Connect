@@ -22,19 +22,24 @@ messaging.onBackgroundMessage((payload) => {
 
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
+  const gameId    = payload.data?.gameId    || "";   // ← Added for Q&A Games
 
-  // ── SMART URL LOGIC - Supports BOTH home.html and channel.html ─────────────────
+  // ── SMART URL LOGIC - Supports home.html, channel.html, and Q&A.html ─────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
-  if (channelId) {
-    // If channelId exists → it's a channel-related notification
+  if (gameId) {
+    // Q&A Game notification → ONLY gameId (as requested)
+    url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
+  } 
+  else if (channelId) {
+    // Normal Channel post
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
     
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
   }
-  // If no channelId → default to main home chat (comments)
+  // If neither → default to main home chat
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
@@ -47,7 +52,8 @@ messaging.onBackgroundMessage((payload) => {
     data: { 
       url: url,
       channelId: channelId,
-      postId: postId 
+      postId: postId,
+      gameId: gameId
     }
   });
 });
@@ -64,7 +70,8 @@ self.addEventListener("notificationclick", (event) => {
       // Try to focus existing window/tab if it matches the target URL
       for (const client of clientList) {
         if (client.url === urlToOpen || 
-            (channelId && client.url.includes("channel.html")) || 
+            (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
+            (event.notification.data?.channelId && client.url.includes("channel.html")) ||
             "focus" in client) {
           return client.focus();
         }
@@ -109,7 +116,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwM5eWla2f1SgfljI96OhR4qgfRyHUQHXQ6jilm3HnwlsVoBRc-gx2Z51XyVPEsO3Iq/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbxaHF9z9UkxDxZPtY8h4ujyB9NvPJaukEec7pyJfH0lX29fA7P24Be7eGbNS0goy1pq/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

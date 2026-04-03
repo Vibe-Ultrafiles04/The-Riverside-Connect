@@ -23,27 +23,23 @@ messaging.onBackgroundMessage((payload) => {
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
   const gameId    = payload.data?.gameId    || "";   
+  const isAnnouncement = payload.data?.isAnnouncement;   // ← can be boolean or string
 
-  // ── SMART URL LOGIC - Supports home.html, channel.html, Q&A.html, and announce.html ─────────────────
+  // ── SMART URL LOGIC ─────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (gameId) {
-    // Q&A Game notification → ONLY gameId
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
   } 
   else if (channelId) {
-    // Normal Channel post
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
-    
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
   } 
-  else if (String(payload.data?.isAnnouncement).toLowerCase() === "true") {
-  // Announcement notification - Most reliable check
-  url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
-}
-  // If none of the above → default to home.html (main chat comments)
+  else if (String(isAnnouncement).toLowerCase() === "true") {   // ← THIS IS THE REAL FIX
+    url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
+  }
 
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
@@ -58,11 +54,10 @@ messaging.onBackgroundMessage((payload) => {
       channelId: channelId,
       postId: postId,
       gameId: gameId,
-      isAnnouncement: payload.data?.isAnnouncement || false
+      isAnnouncement: isAnnouncement
     }
   });
 });
-
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
@@ -72,18 +67,16 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
-      // Try to focus existing window/tab if it matches the target URL
       for (const client of clientList) {
         if (client.url === urlToOpen || 
             (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
             (event.notification.data?.channelId && client.url.includes("channel.html")) ||
-            (event.notification.data?.isAnnouncement && client.url.includes("announce.html")) ||
+            (event.notification.data?.isAnnouncement && client.url.includes("announce.html")) ||  // ← weak
             "focus" in client) {
           return client.focus();
         }
       }
 
-      // Otherwise open the correct URL
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }

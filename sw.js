@@ -23,49 +23,42 @@ messaging.onBackgroundMessage((payload) => {
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
   const gameId    = payload.data?.gameId    || "";
-  const announcement = payload.data?.announcement || "";
+  const announcement = payload.data?.announcement || "";   // ← NEW for announcements
 
   // ── SMART URL LOGIC ─────────────────────────────────────────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (gameId) {
+    // Q&A Game
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
   } 
   else if (channelId) {
+    // Channel Post
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
   }
   else if (announcement) {
+    // Announcement → opens announce.html (just like comments open home.html)
     url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
+  // Default falls back to home.html (for normal comments)
 
-  // Set the profile picture URL
-  const profilePic = payload.data?.icon || "./maskable_icon_x192.png";
+  const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
 
   self.registration.showNotification(title, {
     body: body,
-    // PRIMARY LEFT-SIDE ATTEMPT: The icon property
-    icon: profilePic, 
+    icon: icon,
     badge: badge,
-    image: payload.data?.image || "", 
-    
-    // ── CRITICAL FOR LEFT-SIDE ALIGNMENT ─────────────────────────────────
-    // Using a 'tag' tells the OS this is a specific thread/person.
-    // On most Android versions, 'tag' + 'renotify' forces the 
-    // "Conversation" layout which keeps the icon on the left.
-    tag: channelId || announcement || "chat-message",
-    renotify: true, 
-    // ─────────────────────────────────────────────────────────────────────
-
+    image: payload.data?.image || "",
     data: { 
       url: url,
       channelId: channelId,
       postId: postId,
       gameId: gameId,
-      announcement: announcement
+      announcement: announcement   // ← NEW
     }
   });
 });
@@ -129,7 +122,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbzjWelnty79f7hmm_9qkJcCmZQPyDjPa-8aD0Osnog0etdyyyjYHyjngULpygGNrX81/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbx9-o8DZAhcr2f9HDLUFvoZC36uJziRgLRJ3DwthNhV1DjMjDChJ7kGl7jbc4c9ugNp/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

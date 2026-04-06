@@ -23,45 +23,47 @@ messaging.onBackgroundMessage((payload) => {
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
   const gameId    = payload.data?.gameId    || "";
-  const announcement = payload.data?.announcement || "";
+  const announcement = payload.data?.announcement || "";   // ← NEW for announcements
 
   // ── SMART URL LOGIC ─────────────────────────────────────────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (gameId) {
+    // Q&A Game
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
   } 
   else if (channelId) {
+    // Channel Post
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
   }
   else if (announcement) {
+    // Announcement → opens announce.html (just like comments open home.html)
     url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
+  // Default falls back to home.html (for normal comments)
 
-  // ==================== UPDATED PART ====================
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
 
   self.registration.showNotification(title, {
     body: body,
-    icon: icon,                    // ← User's profile picture goes here (left side)
+    icon: icon,
     badge: badge,
-    image: payload.data?.image || "",   // ← Only for media/photos on the right side
-    color: "#1E88E5",              // ← Optional: Adds a nice blue accent (change to your brand color)
+    image: payload.data?.image || "",
     data: { 
       url: url,
       channelId: channelId,
       postId: postId,
       gameId: gameId,
-      announcement: announcement
+      announcement: announcement   // ← NEW
     }
   });
 });
 
-// Handle notification click (no change needed)
+// Handle notification click
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
@@ -70,6 +72,7 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: "window" }).then((clientList) => {
+      // Try to focus existing window/tab
       for (const client of clientList) {
         if (client.url === urlToOpen || 
             (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
@@ -80,6 +83,7 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
 
+      // Open new window/tab with correct URL
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
@@ -118,7 +122,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbwoq-Nv2xUgAVwj1_08uH43SwFoRyUCAjNhoFN3seJ8kH4P-9lZ-1lMMYZs1OYYn34j/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwBaGTlNI-YrVsnN6Ys6vDPvWaH094zFS7ZleyZW-QdKRY_qd-kg6NX80nXBROKzTFx/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

@@ -41,15 +41,16 @@ messaging.onBackgroundMessage((payload) => {
     url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
 
-  // Updated icon logic: Prefer notification.icon (for circular profile pic)
-  const icon = payload.notification?.icon || payload.data?.icon || "./maskable_icon_x192.png";
+  // ==================== UPDATED PART ====================
+  const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
 
   self.registration.showNotification(title, {
     body: body,
-    icon: icon,
+    icon: icon,                    // ← User's profile picture goes here (left side)
     badge: badge,
-    image: payload.data?.image || "",
+    image: payload.data?.image || "",   // ← Only for media/photos on the right side
+    color: "#1E88E5",              // ← Optional: Adds a nice blue accent (change to your brand color)
     data: { 
       url: url,
       channelId: channelId,
@@ -60,7 +61,7 @@ messaging.onBackgroundMessage((payload) => {
   });
 });
 
-// Handle notification click (unchanged)
+// Handle notification click (no change needed)
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
@@ -117,7 +118,7 @@ const API_CACHE_PATTERNS = [
 
 const EXPECTED_CACHES = [CACHE_NAME];
 
-const API_BASE = 'https://script.google.com/macros/s/AKfycbw40f2EXVtUfBci7R-wX2cKHbiVkJdtVt7dZuHoA0B0_PC_DsyKbkMy5GoiXrRk7KX9/exec';
+const API_BASE = 'https://script.google.com/macros/s/AKfycbwoq-Nv2xUgAVwj1_08uH43SwFoRyUCAjNhoFN3seJ8kH4P-9lZ-1lMMYZs1OYYn34j/exec';
 
 // ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
 

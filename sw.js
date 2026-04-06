@@ -41,17 +41,25 @@ messaging.onBackgroundMessage((payload) => {
     url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
 
-  // Use the profile picture from payload.data.icon for the left-side visual
+  // Set the profile picture URL
   const profilePic = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
 
   self.registration.showNotification(title, {
     body: body,
-    // This is what appears on the LEFT side of the notification text
+    // PRIMARY LEFT-SIDE ATTEMPT: The icon property
     icon: profilePic, 
     badge: badge,
-    // If a specific post image exists, it shows as a BIG preview below the text
     image: payload.data?.image || "", 
+    
+    // ── CRITICAL FOR LEFT-SIDE ALIGNMENT ─────────────────────────────────
+    // Using a 'tag' tells the OS this is a specific thread/person.
+    // On most Android versions, 'tag' + 'renotify' forces the 
+    // "Conversation" layout which keeps the icon on the left.
+    tag: channelId || announcement || "chat-message",
+    renotify: true, 
+    // ─────────────────────────────────────────────────────────────────────
+
     data: { 
       url: url,
       channelId: channelId,

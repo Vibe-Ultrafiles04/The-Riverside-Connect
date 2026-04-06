@@ -20,9 +20,6 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.data?.title || "Riverside Connect";
   const body  = payload.data?.body  || "New activity";
 
-  // Identify the sender's profile picture or fallback to app icon
-  const profilePic = payload.data?.image || payload.data?.icon || "./maskable_icon_x192.png";
-
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
   const gameId    = payload.data?.gameId    || "";
@@ -44,23 +41,23 @@ messaging.onBackgroundMessage((payload) => {
     url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
 
+  // Use the profile picture from payload.data.icon for the left-side visual
+  const profilePic = payload.data?.icon || "./maskable_icon_x192.png";
+  const badge = "./badge.png";
+
   self.registration.showNotification(title, {
     body: body,
-    // Places the profile picture on the LEFT side of the notification
+    // This is what appears on the LEFT side of the notification text
     icon: profilePic, 
-    // Small monochrome icon for the status bar
-    badge: "./badge.png",
-    // Makes the image BIG when the user expands/swipes down the notification
-    image: profilePic, 
-    // Ensures a clean update if multiple messages arrive
-    tag: channelId || announcement || "chat-update",
-    renotify: true,
+    badge: badge,
+    // If a specific post image exists, it shows as a BIG preview below the text
+    image: payload.data?.image || "", 
     data: { 
       url: url,
       channelId: channelId,
       postId: postId,
       gameId: gameId,
-      announcement: announcement 
+      announcement: announcement
     }
   });
 });

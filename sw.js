@@ -20,45 +20,47 @@ messaging.onBackgroundMessage((payload) => {
   const title = payload.data?.title || "Riverside Connect";
   const body  = payload.data?.body  || "New activity";
 
+  // Identify the sender's profile picture or fallback to app icon
+  const profilePic = payload.data?.image || payload.data?.icon || "./maskable_icon_x192.png";
+
   const channelId = payload.data?.channelId || "";
   const postId    = payload.data?.postId    || "";
   const gameId    = payload.data?.gameId    || "";
-  const announcement = payload.data?.announcement || "";   // ← NEW for announcements
+  const announcement = payload.data?.announcement || "";
 
   // ── SMART URL LOGIC ─────────────────────────────────────────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (gameId) {
-    // Q&A Game
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
   } 
   else if (channelId) {
-    // Channel Post
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
     if (postId) {
       url += `&postId=${encodeURIComponent(postId)}`;
     }
   }
   else if (announcement) {
-    // Announcement → opens announce.html (just like comments open home.html)
     url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
-  // Default falls back to home.html (for normal comments)
-
-  const icon = payload.data?.icon || "./maskable_icon_x192.png";
-  const badge = "./badge.png";
 
   self.registration.showNotification(title, {
     body: body,
-    icon: icon,
-    badge: badge,
-    image: payload.data?.image || "",
+    // Places the profile picture on the LEFT side of the notification
+    icon: profilePic, 
+    // Small monochrome icon for the status bar
+    badge: "./badge.png",
+    // Makes the image BIG when the user expands/swipes down the notification
+    image: profilePic, 
+    // Ensures a clean update if multiple messages arrive
+    tag: channelId || announcement || "chat-update",
+    renotify: true,
     data: { 
       url: url,
       channelId: channelId,
       postId: postId,
       gameId: gameId,
-      announcement: announcement   // ← NEW
+      announcement: announcement 
     }
   });
 });

@@ -291,6 +291,8 @@
 .big-btn {
   position: relative;              /* ← important! makes badge position relative to button */
 }
+
+
   </style>
 </head>
 <body>
@@ -507,18 +509,30 @@ async function loadDashboard() {
           btnContainer.innerHTML = `
   <div style="width:100%; max-width:420px; margin:0 auto 32px auto;">
     <div class="button-grid">
-      <a href="home.html" class="big-btn"><i class="fas fa-home"></i> Home</a>
+      <!-- Row 1 -->
+      <a href="home.html" class="big-btn">
+        <i class="fas fa-home"></i> Home
+      </a>
       
       <a href="announce.html" class="big-btn" id="announcements-btn">
         <i class="fas fa-bullhorn"></i> Announcements
         <span id="ann-badge" class="badge" style="display:none;">0</span>
       </a>
 
-      <!-- New Notification Toggle Button -->
+      <!-- Row 2 -->
       <button id="notification-toggle-btn" class="big-btn">
         <i class="fas fa-bell" id="notification-icon"></i> 
         <span id="notification-text">Notifications</span>
       </button>
+
+      <a href="account.html" class="big-btn" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
+        <i class="fas fa-user-cog"></i> Account
+      </a>
+
+      <!-- You can add Settings here if you want 5 buttons (it will start a new row) -->
+      <a href="settings.html" class="big-btn" style="background: linear-gradient(135deg, #64748b, #94a3b8);">
+        <i class="fas fa-cog"></i> Settings
+      </a>
     </div>
   </div>
 
@@ -532,7 +546,6 @@ async function loadDashboard() {
     <div id="qna-spaces-grid" class="circle-grid"></div>
   </div>
 `;
-
       // Fetch Q&A channels
       const qnaRes = await fetch(`${scriptUrl}?operation=getAllQnAChannels`);
       const qnaData = await qnaRes.json();

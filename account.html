@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Account – Riverside Connect</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100dvh;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #e2e8f0;
+      overflow: hidden;
+    }
+    body { display: flex; flex-direction: column; }
+
+    header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+    }
+    .header-content {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    h1 { font-size: 1.5rem; color: #60a5fa; font-weight: 600; }
+
+    main {
+      flex: 1;
+      padding: 20px 16px;
+      overflow-y: auto;
+      max-width: 640px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .profile-card {
+      background: rgba(30, 41, 59, 0.85);
+      border-radius: 20px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 32px;
+      border: 1px solid rgba(96, 165, 250, 0.25);
+    }
+    .avatar-large {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 4px solid #60a5fa;
+      margin-bottom: 16px;
+    }
+    .user-name { font-size: 1.55rem; font-weight: 700; margin-bottom: 6px; }
+    .user-info { color: #94a3b8; font-size: 1rem; }
+
+    .section { margin-bottom: 40px; }
+    .section-title {
+      color: #94a3b8;
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      padding-left: 4px;
+    }
+
+    .item {
+      background: rgba(15, 23, 42, 0.7);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .item-name { font-weight: 600; flex: 1; }
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+    .btn-edit { background: #3b82f6; color: white; }
+    .btn-delete { background: #ef4444; color: white; }
+
+    /* Improved Analytics Styling */
+    .analytics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .stat-card {
+      background: rgba(30, 41, 59, 0.9);
+      padding: 20px 16px;
+      border-radius: 18px;
+      text-align: center;
+      border: 1px solid rgba(96, 165, 250, 0.15);
+      transition: all 0.2s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+    .stat-icon {
+      font-size: 2.4rem;
+      margin-bottom: 12px;
+      color: #60a5fa;
+      opacity: 0.9;
+    }
+    .stat-number {
+      font-size: 2.1rem;
+      font-weight: 700;
+      color: #60a5fa;
+      line-height: 1.1;
+    }
+    .stat-label {
+      color: #cbd5e1;
+      font-size: 0.96rem;
+      margin-top: 8px;
+    }
+    .empty-state {
+      grid-column: 1 / -1;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 40px 20px;
+      border-radius: 16px;
+      text-align: center;
+      color: #94a3b8;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <h1>My Account</h1>
+    <button onclick="window.location.href='index.html'" style="background:none;border:none;color:#60a5fa;font-size:1.6rem;">
+      <i class="fas fa-home"></i>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- Profile -->
+  <div class="profile-card" id="profile-card">
+    <img id="profile-avatar" class="avatar-large" src="" alt="Avatar">
+    <div class="user-name" id="profile-name"></div>
+    <div class="user-info" id="profile-info"></div>
+  </div>
+
+  <!-- Update Profile -->
+  <div class="section">
+    <h3 class="section-title">Update Profile</h3>
+    <input type="text" id="new-name" placeholder="New display name" style="width:100%; padding:14px; margin-bottom:12px; background:rgba(15,23,42,0.8); border:1px solid rgba(96,165,250,0.3); border-radius:12px; color:white;">
+    <input type="file" id="new-avatar" accept="image/*" style="width:100%; margin-bottom:12px;">
+    <button onclick="updateProfile()" class="btn-primary">Save Profile Changes</button>
+  </div>
+
+  <!-- My Channels -->
+  <div class="section">
+    <h3 class="section-title">My Channels</h3>
+    <div id="my-channels"></div>
+  </div>
+
+  <!-- My Q&A -->
+  <div class="section">
+    <h3 class="section-title">My Q&A Content</h3>
+    <div id="my-qna"></div>
+  </div>
+
+  <!-- Performance Analytics -->
+  <div class="section">
+    <h3 class="section-title">Performance Analytics</h3>
+    <div class="analytics" id="analytics"></div>
+  </div>
+</main>
+
+<script>
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbx9-o8DZAhcr2f9HDLUFvoZC36uJziRgLRJ3DwthNhV1DjMjDChJ7kGl7jbc4c9ugNp/exec';
+const userName = localStorage.getItem('userName');
+
+if (!userName) window.location.href = 'login.html';
+
+// Load everything
+async function loadAccount() {
+  try {
+    const statusRes = await fetch(`${scriptUrl}?operation=getUserStatus&name=${encodeURIComponent(userName)}`);
+    const statusData = await statusRes.json();
+
+    document.getElementById('profile-name').textContent = userName;
+    const infoEl = document.getElementById('profile-info');
+    infoEl.innerHTML = `
+      Status: <span style="color:${statusData.userStatus==='approved'?'#34d399':'#f59e0b'}">${statusData.userStatus.toUpperCase()}</span><br>
+      Role: ${statusData.role || 'Member'}
+    `;
+
+    const picLink = localStorage.getItem('userPicLink');
+    const avatarEl = document.getElementById('profile-avatar');
+    if (picLink) {
+      const id = picLink.match(/[-\w]{25,}/)?.[0];
+      avatarEl.src = id ? `https://lh3.googleusercontent.com/d/${id}` : picLink;
+    } else {
+      avatarEl.src = 'https://via.placeholder.com/110?text=@';
+    }
+
+    await loadMyChannels();
+    await loadMyQnA();
+    await loadAnalytics();
+
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+// ====================== MY CHANNELS ====================== (unchanged)
+async function loadMyChannels() {
+  const res = await fetch(`${scriptUrl}?operation=getAllChannels`);
+  const data = await res.json();
+  const channels = data.channels || [];
+
+  const myChannels = channels.filter(ch => ch.creator === userName);
+  const container = document.getElementById('my-channels');
+
+  if (myChannels.length === 0) {
+    container.innerHTML = `<p style="color:#94a3b8; text-align:center; padding:20px;">You haven't created any channels yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = myChannels.map(ch => `
+    <div class="item">
+      <div class="item-name">${ch.name}</div>
+      <button class="btn-small btn-edit" onclick="editChannel('${ch.id}')">Edit</button>
+      <button class="btn-small btn-delete" onclick="deleteChannel('${ch.id}')">Delete</button>
+    </div>
+  `).join('');
+}
+
+async function editChannel(channelId) {
+  const newName = prompt("New channel name:");
+  if (!newName) return;
+
+  const res = await fetch(scriptUrl, {
+    method: "POST",
+    body: JSON.stringify({
+      operation: "editChannel",
+      channelId: channelId,
+      user: userName,
+      newName: newName
+    })
+  });
+  const data = await res.json();
+  if (data.status === "success") {
+    alert("Channel updated!");
+    loadMyChannels();
+  } else {
+    alert(data.message || "Failed to edit");
+  }
+}
+
+async function deleteChannel(channelId) {
+  if (!confirm("Delete this channel and ALL its posts? This cannot be undone.")) return;
+
+  const res = await fetch(scriptUrl, {
+    method: "POST",
+    body: JSON.stringify({
+      operation: "deleteChannel",
+      channelId: channelId,
+      username: userName
+    })
+  });
+  const data = await res.json();
+  if (data.status === "success") {
+    alert("Channel deleted successfully.");
+    loadMyChannels();
+  } else {
+    alert(data.message || "Failed to delete");
+  }
+}
+
+// ====================== MY Q&A ====================== (unchanged)
+async function loadMyQnA() {
+  const container = document.getElementById('my-qna');
+
+  const chRes = await fetch(`${scriptUrl}?operation=getAllQnAChannels`);
+  const chData = await chRes.json();
+  const myQnAChannels = (chData.channels || []).filter(ch => ch.creator === userName);
+
+  let html = `<p style="color:#94a3b8; margin-bottom:12px;">Q&A Channels:</p>`;
+
+  if (myQnAChannels.length === 0) {
+    html += `<p style="color:#64748b; padding:12px;">No Q&A channels created.</p>`;
+  } else {
+    html += myQnAChannels.map(ch => `
+      <div class="item">
+        <div class="item-name">${ch.name}</div>
+        <button class="btn-small btn-delete" onclick="deleteQnAChannel('${ch.id}')">Delete</button>
+      </div>
+    `).join('');
+  }
+
+  html += `<p style="color:#94a3b8; margin:20px 0 12px;">My Q&A Games:</p>`;
+  html += `<p style="color:#64748b;">Games you created can be deleted from within the Q&A channel itself.</p>`;
+
+  container.innerHTML = html;
+}
+
+async function deleteQnAChannel(channelId) {
+  if (!confirm("Delete this Q&A channel and ALL games inside?")) return;
+
+  const res = await fetch(scriptUrl, {
+    method: "POST",
+    body: JSON.stringify({
+      operation: "deleteQnAChannel",
+      channelId: channelId,
+      username: userName
+    })
+  });
+  const data = await res.json();
+  if (data.status === "success") {
+    alert("Q&A Channel deleted.");
+    loadMyQnA();
+  } else {
+    alert(data.message);
+  }
+}
+
+// ====================== UPDATED ANALYTICS ======================
+async function loadAnalytics() {
+  const container = document.getElementById('analytics');
+
+  try {
+    let channelCount = 0;
+    let qnaChannelCount = 0;
+    let totalPosts = 0;
+    let totalComments = 0;
+
+    // 1. Channels Created
+    const chRes = await fetch(`${scriptUrl}?operation=getAllChannels`);
+    const chData = await chRes.json();
+    const myChannels = (chData.channels || []).filter(ch => ch.creator === userName);
+    channelCount = myChannels.length;
+
+    // 2. Q&A Channels Created
+    const qnaRes = await fetch(`${scriptUrl}?operation=getAllQnAChannels`);
+    const qnaData = await qnaRes.json();
+    const myQnA = (qnaData.channels || []).filter(ch => ch.creator === userName);
+    qnaChannelCount = myQnA.length;
+
+    // 3. Total Posts in Channels (by user)
+    for (const ch of myChannels) {
+      try {
+        const postRes = await fetch(`${scriptUrl}?operation=getChannelPosts&channelId=${encodeURIComponent(ch.id)}`);
+        const postData = await postRes.json();
+        if (postData.posts) {
+          totalPosts += postData.posts.filter(p => p.author === userName).length;
+        }
+      } catch(e) {}
+    }
+
+    // 4. Total Main Chat Comments by user
+    try {
+      const dataRes = await fetch(`${scriptUrl}?operation=getData`);
+      const allData = await dataRes.json();
+      if (allData.comments) {
+        totalComments = allData.comments.filter(c => c.name === userName).length;
+      }
+    } catch(e) {}
+
+    // Render beautiful analytics
+    container.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-layer-group"></i></div>
+        <div class="stat-number">${channelCount}</div>
+        <div class="stat-label">Channels Created</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-question-circle"></i></div>
+        <div class="stat-number">${qnaChannelCount}</div>
+        <div class="stat-label">Q&A Channels</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-comment-dots"></i></div>
+        <div class="stat-number">${totalPosts}</div>
+        <div class="stat-label">Channel Posts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon"><i class="fas fa-comments"></i></div>
+        <div class="stat-number">${totalComments}</div>
+        <div class="stat-label">Main Chat Comments</div>
+      </div>
+    `;
+
+  } catch (err) {
+    console.error("Analytics error:", err);
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-chart-bar" style="font-size: 3rem; opacity: 0.4; margin-bottom: 12px;"></i>
+        <p>Analytics will appear here as you create content.</p>
+      </div>
+    `;
+  }
+}
+
+// Update Profile (unchanged)
+async function updateProfile() {
+  const newName = document.getElementById('new-name').value.trim();
+  const fileInput = document.getElementById('new-avatar');
+
+  if (!newName && !fileInput.files[0]) {
+    alert("Please provide a new name or select a photo.");
+    return;
+  }
+
+  const payload = { operation: "updateProfile", oldName: userName };
+  if (newName) payload.newName = newName;
+
+  if (fileInput.files[0]) {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      payload.imageData = e.target.result.split(',')[1];
+      payload.imageName = fileInput.files[0].name;
+      sendProfileUpdate(payload);
+    };
+    reader.readAsDataURL(fileInput.files[0]);
+  } else {
+    sendProfileUpdate(payload);
+  }
+}
+
+async function sendProfileUpdate(payload) {
+  try {
+    const res = await fetch(scriptUrl, { method: "POST", body: JSON.stringify(payload) });
+    const data = await res.json();
+    if (data.status === "success") {
+      alert("Profile updated successfully!");
+      if (data.newName) localStorage.setItem('userName', data.newName);
+      if (data.picLink) localStorage.setItem('userPicLink', data.picLink);
+      loadAccount();
+    } else {
+      alert(data.message || "Update failed");
+    }
+  } catch (err) {
+    alert("Connection error");
+  }
+}
+
+// Initialize
+loadAccount();
+</script>
+</body>
+</html>

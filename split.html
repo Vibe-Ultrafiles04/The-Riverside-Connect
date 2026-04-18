@@ -264,14 +264,26 @@ select option:hover {
 select option[value=""] {
     color: #94a3b8;
 }
+    .delete-history-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="header-content">
       <h1><i class="fas fa-coins"></i> CashSplit</h1>
+            <button onclick="showResetSettings()" style="background:#334155; font-size:0.9rem;">
+        <i class="fas fa-clock"></i> Reset Mode
+      </button>
       <button onclick="resetAll()" style="background:#334155; font-size:0.9rem;">
-        <i class="fas fa-trash"></i> Reset
+        <i class="fas fa-trash"></i> Full Reset
       </button>
       <button onclick="goBackToMain()" 
         style="background:#334155; font-size:0.9rem; padding:10px 16px; border-radius:12px;">
@@ -348,10 +360,12 @@ select option[value=""] {
     let allocations = [];
     let history = [];
     let pendingCallbacks = [];
+        let resetMode = "consistent";   // "consistent", "daily", "weekly", "monthly", "yearly"
+    let lastResetDate = null;
 
-    const STORAGE_KEY = 'cashsplit_data_v11';
+       const STORAGE_KEY = 'cashsplit_data_v12';
 
-    function loadData() {
+        function loadData() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const data = JSON.parse(saved);
@@ -359,16 +373,20 @@ select option[value=""] {
         unallocatedAmount = data.unallocatedAmount || 0;
         allocations = data.allocations || [];
         history = data.history || [];
+        resetMode = data.resetMode || "consistent";
+        lastResetDate = data.lastResetDate || null;
       }
+      checkAndPerformAutoReset();
       renderAll();
     }
-
-    function saveData() {
+       function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         actualAmount,
         unallocatedAmount,
         allocations,
-        history
+        history,
+        resetMode,
+        lastResetDate
       }));
     }
 
@@ -754,25 +772,176 @@ select option[value=""] {
       showToast(`KSh ${amount.toFixed(2)} deducted from ${categoryName}`);
     }
 
-    function renderHistory() {
+        function renderHistory() {
       const container = document.getElementById('history-list');
       container.innerHTML = history.length === 0 
         ? '<p style="text-align:center; color:#64748b; padding:60px 20px;">No transactions yet.<br>Add money to start tracking.</p>' 
         : '';
 
-      history.slice(0, 20).forEach(item => {
+      history.slice(0, 30).forEach((item, i) => {
         const isIncome = item.type === 'income';
+        const isReset = item.type === 'reset';
+
         const div = document.createElement('div');
         div.className = 'history-item';
+
+        let label = isReset ? `<strong style="color:#eab308">${item.note}</strong>` :
+                    isIncome ? `<strong>Received</strong>` : `<strong>Spent ${item.category ? `(${item.category})` : ''}</strong>`;
+
         div.innerHTML = `
-          <div><strong>${isIncome ? 'Received' : 'Spent'}</strong> ${item.category ? `(${item.category})` : ''}</div>
-          <div style="color: ${isIncome ? '#22c55e' : '#ef4444'}; font-weight:600;">
-            ${isIncome ? '+' : '-'} KSh ${item.amount.toFixed(2)}
+          <div style="flex:1">
+            ${label}<br>
+            <small style="color:#64748b">${new Date(item.timestamp).toLocaleString()}</small>
+          </div>
+          <div style="text-align:right">
+            ${isReset ? '' : `<span style="color:${isIncome ? '#22c55e' : '#ef4444'};font-weight:600">
+              ${isIncome ? '+' : '-'} KSh ${item.amount.toFixed(2)}
+            </span>`}
+            <button onclick="deleteHistoryItem(${i})" class="delete-history-btn" style="margin-left:8px">×</button>
           </div>
         `;
         container.appendChild(div);
       });
     }
+        // ====================== RESET SYSTEM ======================
+    function checkAndPerformAutoReset() {
+      if (resetMode === "consistent" || !lastResetDate) return;
+
+      const now = new Date();
+      const last = new Date(lastResetDate);
+      let shouldReset = false;
+
+      switch(resetMode) {
+        case "daily":
+          shouldReset = now.toDateString() !== last.toDateString();
+          break;
+        case "weekly":
+          shouldReset = (now - last) / (1000*60*60*24) >= 7;
+          break;
+        case "monthly":
+          shouldReset = now.getMonth() !== last.getMonth() || now.getFullYear() !== last.getFullYear();
+          break;
+        case "yearly":
+          shouldReset = now.getFullYear() !== last.getFullYear();
+          break;
+      }
+
+      if (shouldReset) {
+        performReset(false); // auto reset, no confirm
+      }
+    }
+
+   function performReset(askConfirm = true) {
+  if (askConfirm) {
+    showConfirm("Confirm Reset", `Reset Actual Amount and Allocations to 0?\nMode: ${resetMode}\nHistory will be kept.`, () => {
+      executeReset();
+    });
+    return;
+  }
+  executeReset();
+}
+
+function executeReset() {
+  actualAmount = 0;
+  unallocatedAmount = 0;
+
+  allocations.forEach(alloc => {
+    alloc.used = 0;
+    if (alloc.subAllocations) {
+      alloc.subAllocations.forEach(sub => sub.used = 0);
+    }
+  });
+
+  lastResetDate = new Date().toISOString();
+
+  history.unshift({
+    type: "reset",
+    amount: 0,
+    note: `${resetMode} Reset`,
+    timestamp: new Date().toISOString()
+  });
+
+  saveData();
+  renderAll();
+  showToast(`Reset done (${resetMode})`, "success");
+}
+                 function showResetSettings() {
+  const options = [
+    { value: "consistent", text: "Keep Consistent (No Auto Reset)" },
+    { value: "daily",      text: "Reset Every Day" },
+    { value: "weekly",     text: "Reset Every Week" },
+    { value: "monthly",    text: "Reset Every Month" },
+    { value: "yearly",     text: "Reset Every Year" }
+  ];
+
+  let html = `<p style="margin-bottom: 12px; color: #94a3b8;">
+                Current mode: <strong>${options.find(o => o.value === resetMode)?.text || resetMode}</strong>
+              </p>`;
+
+  html += `<select id="reset-select" style="width:100%; padding:12px; border-radius:12px; background:rgba(255,255,255,0.08); color:white; border:1px solid rgba(96,165,250,0.3);">`;
+  options.forEach(opt => {
+    html += `<option value="${opt.value}" ${opt.value === resetMode ? 'selected' : ''}>${opt.text}</option>`;
+  });
+  html += `</select>`;
+
+  // Use the existing modal
+  document.getElementById('modal-title').innerHTML = 'Reset Settings';
+  document.getElementById('modal-input').style.display = 'none';
+
+  const modalContent = document.querySelector('.modal-content');
+  // Remove any previous extra select
+  const oldSelect = document.getElementById('reset-select');
+  if (oldSelect) oldSelect.remove();
+
+  modalContent.insertAdjacentHTML('beforeend', html);
+
+  document.getElementById('modal').style.display = 'flex';
+
+  // Override OK button for this modal
+  const okBtn = document.querySelector('.modal-buttons button:last-child');
+  const originalOnClick = okBtn.onclick;
+
+  okBtn.onclick = function() {
+    const select = document.getElementById('reset-select');
+    if (select) {
+      resetMode = select.value;
+      saveData();
+      showToast(`Reset mode changed to: ${options.find(o => o.value === resetMode).text}`, "success");
+    }
+
+    // Cleanup
+    if (select) select.remove();
+    document.getElementById('modal-input').style.display = 'block';
+    okBtn.onclick = originalOnClick || confirmModalAction;
+    hideModal();
+  };
+}
+           function hideModal() {
+      document.getElementById('modal').style.display = 'none';
+      
+      // Clean up any leftover reset elements
+      const extraSelect = document.getElementById('reset-select');
+      if (extraSelect) extraSelect.remove();
+      
+      const input = document.getElementById('modal-input');
+      input.style.display = 'block';
+      input.value = '';
+      
+      pendingCallbacks = [];
+      
+      // Restore OK button
+      const okBtn = document.querySelector('.modal-buttons button:last-child');
+      if (okBtn) okBtn.onclick = confirmModalAction;
+    }
+    
+   function deleteHistoryItem(index) {
+  showConfirm("Delete Record", "Delete this history record? This action cannot be undone.", () => {
+    history.splice(index, 1);
+    saveData();
+    renderHistory();
+    showToast("History item deleted", "success");
+  });
+}
 
     function showToast(message, type = "success") {
       const toast = document.createElement('div');
@@ -782,13 +951,45 @@ select option[value=""] {
       document.body.appendChild(toast);
       setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 400); }, 2800);
     }
+    function showConfirm(title, message, onConfirm) {
+  document.getElementById('modal-title').innerHTML = `<strong>${title}</strong>`;
+  
+  const input = document.getElementById('modal-input');
+  input.style.display = 'none';
+  input.value = '';
 
-    function resetAll() {
-      if (confirm("Reset all data? This cannot be undone.")) {
-        localStorage.removeItem(STORAGE_KEY);
-        location.reload();
-      }
-    }
+  let msgEl = document.getElementById('confirm-message');
+  if (!msgEl) {
+    msgEl = document.createElement('p');
+    msgEl.id = 'confirm-message';
+    msgEl.style.marginBottom = '20px';
+    msgEl.style.color = '#e2e8f0';
+    document.querySelector('.modal-content').insertBefore(msgEl, document.querySelector('.modal-buttons'));
+  }
+  msgEl.textContent = message;
+
+  pendingCallbacks.push(onConfirm);
+
+  document.getElementById('modal').style.display = 'flex';
+
+  const okBtn = document.querySelector('.modal-buttons button:last-child');
+  const originalOk = okBtn.onclick;
+
+  okBtn.onclick = () => {
+    const cb = pendingCallbacks.pop();
+    if (cb) cb();
+    hideModal();
+    okBtn.onclick = originalOk || confirmModalAction;
+    if (msgEl) msgEl.remove();
+  };
+}
+
+   function resetAll() {
+  showConfirm("Full Reset", "Reset ALL data? This cannot be undone.", () => {
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  });
+}
 
    function goBackToMain() {
   document.documentElement.style.transition = 'transform 0.45s ease';

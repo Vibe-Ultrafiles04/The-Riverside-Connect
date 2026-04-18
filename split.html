@@ -310,9 +310,9 @@ select option[value=""] {
     <div class="card">
       <div class="section-title"><i class="fas fa-chart-pie"></i> Allocations & Targets</div>
       <div id="allocations-list" class="split-grid"></div>
-      <button onclick="showAddNewAllocationModal()" style="margin-top:16px; width:100%;">
-        <i class="fas fa-plus"></i> Add New Main Allocation Category
-      </button>
+     <button id="add-allocation-btn" onclick="showAddNewAllocationModal()" style="margin-top:16px; width:100%;">
+  <i class="fas fa-plus"></i> Add New Main Allocation Category
+</button>
     </div>
 
     <div class="card">
@@ -380,8 +380,23 @@ select option[value=""] {
       renderAllocations();
       renderDeductOptions();
       renderHistory();
+      updateAddButtonState();
     }
 
+   function updateAddButtonState() {
+  const btn = document.getElementById('add-allocation-btn');
+  if (!btn) return;
+
+  if (!canAddNewAllocation()) {
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'pointer';        // remains clickable
+    btn.disabled = false;                // important: keep enabled
+  } else {
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    btn.disabled = false;
+  }
+}
     function showModal(title, defaultValue, callback, params = {}) {
       pendingCallbacks.push(callback);
       document.getElementById('modal-title').textContent = title;
@@ -451,6 +466,7 @@ select option[value=""] {
         return;
       }
 
+
       if (allocations.length === 0) {
         unallocatedAmount = actualAmount;
         return;
@@ -474,6 +490,17 @@ select option[value=""] {
       unallocatedAmount = Math.max(0, actualAmount - calculateTotalAllocated());
     }
 
+    function canAddNewAllocation() {
+  if (actualAmount <= 0) return true; // Allow if no money yet
+
+  let totalPercent = 0;
+  allocations.forEach(alloc => {
+    totalPercent += alloc.percent || 0;
+  });
+
+  return totalPercent < 100;
+}
+
     function redistributeToSubs(mainAlloc) {
       if (!mainAlloc.subAllocations || mainAlloc.subAllocations.length === 0) return;
 
@@ -492,30 +519,45 @@ select option[value=""] {
     // ====================== END OF FIXED FUNCTIONS ======================
 
     function showAddNewAllocationModal() {
-      showModal("Main Allocation Name", "", (name) => {
-        if (!name) return;
-        showModal(`Percentage for ${name} (%)`, "10", (percentStr) => {
-          const percent = parseFloat(percentStr);
-          if (!percent || percent <= 0 || percent > 100) {
-            showToast("Percentage must be between 0 and 100", "error");
-            return;
-          }
-          allocations.push({
-            id: Date.now(),
-            name: name,
-            percent: percent,
-            target: 0,
-            used: 0,
-            subAllocations: []
-          });
-          redistributeAll();
-          saveData();
-          renderAll();
-          showToast(`"${name}" added`);
-        }, {type: 'number'});
-      });
-    }
+  if (!canAddNewAllocation()) {
+    showToast("Cannot add more allocations. Total percentage is already 100%. Edit existing percentages first.", "error");
+    return;
+  }
 
+  showModal("Main Allocation Name", "", (name) => {
+    if (!name) return;
+
+    showModal(`Percentage for ${name} (%)`, "10", (percentStr) => {
+      const percent = parseFloat(percentStr);
+      
+      if (!percent || percent <= 0 || percent > 100) {
+        showToast("Percentage must be between 0.01 and 100", "error");
+        return;
+      }
+
+      // Double-check total after adding
+      let currentTotal = allocations.reduce((sum, alloc) => sum + (alloc.percent || 0), 0);
+      if (currentTotal + percent > 100) {
+        showToast("Total percentage would exceed 100%. Please use a smaller percentage or edit existing ones.", "error");
+        return;
+      }
+
+      allocations.push({
+        id: Date.now(),
+        name: name,
+        percent: percent,
+        target: 0,
+        used: 0,
+        subAllocations: []
+      });
+
+      redistributeAll();
+      saveData();
+      renderAll();
+      showToast(`"${name}" added (${percent}%)`);
+    }, {type: 'number'});
+  });
+}
     function renderAllocations() {
       const container = document.getElementById('allocations-list');
       container.innerHTML = '';

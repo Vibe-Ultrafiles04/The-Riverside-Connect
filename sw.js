@@ -102,6 +102,7 @@ const STATIC_ASSETS = [
   './home.html',
   './Q&A.html',
   './play.html',
+  './split.html',
   './announce.html',
   './channel.html',
   './manifest.json',

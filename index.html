@@ -293,12 +293,18 @@
 }
 
 
+
+
   </style>
 </head>
 <body>
 
 <header>
   <div class="header-content">
+    <!-- Split Button -->
+    <button onclick="openSplit()" class="split-btn" title="Open CashSplit">
+      <span>SPLIT</span>
+    </button>
     <h1>Riverside Connect</h1>
    <div>
     <div style="display:flex; align-items:center; gap:16px;">
@@ -525,14 +531,7 @@ async function loadDashboard() {
         <span id="notification-text">Notifications</span>
       </button>
 
-      <a href="account.html" class="big-btn" style="background: linear-gradient(135deg, #8b5cf6, #a78bfa);">
-        <i class="fas fa-user-cog"></i> Account
-      </a>
-
-      <!-- You can add Settings here if you want 5 buttons (it will start a new row) -->
-      <a href="settings.html" class="big-btn" style="background: linear-gradient(135deg, #64748b, #94a3b8);">
-        <i class="fas fa-cog"></i> Settings
-      </a>
+     
     </div>
   </div>
 
@@ -667,6 +666,14 @@ function updateToggleUI() {
   }
 }
 
+function openSplit() {
+  document.documentElement.style.transition = 'transform 0.4s ease';
+  document.documentElement.style.transform = 'translateX(-100%)';
+
+  setTimeout(() => {
+    window.location.href = 'split.html';
+  }, 300);
+}
 async function toggleNotifications() {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) {
     alert("Notifications are not supported in this browser.");

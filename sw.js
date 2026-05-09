@@ -24,9 +24,13 @@ messaging.onBackgroundMessage((payload) => {
   const postId    = payload.data?.postId    || "";
   const gameId    = payload.data?.gameId    || "";
   const announcement = payload.data?.announcement || "";   // ← NEW for announcements
-
+  const callId = payload.data?.callId || "";
   // ── SMART URL LOGIC ─────────────────────────────────────────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
+
+  if (callId) {
+  url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/call.html?callId=${encodeURIComponent(callId)}`;
+}
 
   if (gameId) {
     // Q&A Game
@@ -48,19 +52,25 @@ messaging.onBackgroundMessage((payload) => {
   const icon = payload.data?.icon || "./maskable_icon_x192.png";
   const badge = "./badge.png";
 
-  self.registration.showNotification(title, {
-    body: body,
-    icon: icon,
-    badge: badge,
-    image: payload.data?.image || "",
-    data: { 
-      url: url,
-      channelId: channelId,
-      postId: postId,
-      gameId: gameId,
-      announcement: announcement   // ← NEW
-    }
-  });
+  const isCall = !!callId;
+
+self.registration.showNotification(title, {
+  body: body,
+  icon: icon,
+  badge: badge,
+  image: payload.data?.image || "",
+  vibrate: isCall ? [500, 200, 500, 200, 500] : [200, 100, 200],
+  requireInteraction: isCall, // keeps call notification on screen until tapped
+  tag: isCall ? `call-${callId}` : undefined, // prevents duplicate call notifications
+  data: {
+    url: url,
+    channelId: channelId,
+    postId: postId,
+    gameId: gameId,
+    announcement: announcement,
+    callId: callId
+  }
+});
 });
 
 // Handle notification click
@@ -75,6 +85,7 @@ self.addEventListener("notificationclick", (event) => {
       // Try to focus existing window/tab
       for (const client of clientList) {
         if (client.url === urlToOpen || 
+          (event.notification.data?.callId && client.url.includes("call.html")) ||
             (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
             (event.notification.data?.channelId && client.url.includes("channel.html")) ||
             (event.notification.data?.announcement && client.url.includes("announce.html")) ||

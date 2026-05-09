@@ -739,7 +739,10 @@ async function pollSignals() {
 async function autoJoin() {
   const loadingTitle = document.getElementById('loadingTitle');
   const loadingDesc  = document.getElementById('loadingDesc');
-
+// Play ring tone briefly to signal incoming call
+const ring = new Audio('./ring.mp3'); // add a short ring.mp3 to your repo
+ring.loop  = false;
+ring.play().catch(() => {}); // silently fail if autoplay blocked
   // 1. Fetch call info to set the title
   try {
     const res  = await fetch(`${SCRIPT_URL}?operation=getCallInfo&callId=${encodeURIComponent(callId)}`);

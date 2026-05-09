@@ -2296,21 +2296,50 @@ function buildCallCard(c, callData) {
         }
 
         // Handle foreground messages
-        onMessage(messaging, (payload) => {
-          console.log("Foreground message received (home):", payload);
+       onMessage(messaging, (payload) => {
+  const title  = payload.data?.title || "Riverside Connect";
+  const body   = payload.data?.body  || "New message";
+  const callId = payload.data?.callId || "";
 
-          const title = payload.data?.title || "Riverside Connect";
-          const body  = payload.data?.body  || "New message";
-
-          // Use your existing toast function
-          showToast(`${title}: ${body}`, "info");
-
-          // Refresh the chat
-          if (isApproved) {
-            loadComments(false);
-          }
-        });
-
+  if (callId) {
+    // Show a clickable in-app call banner instead of a plain toast
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+      position:fixed; top:0; left:0; right:0; z-index:9999;
+      background:linear-gradient(135deg,#22c55e,#16a34a);
+      color:white; padding:16px 20px;
+      display:flex; align-items:center; justify-content:space-between;
+      box-shadow:0 4px 20px rgba(0,0,0,0.4); animation:slideDown 0.3s ease;
+    `;
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;">
+        <i class="fas fa-phone-volume" style="font-size:1.4rem;animation:callPulse 1s infinite;"></i>
+        <div>
+          <div style="font-weight:700;font-size:1rem;">${title}</div>
+          <div style="font-size:0.85rem;opacity:0.9;">${body}</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="window.location.href='call.html?callId=${callId}'"
+          style="padding:8px 18px;background:white;color:#16a34a;border:none;
+                 border-radius:999px;font-weight:700;cursor:pointer;">
+          Join
+        </button>
+        <button onclick="this.closest('div[style]').remove()"
+          style="padding:8px 14px;background:rgba(255,255,255,0.2);color:white;
+                 border:none;border-radius:999px;cursor:pointer;">
+          Dismiss
+        </button>
+      </div>
+    `;
+    document.body.appendChild(banner);
+    // Auto-dismiss after 30 seconds
+    setTimeout(() => banner.remove(), 30000);
+  } else {
+    showToast(`${title}: ${body}`, "info");
+    if (isApproved) loadComments(false);
+  }
+});
       } catch (err) {
         console.error("❌ FCM registration error in home.html:", err);
       }

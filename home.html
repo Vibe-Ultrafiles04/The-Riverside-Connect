@@ -1005,7 +1005,10 @@ html, body {
   font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 4px;
 }
 #startCallBtn:disabled { opacity: 0.6; cursor: not-allowed; }
-
+.call-card.ended-card {
+  opacity: 0.5;
+  filter: grayscale(60%);
+}
     </style>
 
     <!-- Name Input -->
@@ -1082,7 +1085,7 @@ html, body {
 <canvas id="cropCanvas" style="display:none;"></canvas>
 
  <script>
-  const scriptUrl = 'https://script.google.com/macros/s/AKfycbwj3Hh0LYvciX4RDuOB1eJ90pJJL-jOpS79koFmCSRN9sVxf6tiMSZg6cdXuAslrmzU/exec';
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbwgsJvoMeR1dW4QOjuyRZoV6PSHXBUcdd6QEXcmVqEyD4FQhZrUFKKFiilUe1zK0EVU/exec';
 
  let userName = localStorage.getItem('userName');
 let callType       = 'all';  // 'all' | 'select'
@@ -2115,7 +2118,7 @@ function buildCallCard(c, callData) {
   const callUrl  = `call.html?callId=${encodeURIComponent(callData.callId)}`;
   const iconClass = isEnded ? 'ended' : '';
   const btnHtml   = canJoin
-    ? `<a href="${callUrl}" target="_blank" class="join-call-btn">
+    ? `<a href="${callUrl}" class="join-call-btn">
         <i class="fas fa-phone"></i> Join
        </a>`
     : `<span class="join-call-btn ended">Ended</span>`;
@@ -2133,7 +2136,7 @@ function buildCallCard(c, callData) {
     ${picHtml}
     <div class="message-content" style="padding:10px 12px; background:transparent;">
       <div class="name">${c.name}</div>
-      <div class="call-card">
+     <div class="call-card ${isEnded ? 'ended-card' : ''}">
         <div class="call-card-icon ${iconClass}">
           <i class="fas fa-${isEnded ? 'phone-slash' : 'phone-volume'}"></i>
         </div>
@@ -2228,7 +2231,7 @@ function buildCallCard(c, callData) {
 <!-- ==================== FCM PUSH NOTIFICATION REGISTRATION ==================== -->
 <!-- ==================== FCM PUSH NOTIFICATION REGISTRATION (Home) ==================== -->
 <script>
-  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj3Hh0LYvciX4RDuOB1eJ90pJJL-jOpS79koFmCSRN9sVxf6tiMSZg6cdXuAslrmzU/exec';
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgsJvoMeR1dW4QOjuyRZoV6PSHXBUcdd6QEXcmVqEyD4FQhZrUFKKFiilUe1zK0EVU/exec';
 
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {

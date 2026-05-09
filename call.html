@@ -50,6 +50,21 @@
     #videoGrid.count-6 { grid-template-columns: repeat(3, 1fr); grid-template-rows: 1fr 1fr; }
     #videoGrid.count-many { grid-template-columns: repeat(3, 1fr); }
 
+    /* Empty state when alone in call */
+    #emptyState {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: #475569;
+      pointer-events: none;
+    }
+    #emptyState i { font-size: 3rem; opacity: 0.4; }
+    #emptyState p { font-size: 0.95rem; opacity: 0.6; }
+
     .video-tile {
       position: relative;
       background: #1e293b;
@@ -99,7 +114,6 @@
     #localTile video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
     #localTile .name-tag { font-size: 0.7rem; padding: 2px 6px; }
 
-    /* Local tile avatar fallback when cam is off */
     #localTile .local-fallback {
       display: none; width: 100%; height: 100%;
       align-items: center; justify-content: center;
@@ -138,53 +152,31 @@
     .ctrl-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .ctrl-label { font-size: 0.65rem; color: #94a3b8; text-align: center; }
 
-    #lobbyOverlay {
-      position: fixed; inset: 0; background: rgba(10,15,30,0.96);
-      z-index: 50; display: flex; flex-direction: column;
+    /* ── Loading overlay (replaces the old lobby) ── */
+    #loadingOverlay {
+      position: fixed; inset: 0;
+      background: rgba(10,15,30,0.97);
+      z-index: 50;
+      display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      gap: 20px; padding: 24px; text-align: center;
+      gap: 18px; padding: 24px; text-align: center;
     }
-    #lobbyOverlay h2 { color: #60a5fa; font-size: 1.6rem; }
-    #lobbyOverlay p  { color: #94a3b8; font-size: 1rem; max-width: 320px; line-height: 1.6; }
+    #loadingOverlay .spin {
+      width: 56px; height: 56px; border-radius: 50%;
+      border: 4px solid rgba(96,165,250,0.2);
+      border-top-color: #60a5fa;
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingOverlay h2 { color: #60a5fa; font-size: 1.4rem; }
+    #loadingOverlay p  { color: #94a3b8; font-size: 0.95rem; max-width: 280px; line-height: 1.55; }
 
-    .lobby-avatar-row {
-      display: flex; flex-wrap: wrap; justify-content: center;
-      gap: 12px; max-width: 360px;
-    }
-    .lobby-avatar { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.8rem; color: #cbd5e1; }
-    .lobby-avatar img { width: 54px; height: 54px; border-radius: 50%; border: 2px solid #60a5fa; object-fit: cover; }
-    .lobby-avatar .placeholder {
-      width: 54px; height: 54px; border-radius: 50%; background: #334155;
-      display: flex; align-items: center; justify-content: center;
-      color: #60a5fa; font-size: 1.4rem; border: 2px solid #475569;
-    }
-    .pulse-ring { animation: pulse-ring 1.5s ease-out infinite; }
-    @keyframes pulse-ring {
-      0%   { box-shadow: 0 0 0 0 rgba(96,165,250,0.5); }
-      70%  { box-shadow: 0 0 0 14px rgba(96,165,250,0); }
-      100% { box-shadow: 0 0 0 0 rgba(96,165,250,0); }
-    }
-    #joinCallBtn {
-      padding: 14px 40px; background: linear-gradient(135deg, #22c55e, #16a34a);
-      color: white; border: none; border-radius: 999px; font-size: 1.15rem;
-      font-weight: 700; cursor: pointer; transition: all 0.2s;
-      box-shadow: 0 6px 20px rgba(34,197,94,0.4);
-    }
-    #joinCallBtn:hover { transform: translateY(-2px); }
+    /* Decline button still needed for non-host who navigated here via link */
     #declineBtn {
       padding: 12px 32px; background: rgba(239,68,68,0.15); color: #f87171;
       border: 1px solid rgba(239,68,68,0.4); border-radius: 999px;
       font-size: 1rem; font-weight: 600; cursor: pointer;
-    }
-
-    /* Debug log panel (hidden by default) */
-    #debugLog {
-      display: none;
-      position: fixed; bottom: 90px; left: 8px; right: 8px;
-      background: rgba(0,0,0,0.85); color: #22c55e;
-      font-size: 0.65rem; font-family: monospace;
-      padding: 8px; border-radius: 8px; max-height: 120px;
-      overflow-y: auto; z-index: 100;
+      display: none; /* hidden by default, shown for non-hosts if needed */
     }
 
     #toast {
@@ -204,9 +196,26 @@
     #endedScreen i { font-size: 4rem; color: #ef4444; }
     #endedScreen h2 { color: #e2e8f0; font-size: 1.8rem; }
     #endedScreen p  { color: #94a3b8; }
+    #endedScreen .duration-badge {
+      background: rgba(239,68,68,0.1);
+      border: 1px solid rgba(239,68,68,0.3);
+      padding: 8px 20px; border-radius: 999px;
+      font-size: 0.9rem; color: #fca5a5;
+    }
     #backHomeBtn {
       padding: 13px 36px; background: #3b82f6; color: white; border: none;
-      border-radius: 999px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px;
+      border-radius: 999px; font-size: 1rem; font-weight: 600; cursor: pointer;
+      margin-top: 10px; transition: all 0.2s;
+    }
+    #backHomeBtn:hover { background: #2563eb; transform: translateY(-1px); }
+
+    #debugLog {
+      display: none;
+      position: fixed; bottom: 90px; left: 8px; right: 8px;
+      background: rgba(0,0,0,0.85); color: #22c55e;
+      font-size: 0.65rem; font-family: monospace;
+      padding: 8px; border-radius: 8px; max-height: 120px;
+      overflow-y: auto; z-index: 100;
     }
 
     @media (max-width: 480px) {
@@ -222,12 +231,17 @@
 <div id="topBar">
   <div>
     <div id="callTitle">Riverside Call</div>
-    <div id="participantCount">Connecting...</div>
+    <div id="participantCount">Just you</div>
   </div>
   <div id="callTimer">00:00</div>
 </div>
 
-<div id="videoGrid" class="count-1"></div>
+<div id="videoGrid" class="count-1">
+  <div id="emptyState">
+    <i class="fas fa-users"></i>
+    <p>Waiting for others to join…</p>
+  </div>
+</div>
 
 <div id="localTile">
   <video id="localVideo" autoplay muted playsinline></video>
@@ -257,20 +271,20 @@
   </div>
 </div>
 
-<div id="lobbyOverlay">
-  <i class="fas fa-phone-volume pulse-ring" style="font-size:3.5rem;color:#22c55e;border-radius:50%;padding:4px;"></i>
-  <h2 id="lobbyTitle">Incoming Call</h2>
-  <p id="lobbyDesc">Someone is calling you on Riverside Connect</p>
-  <div class="lobby-avatar-row" id="lobbyAvatars"></div>
-  <button id="joinCallBtn"><i class="fas fa-phone"></i> Join Call</button>
+<!-- Replaces the old lobby — auto-dismissed, no user action needed -->
+<div id="loadingOverlay">
+  <div class="spin"></div>
+  <h2 id="loadingTitle">Joining call…</h2>
+  <p id="loadingDesc">Setting up your camera and microphone</p>
   <button id="declineBtn"><i class="fas fa-phone-slash"></i> Decline</button>
 </div>
 
 <div id="endedScreen">
   <i class="fas fa-phone-slash"></i>
-  <h2>Call Ended</h2>
-  <p id="endedDuration">Duration: 00:00</p>
-  <button id="backHomeBtn" onclick="window.location.href='home.html'">
+  <h2 id="endedHeading">Call Ended</h2>
+  <div class="duration-badge" id="endedDuration">Duration: 00:00</div>
+  <p id="endedMessage" style="margin-top:4px;"></p>
+  <button id="backHomeBtn">
     <i class="fas fa-home"></i> Back to Chat
   </button>
 </div>
@@ -279,9 +293,9 @@
 <div id="debugLog"></div>
 
 <script>
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  CONFIG
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwj3Hh0LYvciX4RDuOB1eJ90pJJL-jOpS79koFmCSRN9sVxf6tiMSZg6cdXuAslrmzU/exec';
 
 const ICE_SERVERS = {
@@ -292,58 +306,53 @@ const ICE_SERVERS = {
   ]
 };
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  STATE
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 const urlParams   = new URLSearchParams(window.location.search);
 const callId      = urlParams.get('callId');
 const isHost      = urlParams.get('host') === '1';
 const userName    = localStorage.getItem('userName') || '';
 const userPicLink = localStorage.getItem('userPicLink') || '';
 
-if (!callId || !userName) window.location.href = 'home.html';
+// Guard — must have callId and userName
+if (!callId || !userName) {
+  window.location.href = 'home.html';
+}
 
 let localStream     = null;
 let screenStream    = null;
-// peers[peerId] = { pc: RTCPeerConnection, displayName, picUrl }
-let peers           = {};
+let peers           = {};   // peerId → { pc, displayName, picUrl }
 let isMuted         = false;
 let isCamOff        = false;
 let isSharingScreen = false;
 let callStartTime   = null;
 let timerInterval   = null;
 let pollingInterval = null;
+let hasEnded        = false; // prevent double-end
 
-// ── Unique peer ID for THIS session tab ──────────────────────────────────────
-// We append a random suffix so the same user can rejoin without collision
+// Unique peer ID for this session tab
 const myPeerId = userName + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
 
-// Track peers we've already started connecting to (avoid double-offer races)
-const knownPeerIds     = new Set([myPeerId]);
-// Candidates buffered before remote description is set
+const knownPeerIds      = new Set([myPeerId]);
 const pendingCandidates = {};   // peerId → RTCIceCandidate[]
-// Last signal timestamp polled (use server time via epoch ms stored in sheet)
-let lastSignalTs = Date.now(); // ← KEY FIX: start from NOW, not 0
-                                // so we don't replay old signals
+let lastSignalTs        = Date.now();
 
-// ═══════════════════════════════════════════════
-//  DEBUG LOGGER
-// ═══════════════════════════════════════════════
-const DEBUG = false; // set true to show on-screen log
+// ═══════════════════════════════════════════════════════════════════
+//  DEBUG
+// ═══════════════════════════════════════════════════════════════════
+const DEBUG = false;
 function log(...args) {
   console.log('[Call]', ...args);
   if (DEBUG) {
     const el = document.getElementById('debugLog');
-    if (el) {
-      el.style.display = 'block';
-      el.textContent = args.join(' ') + '\n' + el.textContent;
-    }
+    if (el) { el.style.display = 'block'; el.textContent = args.join(' ') + '\n' + el.textContent; }
   }
 }
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  UTILITIES
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 function showToast(msg, duration = 2800) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -368,22 +377,38 @@ function formatTime(secs) {
   return `${m}:${s}`;
 }
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  PARTICIPANT COUNT  — always 1 (you) + connected remote peers
+// ═══════════════════════════════════════════════════════════════════
+function updateParticipantCount() {
+  const remotePeers = Object.keys(peers).length;
+  const total       = 1 + remotePeers;   // 1 = you
+  const el          = document.getElementById('participantCount');
+  el.textContent    = total === 1
+    ? 'Just you'
+    : `${total} participant${total !== 1 ? 's' : ''}`;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  VIDEO GRID
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 function updateGrid() {
   const grid  = document.getElementById('videoGrid');
   const count = Object.keys(peers).length;
-  grid.className = '';
-  if      (count <= 1) grid.classList.add('count-1');
-  else if (count <= 2) grid.classList.add('count-2');
-  else if (count <= 4) grid.classList.add('count-4');
-  else if (count <= 6) grid.classList.add('count-6');
-  else                 grid.classList.add('count-many');
 
-  const total = count + 1;
-  document.getElementById('participantCount').textContent =
-    `${total} participant${total !== 1 ? 's' : ''}`;
+  // Show/hide "waiting" empty state
+  const emptyState = document.getElementById('emptyState');
+  if (emptyState) emptyState.style.display = count === 0 ? 'flex' : 'none';
+
+  grid.className = '';
+  if      (count === 0) grid.classList.add('count-1');   // empty — keep grid happy
+  else if (count === 1) grid.classList.add('count-1');
+  else if (count === 2) grid.classList.add('count-2');
+  else if (count <= 4)  grid.classList.add('count-4');
+  else if (count <= 6)  grid.classList.add('count-6');
+  else                  grid.classList.add('count-many');
+
+  updateParticipantCount();
 }
 
 function ensureTile(peerId, displayName, picUrl) {
@@ -395,11 +420,10 @@ function ensureTile(peerId, displayName, picUrl) {
   tile.id = 'tile-' + peerId;
 
   const vid = document.createElement('video');
-  vid.autoplay   = true;
+  vid.autoplay    = true;
   vid.playsinline = true;
-  // ── CRITICAL: NOT muted for remote peers ────────────────────────────────
-  vid.muted = false;
-  vid.id = 'video-' + peerId;
+  vid.muted       = false;   // remote peers must NOT be muted
+  vid.id          = 'video-' + peerId;
   tile.appendChild(vid);
 
   // Avatar fallback
@@ -407,13 +431,13 @@ function ensureTile(peerId, displayName, picUrl) {
   fallback.className = 'avatar-fallback';
   const avatarSrc = picUrl ? getLh3(picUrl) : '';
   if (avatarSrc) {
-    const img    = document.createElement('img');
-    img.src      = avatarSrc;
-    img.onerror  = () => img.style.display = 'none';
+    const img = document.createElement('img');
+    img.src     = avatarSrc;
+    img.onerror = () => img.style.display = 'none';
     fallback.appendChild(img);
   } else {
     const ph = document.createElement('div');
-    ph.className = 'avatar-placeholder';
+    ph.className   = 'avatar-placeholder';
     ph.textContent = (displayName || '?')[0].toUpperCase();
     fallback.appendChild(ph);
   }
@@ -450,23 +474,27 @@ function attachStream(peerId, stream) {
   const vid  = document.getElementById('video-' + peerId);
   const tile = document.getElementById('tile-' + peerId);
   if (!vid || !tile) { log('attachStream: tile missing for', peerId); return; }
-
-  // Only reassign srcObject if the stream actually changed
   if (vid.srcObject !== stream) {
     vid.srcObject = stream;
     vid.play().catch(e => log('play() failed:', e.message));
-    log('Stream attached to tile', peerId, '| tracks:', stream.getTracks().map(t=>t.kind).join(','));
+    log('Stream attached to', peerId, '| tracks:', stream.getTracks().map(t=>t.kind).join(','));
   }
-
   const hasVideo = stream.getVideoTracks().some(t => t.enabled && t.readyState === 'live');
   tile.classList.toggle('no-video', !hasVideo);
 }
 
-// ═══════════════════════════════════════════════
+function refreshTileVideoState(peerId) {
+  const vid  = document.getElementById('video-' + peerId);
+  const tile = document.getElementById('tile-' + peerId);
+  if (!vid || !tile || !vid.srcObject) return;
+  const hasVideo = vid.srcObject.getVideoTracks().some(t => t.enabled && t.readyState === 'live');
+  tile.classList.toggle('no-video', !hasVideo);
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  MEDIA
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 async function getLocalMedia() {
-  // Try video + audio first
   try {
     localStream = await navigator.mediaDevices.getUserMedia({
       video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
@@ -488,117 +516,75 @@ async function getLocalMedia() {
       return false;
     }
   }
-
   document.getElementById('localVideo').srcObject = localStream;
-  if (isCamOff) {
-    document.getElementById('localTile').classList.add('cam-off');
-  }
+  if (isCamOff) document.getElementById('localTile').classList.add('cam-off');
   return true;
 }
 
-// ═══════════════════════════════════════════════
-//  WebRTC – PEER CONNECTION
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  WebRTC
+// ═══════════════════════════════════════════════════════════════════
 function getOrCreatePeer(peerId, displayName, picUrl) {
   if (peers[peerId]) return peers[peerId].pc;
 
   log('Creating RTCPeerConnection for', peerId);
-
   const pc = new RTCPeerConnection(ICE_SERVERS);
   peers[peerId] = { pc, displayName, picUrl };
 
-  // ── Add ALL local tracks to every peer ──────────────────────────────────
   if (localStream) {
     localStream.getTracks().forEach(track => {
       pc.addTrack(track, localStream);
       log('Added local track', track.kind, 'to peer', peerId);
     });
-  } else {
-    log('WARNING: localStream is null when creating peer for', peerId);
   }
 
-  // ── Receive remote tracks ────────────────────────────────────────────────
-  // Use a MediaStream per peer to aggregate tracks
   const remoteStream = new MediaStream();
 
   pc.ontrack = (event) => {
-    log('ontrack from', peerId, '| kind:', event.track.kind, '| streams:', event.streams.length);
-
-    // Prefer the stream from the event if available
+    log('ontrack from', peerId, '| kind:', event.track.kind);
     if (event.streams && event.streams[0]) {
       ensureTile(peerId, displayName, picUrl);
       attachStream(peerId, event.streams[0]);
     } else {
-      // Fallback: manually add track to our MediaStream
       event.track.onunmute = () => {
         remoteStream.addTrack(event.track);
         ensureTile(peerId, displayName, picUrl);
         attachStream(peerId, remoteStream);
       };
     }
-
-    // Listen for video track enabling/disabling
     event.track.onmute   = () => refreshTileVideoState(peerId);
     event.track.onunmute = () => refreshTileVideoState(peerId);
   };
 
-  // ── ICE candidates ───────────────────────────────────────────────────────
   pc.onicecandidate = (event) => {
     if (event.candidate) {
-      log('Sending ICE candidate to', peerId);
       sendSignal({
-        type:      'candidate',
-        callId,
-        from:      myPeerId,
-        to:        peerId,
-        senderName: userName,
-        senderPic:  userPicLink,
-        candidate:  event.candidate.toJSON()
+        type: 'candidate', callId, from: myPeerId, to: peerId,
+        senderName: userName, senderPic: userPicLink,
+        candidate: event.candidate.toJSON()
       });
     }
   };
 
-  pc.onicecandidateerror = (e) => {
-    log('ICE candidate error:', e.errorText);
-  };
-
-  // ── Connection state changes ─────────────────────────────────────────────
   pc.onconnectionstatechange = () => {
     const state = pc.connectionState;
     log('Peer', peerId, 'connectionState ->', state);
     if (state === 'connected') {
       showToast(`Connected to ${displayName || peerId.split('_')[0]}`);
+      updateGrid(); // refresh count
     } else if (state === 'failed') {
-      log('Connection failed for', peerId, '– attempting ICE restart');
       restartIce(peerId);
     } else if (state === 'disconnected') {
-      // Give it 5s before removing — might recover
       setTimeout(() => {
-        if (peers[peerId]?.pc.connectionState === 'disconnected') {
-          log('Peer', peerId, 'still disconnected, removing');
-          removeTile(peerId);
-        }
+        if (peers[peerId]?.pc.connectionState === 'disconnected') removeTile(peerId);
       }, 5000);
     }
   };
 
-  pc.onsignalingstatechange = () => {
-    log('Peer', peerId, 'signalingState ->', pc.signalingState);
-  };
-
-  pc.oniceconnectionstatechange = () => {
-    log('Peer', peerId, 'iceConnectionState ->', pc.iceConnectionState);
-  };
+  pc.onsignalingstatechange = () => log('Peer', peerId, 'signalingState ->', pc.signalingState);
+  pc.oniceconnectionstatechange = () => log('Peer', peerId, 'iceConnectionState ->', pc.iceConnectionState);
 
   return pc;
-}
-
-function refreshTileVideoState(peerId) {
-  const vid  = document.getElementById('video-' + peerId);
-  const tile = document.getElementById('tile-' + peerId);
-  if (!vid || !tile || !vid.srcObject) return;
-  const hasVideo = vid.srcObject.getVideoTracks().some(t => t.enabled && t.readyState === 'live');
-  tile.classList.toggle('no-video', !hasVideo);
 }
 
 async function restartIce(peerId) {
@@ -607,140 +593,76 @@ async function restartIce(peerId) {
   try {
     const offer = await entry.pc.createOffer({ iceRestart: true });
     await entry.pc.setLocalDescription(offer);
-    await sendSignal({
-      type:      'offer',
-      callId,
-      from:      myPeerId,
-      to:        peerId,
-      senderName: userName,
-      senderPic:  userPicLink,
-      sdp:        entry.pc.localDescription
-    });
+    await sendSignal({ type: 'offer', callId, from: myPeerId, to: peerId,
+      senderName: userName, senderPic: userPicLink, sdp: entry.pc.localDescription });
     log('ICE restart offer sent to', peerId);
-  } catch (e) {
-    log('ICE restart failed:', e.message);
-  }
+  } catch (e) { log('ICE restart failed:', e.message); }
 }
 
-// ── Create and send an offer to a peer ──────────────────────────────────────
 async function offerToPeer(peerId, displayName, picUrl) {
-  if (peers[peerId]) { log('Peer already exists, skipping offer to', peerId); return; }
-
+  if (peers[peerId]) return;
   ensureTile(peerId, displayName, picUrl);
   const pc = getOrCreatePeer(peerId, displayName, picUrl);
-
   try {
-    const offer = await pc.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: true
-    });
+    const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: true });
     await pc.setLocalDescription(offer);
     log('Sending offer to', peerId);
-    await sendSignal({
-      type:      'offer',
-      callId,
-      from:      myPeerId,
-      to:        peerId,
-      senderName: userName,
-      senderPic:  userPicLink,
-      sdp:        pc.localDescription
-    });
-  } catch (e) {
-    log('offerToPeer error:', e.message);
-  }
+    await sendSignal({ type: 'offer', callId, from: myPeerId, to: peerId,
+      senderName: userName, senderPic: userPicLink, sdp: pc.localDescription });
+  } catch (e) { log('offerToPeer error:', e.message); }
 }
 
-// ── Handle incoming offer ────────────────────────────────────────────────────
 async function handleOffer(sig) {
   const { from, sdp, senderName, senderPic } = sig;
   log('Handling offer from', from);
-
   ensureTile(from, senderName || from.split('_')[0], senderPic || '');
   const pc = getOrCreatePeer(from, senderName || from.split('_')[0], senderPic || '');
 
-  // If we already have a remote description, skip (duplicate signal)
   if (pc.signalingState !== 'stable' && pc.signalingState !== 'have-local-offer') {
-    log('Skipping offer — unexpected signalingState:', pc.signalingState);
-    return;
+    log('Skipping offer — unexpected signalingState:', pc.signalingState); return;
   }
-
-  // Handle glare (both sides sent offer simultaneously) — lower peerId loses
   if (pc.signalingState === 'have-local-offer') {
     if (myPeerId < from) {
-      log('Glare: rolling back our offer, accepting remote');
+      log('Glare: rolling back');
       await pc.setLocalDescription({ type: 'rollback' });
-    } else {
-      log('Glare: ignoring remote offer, keeping ours');
-      return;
-    }
+    } else { log('Glare: keeping ours'); return; }
   }
 
   try {
     await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-    log('Remote description set (offer) for', from);
-
-    // Flush buffered candidates
     await flushCandidates(from, pc);
-
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     log('Sending answer to', from);
-    await sendSignal({
-      type:      'answer',
-      callId,
-      from:      myPeerId,
-      to:        from,
-      senderName: userName,
-      senderPic:  userPicLink,
-      sdp:        pc.localDescription
-    });
-  } catch (e) {
-    log('handleOffer error:', e.message);
-  }
+    await sendSignal({ type: 'answer', callId, from: myPeerId, to: from,
+      senderName: userName, senderPic: userPicLink, sdp: pc.localDescription });
+  } catch (e) { log('handleOffer error:', e.message); }
 }
 
-// ── Handle incoming answer ───────────────────────────────────────────────────
 async function handleAnswer(sig) {
   const { from, sdp } = sig;
   log('Handling answer from', from);
-
   const entry = peers[from];
-  if (!entry) { log('No peer for answer from', from); return; }
-  const pc = entry.pc;
-
-  if (pc.signalingState !== 'have-local-offer') {
-    log('Ignoring answer — signalingState is', pc.signalingState);
-    return;
+  if (!entry) return;
+  if (entry.pc.signalingState !== 'have-local-offer') {
+    log('Ignoring answer — signalingState is', entry.pc.signalingState); return;
   }
-
   try {
-    await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-    log('Remote description set (answer) from', from);
-    await flushCandidates(from, pc);
-  } catch (e) {
-    log('handleAnswer error:', e.message);
-  }
+    await entry.pc.setRemoteDescription(new RTCSessionDescription(sdp));
+    await flushCandidates(from, entry.pc);
+  } catch (e) { log('handleAnswer error:', e.message); }
 }
 
-// ── Handle incoming ICE candidate ───────────────────────────────────────────
 async function handleCandidate(sig) {
   const { from, candidate } = sig;
-  const entry = peers[from];
-
   if (!candidate) return;
-
+  const entry = peers[from];
   if (entry && entry.pc.remoteDescription) {
-    try {
-      await entry.pc.addIceCandidate(new RTCIceCandidate(candidate));
-      log('Added ICE candidate from', from);
-    } catch (e) {
-      log('addIceCandidate error:', e.message);
-    }
+    try { await entry.pc.addIceCandidate(new RTCIceCandidate(candidate)); }
+    catch (e) { log('addIceCandidate error:', e.message); }
   } else {
-    // Buffer it until remote description is available
     if (!pendingCandidates[from]) pendingCandidates[from] = [];
     pendingCandidates[from].push(candidate);
-    log('Buffered ICE candidate from', from, '(no remote desc yet)');
   }
 }
 
@@ -748,32 +670,22 @@ async function flushCandidates(peerId, pc) {
   const buffered = pendingCandidates[peerId] || [];
   delete pendingCandidates[peerId];
   for (const c of buffered) {
-    try {
-      await pc.addIceCandidate(new RTCIceCandidate(c));
-      log('Flushed buffered ICE candidate for', peerId);
-    } catch (e) {
-      log('Flush candidate error:', e.message);
-    }
+    try { await pc.addIceCandidate(new RTCIceCandidate(c)); }
+    catch (e) { log('Flush candidate error:', e.message); }
   }
 }
 
-// ═══════════════════════════════════════════════
-//  SIGNALLING — via Google Sheet
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  SIGNALLING
+// ═══════════════════════════════════════════════════════════════════
 async function sendSignal(payload) {
   try {
-    const res = await fetch(SCRIPT_URL, {
-      method: 'POST',
-      body:   JSON.stringify({ operation: 'sendCallSignal', ...payload })
-    });
-    // Don't need to await parse — fire and forget is fine for signaling
-  } catch (e) {
-    log('sendSignal failed:', e.message);
-  }
+    await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ operation: 'sendCallSignal', ...payload }) });
+  } catch (e) { log('sendSignal failed:', e.message); }
 }
 
-// ── Main poll loop ───────────────────────────────────────────────────────────
 async function pollSignals() {
+  if (hasEnded) return;
   try {
     const url = `${SCRIPT_URL}?operation=getCallSignals`
               + `&callId=${encodeURIComponent(callId)}`
@@ -785,173 +697,181 @@ async function pollSignals() {
     if (data.status !== 'success') return;
 
     const signals = data.signals || [];
-    if (signals.length > 0) {
-      log(`Poll: got ${signals.length} signal(s)`);
-    }
 
     for (const sig of signals) {
-      // Advance our timestamp pointer
       if (sig.timestamp > lastSignalTs) lastSignalTs = sig.timestamp;
-
       const { type, from, senderName, senderPic } = sig;
 
-      // ── Someone new joined ──────────────────────────────────────────────
       if (type === 'join' && from !== myPeerId) {
         if (!knownPeerIds.has(from)) {
           knownPeerIds.add(from);
-          log('New participant joined:', from, senderName);
           showToast(`${senderName || from.split('_')[0]} joined`);
           ensureTile(from, senderName || from.split('_')[0], senderPic || '');
-          // We send the offer — they will send an answer
           await offerToPeer(from, senderName || from.split('_')[0], senderPic || '');
         }
-      }
-
-      // ── Offer addressed to us ───────────────────────────────────────────
-      else if (type === 'offer' && sig.to === myPeerId) {
-        // Make sure we know this peer
+      } else if (type === 'offer' && sig.to === myPeerId) {
         if (!knownPeerIds.has(from)) knownPeerIds.add(from);
         await handleOffer(sig);
-      }
-
-      // ── Answer addressed to us ──────────────────────────────────────────
-      else if (type === 'answer' && sig.to === myPeerId) {
+      } else if (type === 'answer' && sig.to === myPeerId) {
         await handleAnswer(sig);
-      }
-
-      // ── ICE candidate addressed to us ──────────────────────────────────
-      else if (type === 'candidate' && sig.to === myPeerId) {
+      } else if (type === 'candidate' && sig.to === myPeerId) {
         await handleCandidate(sig);
-      }
-
-      // ── Someone left ────────────────────────────────────────────────────
-      else if (type === 'leave') {
-        if (from !== myPeerId) {
-          showToast(`${senderName || from.split('_')[0]} left`);
-          removeTile(from);
-        }
-      }
-
-      // ── Host ended the call for everyone ───────────────────────────────
-      else if (type === 'end_call') {
-        endCallUI('Host ended the call');
-        return; // stop processing
+      } else if (type === 'leave' && from !== myPeerId) {
+        showToast(`${senderName || from.split('_')[0]} left`);
+        removeTile(from);
+      } else if (type === 'end_call') {
+        // Only the host's end_call signal should close everyone's call
+        endCallUI('Host ended the call', true);
+        return;
       }
     }
 
-    // Update participant count using sheet's participant list
-    if (data.participants) {
-      const total = data.participants.length + 1;
-      document.getElementById('participantCount').textContent =
-        `${total} participant${total !== 1 ? 's' : ''}`;
-    }
+    // Update count from server participant list if available
+    // (but server's list may not be perfectly sync'd — our local count is source of truth)
+    updateParticipantCount();
 
-  } catch (e) {
-    log('pollSignals error:', e.message);
-  }
+  } catch (e) { log('pollSignals error:', e.message); }
 }
 
-// ═══════════════════════════════════════════════
-//  JOIN FLOW
-// ═══════════════════════════════════════════════
-async function joinCall() {
-  const joinBtn = document.getElementById('joinCallBtn');
-  joinBtn.disabled = true;
-  joinBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Joining...';
+// ═══════════════════════════════════════════════════════════════════
+//  AUTO-JOIN — runs immediately on page load, no button press needed
+// ═══════════════════════════════════════════════════════════════════
+async function autoJoin() {
+  const loadingTitle = document.getElementById('loadingTitle');
+  const loadingDesc  = document.getElementById('loadingDesc');
 
-  // 1. Get local media FIRST
+  // 1. Fetch call info to set the title
+  try {
+    const res  = await fetch(`${SCRIPT_URL}?operation=getCallInfo&callId=${encodeURIComponent(callId)}`);
+    const data = await res.json();
+    if (data.status === 'success' && data.callInfo) {
+      const title = data.callInfo.title || 'Riverside Call';
+      document.getElementById('callTitle').textContent = title;
+      loadingTitle.textContent = title;
+      loadingDesc.textContent  = isHost
+        ? 'Starting your call…'
+        : `${data.callInfo.hostName || 'Someone'} called you`;
+    } else {
+      showToast('Call not found', 4000);
+      setTimeout(() => window.location.href = 'home.html', 3000);
+      return;
+    }
+  } catch (e) {
+    log('getCallInfo error:', e.message);
+    // Continue anyway — non-fatal
+  }
+
+  // 2. Get camera/mic
+  loadingDesc.textContent = 'Setting up camera and microphone…';
   const ok = await getLocalMedia();
   if (!ok) {
-    joinBtn.disabled = false;
-    joinBtn.innerHTML = '<i class="fas fa-phone"></i> Join Call';
+    // Camera failed but maybe we can still continue with audio-only
+    // If even audio failed getLocalMedia already toasted and returned false
+    loadingDesc.textContent = 'Could not access media. Check permissions.';
+    // Give user a moment to read, then redirect
+    setTimeout(() => window.location.href = 'home.html', 4000);
     return;
   }
 
-  // 2. Announce ourselves to the call sheet — so others know we joined
-  //    This writes a 'join' signal visible to all existing participants
-  log('Announcing join for callId:', callId, 'peerId:', myPeerId);
-  await fetch(SCRIPT_URL, {
-    method: 'POST',
-    body:   JSON.stringify({
-      operation: 'joinCall',
-      callId,
-      peerId:    myPeerId,
-      username:  userName,
-      picLink:   userPicLink
-    })
-  });
+  // 3. Announce join to signalling server
+  loadingDesc.textContent = 'Connecting to call…';
+  log('Announcing join, callId:', callId, 'peerId:', myPeerId);
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body:   JSON.stringify({
+        operation: 'joinCall',
+        callId,
+        peerId:   myPeerId,
+        username: userName,
+        picLink:  userPicLink
+      })
+    });
+  } catch (e) { log('joinCall announce failed:', e.message); }
 
-  // 3. Set lastSignalTs to NOW so we catch signals from this point forward
-  //    (we already set it to Date.now() at declaration, but refresh in case
-  //     there was a delay between page load and actually joining)
-  lastSignalTs = Date.now() - 3000; // go back 3 seconds to catch any race signals
+  // 4. Set signal timestamp AFTER joining so we don't miss anything
+  lastSignalTs = Date.now() - 3000;
 
-  // 4. Hide lobby and start UI
-  document.getElementById('lobbyOverlay').style.display = 'none';
+  // 5. Hide loading overlay → user is now in the call
+  document.getElementById('loadingOverlay').style.display = 'none';
 
-  callStartTime  = Date.now();
-  timerInterval  = setInterval(() => {
+  // 6. Start timer
+  callStartTime = Date.now();
+  timerInterval = setInterval(() => {
     document.getElementById('callTimer').textContent =
       formatTime(Math.floor((Date.now() - callStartTime) / 1000));
   }, 1000);
 
-  // 5. Start polling for WebRTC signals
-  //    Poll quickly (1.5s) for responsive signaling
+  // 7. Start signal polling
   pollingInterval = setInterval(pollSignals, 1500);
+  await pollSignals(); // immediate first poll
 
-  // Do an immediate poll to find already-present participants
-  await pollSignals();
-
-  showToast('Joined call!');
   log('Joined successfully. myPeerId:', myPeerId);
 }
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  HANG UP
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 async function hangUp(endForAll = false) {
+  if (hasEnded) return;
+  hasEnded = true;
+
   clearInterval(timerInterval);
   clearInterval(pollingInterval);
 
   localStream?.getTracks().forEach(t => t.stop());
   screenStream?.getTracks().forEach(t => t.stop());
 
-  Object.entries(peers).forEach(([id, entry]) => {
-    try { entry.pc.close(); } catch(e) {}
-  });
+  Object.values(peers).forEach(({ pc }) => { try { pc.close(); } catch(e) {} });
   peers = {};
 
   const sigType = (isHost && endForAll) ? 'end_call' : 'leave';
   await sendSignal({ type: sigType, callId, from: myPeerId, senderName: userName });
 
-  await fetch(SCRIPT_URL, {
-    method: 'POST',
-    body:   JSON.stringify({
-      operation: 'leaveCall',
-      callId,
-      peerId:    myPeerId,
-      username:  userName,
-      ended:     isHost && endForAll
-    })
-  });
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body:   JSON.stringify({
+        operation: 'leaveCall',
+        callId,
+        peerId:    myPeerId,
+        username:  userName,
+        ended:     isHost && endForAll
+      })
+    });
+  } catch(e) { log('leaveCall fetch failed:', e.message); }
 
-  endCallUI();
+  // Always go back to home — no "ended screen" dance
+  window.location.href = 'home.html';
 }
 
-function endCallUI(message = '') {
+function endCallUI(message = '', redirect = false) {
+  if (hasEnded) return;
+  hasEnded = true;
+
   clearInterval(timerInterval);
   clearInterval(pollingInterval);
   localStream?.getTracks().forEach(t => t.stop());
   screenStream?.getTracks().forEach(t => t.stop());
 
   const elapsed = callStartTime ? Math.floor((Date.now() - callStartTime) / 1000) : 0;
-  document.getElementById('endedDuration').textContent = message || `Duration: ${formatTime(elapsed)}`;
-  document.getElementById('endedScreen').style.display = 'flex';
+
+  if (redirect) {
+    // Non-host getting end_call signal → show brief message then redirect
+    document.getElementById('endedScreen').style.display = 'flex';
+    document.getElementById('endedHeading').textContent  = 'Call Ended';
+    document.getElementById('endedDuration').textContent = `Duration: ${formatTime(elapsed)}`;
+    document.getElementById('endedMessage').textContent  = message;
+    // Auto-redirect after 2.5s
+    setTimeout(() => window.location.href = 'home.html', 2500);
+  } else {
+    window.location.href = 'home.html';
+  }
 }
 
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 //  CONTROLS
-// ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
 document.getElementById('btnMic').addEventListener('click', () => {
   if (!localStream) return;
   isMuted = !isMuted;
@@ -1018,79 +938,55 @@ document.getElementById('btnShare').addEventListener('click', async () => {
 document.getElementById('btnHangup').addEventListener('click', () => {
   if (isHost) {
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px;';
     overlay.innerHTML = `
-      <div style="background:#1e293b;border-radius:16px;padding:24px;max-width:300px;text-align:center;border:1px solid rgba(96,165,250,0.3);">
-        <p style="color:#e2e8f0;margin-bottom:20px;font-size:1.05rem;">End call for everyone or just leave?</p>
-        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-          <button id="_endAll"    style="flex:1;padding:10px;background:#ef4444;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">End for All</button>
-          <button id="_justLeave" style="flex:1;padding:10px;background:#475569;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Just Leave</button>
-          <button id="_cancelEnd" style="flex:1;padding:10px;background:none;color:#94a3b8;border:1px solid #475569;border-radius:8px;cursor:pointer;">Cancel</button>
+      <div style="background:#1e293b;border-radius:20px;padding:28px;max-width:300px;width:100%;text-align:center;border:1px solid rgba(96,165,250,0.25);box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+        <div style="font-size:2.5rem;margin-bottom:12px;">📞</div>
+        <p style="color:#e2e8f0;margin-bottom:8px;font-size:1.05rem;font-weight:600;">Leave or end call?</p>
+        <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:24px;">Ending will disconnect everyone.</p>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button id="_endAll" style="padding:12px;background:#ef4444;color:white;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:0.95rem;">
+            <i class="fas fa-phone-slash"></i> End for Everyone
+          </button>
+          <button id="_justLeave" style="padding:12px;background:rgba(255,255,255,0.1);color:white;border:1px solid rgba(255,255,255,0.15);border-radius:12px;cursor:pointer;font-weight:600;font-size:0.95rem;">
+            <i class="fas fa-sign-out-alt"></i> Just Leave
+          </button>
+          <button id="_cancelEnd" style="padding:10px;background:none;color:#94a3b8;border:1px solid transparent;border-radius:12px;cursor:pointer;font-size:0.9rem;">
+            Cancel
+          </button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
     overlay.querySelector('#_endAll').onclick    = () => { overlay.remove(); hangUp(true); };
     overlay.querySelector('#_justLeave').onclick = () => { overlay.remove(); hangUp(false); };
     overlay.querySelector('#_cancelEnd').onclick = () => overlay.remove();
+    // Tap outside to cancel
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   } else {
     hangUp(false);
   }
 });
 
-// ═══════════════════════════════════════════════
-//  LOBBY SETUP
-// ═══════════════════════════════════════════════
-async function setupLobby() {
-  try {
-    const res  = await fetch(`${SCRIPT_URL}?operation=getCallInfo&callId=${encodeURIComponent(callId)}`);
-    const data = await res.json();
-
-    if (data.status !== 'success' || !data.callInfo) {
-      showToast('Call not found or expired', 4000);
-      setTimeout(() => window.location.href = 'home.html', 3000);
-      return;
-    }
-
-    const info = data.callInfo;
-    document.getElementById('callTitle').textContent  = info.title || 'Riverside Call';
-    document.getElementById('lobbyTitle').textContent = info.title || 'Riverside Call';
-    document.getElementById('lobbyDesc').textContent  = isHost
-      ? 'You are the host. Start when ready.'
-      : `${info.hostName || 'Someone'} is calling you`;
-
-    if (isHost) document.getElementById('joinCallBtn').innerHTML = '<i class="fas fa-phone"></i> Start Call';
-
-    const avatarRow = document.getElementById('lobbyAvatars');
-    (info.invitees || []).slice(0, 6).forEach(u => {
-      const div = document.createElement('div');
-      div.className = 'lobby-avatar';
-      const src = u.picLink ? getLh3(u.picLink) : '';
-      div.innerHTML = src
-        ? `<img src="${src}" onerror="this.style.display='none'">`
-        : `<div class="placeholder"><i class="fas fa-user"></i></div>`;
-      div.innerHTML += `<span>${u.username}</span>`;
-      avatarRow.appendChild(div);
-    });
-  } catch (e) {
-    log('Lobby setup error:', e.message);
-    showToast('Error loading call info');
-  }
-}
-
-// ═══════════════════════════════════════════════
-//  INIT
-// ═══════════════════════════════════════════════
-document.getElementById('joinCallBtn').addEventListener('click', joinCall);
-
+// Decline button (shown if somehow lobby is visible)
 document.getElementById('declineBtn').addEventListener('click', async () => {
-  await fetch(SCRIPT_URL, {
-    method: 'POST',
-    body:   JSON.stringify({ operation: 'declineCall', callId, username: userName })
-  });
+  try {
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body:   JSON.stringify({ operation: 'declineCall', callId, username: userName })
+    });
+  } catch(e) {}
   window.location.href = 'home.html';
 });
 
-setupLobby();
+// Back home button on ended screen
+document.getElementById('backHomeBtn').addEventListener('click', () => {
+  window.location.href = 'home.html';
+});
+
+// ═══════════════════════════════════════════════════════════════════
+//  INIT — auto-join immediately, no user interaction needed
+// ═══════════════════════════════════════════════════════════════════
+autoJoin();
 </script>
 </body>
 </html>

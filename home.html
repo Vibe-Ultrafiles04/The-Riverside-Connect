@@ -2091,7 +2091,7 @@ document.getElementById('startCallBtn').addEventListener('click', async () => {
     if (data.status === 'success') {
       document.getElementById('callModal').style.display = 'none';
       // Open call.html as host
-      window.open(`call.html?callId=${data.callId}&host=1`, '_blank');
+     window.location.href = `call.html?callId=${data.callId}&host=1`;
       loadComments(false); // refresh chat to show call card
     } else {
       showToast(data.message || 'Failed to start call', 'error');

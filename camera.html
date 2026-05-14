@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>Riverside Camera</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap');
+
+    :root {
+      --bg: #040608;
+      --surface: rgba(255,255,255,0.06);
+      --border: rgba(255,255,255,0.1);
+      --accent: #e63946;
+      --green: #2ec4b6;
+      --blue: #3a86ff;
+      --text: #eef2f8;
+      --muted: #7a8da0;
+      --live: #ff2d55;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    html, body {
+      width:100%; height:100dvh;
+      background:var(--bg);
+      color:var(--text);
+      font-family:'DM Sans', sans-serif;
+      overflow:hidden;
+    }
+
+    /* ── FULL SCREEN VIEWFINDER ── */
+    .viewfinder {
+      position:fixed; inset:0;
+      background:#000;
+    }
+
+    .viewfinder video {
+      width:100%; height:100%;
+      object-fit:cover;
+    }
+
+    /* ── HUD OVERLAY ── */
+    .hud {
+      position:fixed; inset:0;
+      pointer-events:none;
+      z-index:10;
+    }
+
+    /* Top bar */
+    .hud-top {
+      position:absolute; top:0; left:0; right:0;
+      padding:env(safe-area-inset-top, 16px) 20px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      background:linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    }
+
+    .hud-logo {
+      font-family:'Bebas Neue', sans-serif;
+      font-size:1rem; letter-spacing:2px;
+      color:rgba(255,255,255,0.7);
+    }
+
+    .hud-status {
+      display:flex; align-items:center; gap:6px;
+      background:rgba(0,0,0,0.5);
+      border:1px solid var(--border);
+      border-radius:100px;
+      padding:5px 12px;
+      font-family:'JetBrains Mono', monospace;
+      font-size:0.72rem;
+    }
+
+    .hud-dot {
+      width:7px; height:7px; border-radius:50%;
+      background:var(--muted);
+    }
+
+    .hud-dot.streaming { background:var(--live); animation:pulse 1s infinite; }
+    .hud-dot.connecting { background:var(--blue); animation:pulse 0.7s infinite; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    .hud-timer {
+      font-family:'JetBrains Mono', monospace;
+      font-size:0.75rem;
+      color:rgba(255,255,255,0.6);
+    }
+
+    /* Corner guides */
+    .corner {
+      position:absolute;
+      width:24px; height:24px;
+      border-color:rgba(255,255,255,0.4);
+      border-style:solid;
+    }
+
+    .corner.tl { top:80px; left:20px; border-width:2px 0 0 2px; }
+    .corner.tr { top:80px; right:20px; border-width:2px 2px 0 0; }
+    .corner.bl { bottom:180px; left:20px; border-width:0 0 2px 2px; }
+    .corner.br { bottom:180px; right:20px; border-width:0 2px 2px 0; }
+
+    /* Bottom controls */
+    .hud-bottom {
+      position:absolute; bottom:0; left:0; right:0;
+      padding:20px 24px calc(env(safe-area-inset-bottom, 16px) + 20px);
+      background:linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+      pointer-events:auto;
+    }
+
+    /* Controls row */
+    .controls-row {
+      display:flex; align-items:center; justify-content:center;
+      gap:24px; margin-bottom:20px;
+    }
+
+    .ctrl-btn {
+      width:48px; height:48px; border-radius:50%;
+      background:rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.2);
+      color:white; font-size:1rem;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:all 0.18s;
+      backdrop-filter:blur(8px);
+    }
+
+    .ctrl-btn:hover { background:rgba(255,255,255,0.22); }
+    .ctrl-btn.active { background:rgba(58,134,255,0.4); border-color:var(--blue); }
+    .ctrl-btn.muted { background:rgba(230,57,70,0.3); border-color:var(--accent); }
+
+    /* Main shutter / stream button */
+    .stream-btn {
+      width:76px; height:76px; border-radius:50%;
+      border:4px solid white;
+      background:transparent;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:all 0.22s;
+      position:relative;
+    }
+
+    .stream-btn-inner {
+      width:54px; height:54px; border-radius:50%;
+      background:var(--live);
+      transition:all 0.22s;
+    }
+
+    .stream-btn.streaming .stream-btn-inner {
+      border-radius:8px;
+      background:var(--live);
+      width:28px; height:28px;
+    }
+
+    /* Quality indicator */
+    .quality-row {
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+
+    .quality-bar {
+      display:flex; gap:2px; align-items:flex-end;
+    }
+
+    .quality-bar span {
+      width:4px; border-radius:2px;
+      background:rgba(255,255,255,0.3);
+    }
+
+    .quality-bar span:nth-child(1) { height:6px; }
+    .quality-bar span:nth-child(2) { height:10px; }
+    .quality-bar span:nth-child(3) { height:14px; }
+    .quality-bar span:nth-child(4) { height:18px; }
+
+    .quality-bar.good span { background:var(--green); }
+    .quality-bar.ok span:nth-child(1),
+    .quality-bar.ok span:nth-child(2),
+    .quality-bar.ok span:nth-child(3) { background:var(--gold); }
+    .quality-bar.poor span:nth-child(1) { background:var(--accent); }
+
+    .quality-label {
+      font-family:'JetBrains Mono', monospace;
+      font-size:0.7rem; color:rgba(255,255,255,0.5);
+    }
+
+    /* ── REQUEST PROMPT ── */
+    .request-overlay {
+      display:none;
+      position:fixed; inset:0; z-index:100;
+      background:rgba(0,0,0,0.88);
+      backdrop-filter:blur(10px);
+      flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; padding:32px;
+    }
+
+    .request-overlay.visible { display:flex; }
+
+    .req-icon {
+      font-size:3.5rem; margin-bottom:20px;
+    }
+
+    .req-from {
+      font-size:0.8rem; color:var(--muted);
+      font-family:'JetBrains Mono', monospace;
+      letter-spacing:1px; margin-bottom:8px;
+    }
+
+    .req-title {
+      font-family:'Bebas Neue', sans-serif;
+      font-size:2.2rem; letter-spacing:2px;
+      margin-bottom:8px;
+    }
+
+    .req-broadcast {
+      font-size:1rem; color:var(--blue);
+      font-weight:600; margin-bottom:28px;
+    }
+
+    .req-actions {
+      display:flex; gap:14px; width:100%; max-width:280px;
+    }
+
+    .req-btn {
+      flex:1; padding:16px;
+      border-radius:14px; border:none;
+      font-size:1rem; font-weight:700;
+      cursor:pointer; transition:all 0.18s;
+      font-family:'DM Sans', sans-serif;
+    }
+
+    .req-accept {
+      background:var(--green); color:#000;
+    }
+
+    .req-decline {
+      background:rgba(255,255,255,0.1);
+      border:1px solid rgba(255,255,255,0.2);
+      color:white;
+    }
+
+    /* ── STANDBY SCREEN ── */
+    .standby {
+      position:fixed; inset:0; z-index:50;
+      background:var(--bg);
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      text-align:center; padding:32px;
+    }
+
+    .standby.hidden { display:none; }
+
+    .standby-logo {
+      font-family:'Bebas Neue', sans-serif;
+      font-size:2rem; letter-spacing:3px;
+      margin-bottom:8px; color:rgba(255,255,255,0.4);
+    }
+
+    .standby-title {
+      font-size:1.4rem; font-weight:700;
+      margin-bottom:8px;
+    }
+
+    .standby-sub {
+      font-size:0.9rem; color:var(--muted);
+      line-height:1.5; margin-bottom:32px;
+    }
+
+    .standby-code {
+      background:rgba(58,134,255,0.12);
+      border:1px solid rgba(58,134,255,0.3);
+      border-radius:12px;
+      padding:16px 24px;
+      font-family:'JetBrains Mono', monospace;
+      font-size:1.6rem; letter-spacing:4px;
+      color:var(--blue);
+      margin-bottom:24px;
+    }
+
+    .standby-hint { font-size:0.82rem; color:var(--muted); }
+
+    .standby-btn {
+      padding:14px 28px; border-radius:12px;
+      border:none; background:var(--blue); color:white;
+      font-size:1rem; font-weight:700;
+      cursor:pointer; transition:all 0.18s;
+      font-family:'DM Sans', sans-serif;
+      margin-top:16px;
+    }
+
+    .standby-btn:hover { background:#2563eb; }
+
+    /* ── CONNECTING ── */
+    .connecting-overlay {
+      display:none;
+      position:fixed; inset:0; z-index:80;
+      background:rgba(0,0,0,0.75);
+      backdrop-filter:blur(8px);
+      align-items:center; justify-content:center;
+    }
+
+    .connecting-overlay.visible { display:flex; }
+
+    .connecting-card {
+      background:rgba(255,255,255,0.07);
+      border:1px solid var(--border);
+      border-radius:20px; padding:32px;
+      text-align:center;
+    }
+
+    .spinner {
+      width:40px; height:40px; border-radius:50%;
+      border:3px solid rgba(255,255,255,0.1);
+      border-top-color:var(--blue);
+      animation:spin 0.8s linear infinite;
+      margin:0 auto 16px;
+    }
+
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    .connecting-text { font-size:1rem; color:var(--muted); }
+  </style>
+</head>
+<body>
+
+<!-- ── STANDBY SCREEN ── -->
+<div class="standby" id="standby">
+  <div class="standby-logo">RIVERSIDE</div>
+  <div class="standby-title">Camera Ready</div>
+  <div class="standby-sub">This device will act as a live camera input for the Riverside Studio. Wait for a studio connection request, or enter the session code manually.</div>
+
+  <div class="standby-code" id="device-code">---</div>
+  <div class="standby-hint">Share this code with the Studio operator</div>
+
+  <button class="standby-btn" onclick="startSelfBroadcast()">
+    <i class="fas fa-play"></i> Start Self-Broadcast
+  </button>
+</div>
+
+<!-- ── VIEWFINDER ── -->
+<div class="viewfinder" id="viewfinder">
+  <video id="camera-feed" autoplay muted playsinline></video>
+</div>
+
+<!-- ── HUD ── -->
+<div class="hud" id="hud" style="display:none">
+  <div class="hud-top">
+    <div class="hud-logo">RIVERSIDE CAM</div>
+    <div class="hud-status">
+      <div class="hud-dot" id="hud-dot"></div>
+      <span id="hud-status-text">STANDBY</span>
+    </div>
+    <div class="hud-timer" id="hud-timer">00:00</div>
+  </div>
+
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
+  <div class="hud-bottom">
+    <div class="controls-row">
+      <!-- Flip Camera -->
+      <button class="ctrl-btn" id="flip-btn" onclick="flipCamera()" title="Flip Camera">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+
+      <!-- STREAM BUTTON -->
+      <div class="stream-btn" id="stream-btn" onclick="toggleStream()">
+        <div class="stream-btn-inner"></div>
+      </div>
+
+      <!-- Mute Mic -->
+      <button class="ctrl-btn" id="mute-btn" onclick="toggleMic()" title="Mute Microphone">
+        <i class="fas fa-microphone"></i>
+      </button>
+    </div>
+
+    <div class="quality-row">
+      <div class="quality-bar good" id="quality-bar">
+        <span></span><span></span><span></span><span></span>
+      </div>
+      <span class="quality-label" id="quality-label">GOOD</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── STUDIO REQUEST PROMPT ── -->
+<div class="request-overlay" id="request-overlay">
+  <div class="req-icon">🎥</div>
+  <div class="req-from">REQUEST FROM STUDIO</div>
+  <div class="req-title">CONNECT CAMERA</div>
+  <div class="req-broadcast" id="req-broadcast-name">Sunday Service LIVE</div>
+  <div class="req-actions">
+    <button class="req-btn req-decline" onclick="declineRequest()">Decline</button>
+    <button class="req-btn req-accept" onclick="acceptRequest()">Accept</button>
+  </div>
+</div>
+
+<!-- ── CONNECTING ── -->
+<div class="connecting-overlay" id="connecting-overlay">
+  <div class="connecting-card">
+    <div class="spinner"></div>
+    <div class="connecting-text">Connecting to Studio...</div>
+  </div>
+</div>
+
+<script>
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbxVvXK1oeIfJ1PHekly1HwtUBx8M5iUWZt_wppWDGfJylDjPAHg0ZBE3SXKFNbWSJV3/exec';
+const userName = localStorage.getItem('userName') || 'Camera-' + Math.random().toString(36).slice(2,6);
+
+let localStream = null;
+let facingMode = 'environment'; // back camera
+let micMuted = false;
+let isStreaming = false;
+let streamTimer = null;
+let streamStartTime = null;
+let peerConnection = null;
+let deviceCode = '';
+let pollInterval = null;
+
+// ── DEVICE CODE ──
+function generateDeviceCode() {
+  deviceCode = Math.random().toString(36).slice(2,7).toUpperCase();
+  document.getElementById('device-code').textContent = deviceCode;
+}
+
+// ── CAMERA INIT ──
+async function initCamera() {
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode, width:{ideal:1280}, height:{ideal:720} },
+      audio: true
+    });
+    document.getElementById('camera-feed').srcObject = localStream;
+  } catch(e) {
+    console.error('Camera init failed:', e);
+  }
+}
+
+// ── SELF BROADCAST ──
+async function startSelfBroadcast() {
+  document.getElementById('standby').classList.add('hidden');
+  await initCamera();
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('hud-status-text').textContent = 'LIVE';
+  document.getElementById('hud-dot').classList.add('streaming');
+
+  // Start polling for studio requests
+  pollForRequests();
+}
+
+// ── FLIP ──
+async function flipCamera() {
+  facingMode = facingMode === 'environment' ? 'user' : 'environment';
+  if (localStream) { localStream.getTracks().forEach(t => t.stop()); }
+  await initCamera();
+  if (peerConnection) {
+    // Replace tracks in peer connection
+    const videoTrack = localStream.getVideoTracks()[0];
+    const sender = peerConnection.getSenders().find(s => s.track?.kind === 'video');
+    if (sender && videoTrack) sender.replaceTrack(videoTrack);
+  }
+  document.getElementById('flip-btn').classList.toggle('active');
+}
+
+// ── MUTE ──
+function toggleMic() {
+  micMuted = !micMuted;
+  localStream?.getAudioTracks().forEach(t => t.enabled = !micMuted);
+  const btn = document.getElementById('mute-btn');
+  if (micMuted) {
+    btn.classList.add('muted');
+    btn.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+  } else {
+    btn.classList.remove('muted');
+    btn.innerHTML = '<i class="fas fa-microphone"></i>';
+  }
+}
+
+// ── STREAM TOGGLE ──
+function toggleStream() {
+  if (!isStreaming) {
+    startStreaming();
+  } else {
+    stopStreaming();
+  }
+}
+
+function startStreaming() {
+  isStreaming = true;
+  streamStartTime = Date.now();
+  document.getElementById('stream-btn').classList.add('streaming');
+  document.getElementById('hud-status-text').textContent = 'STREAMING';
+  document.getElementById('hud-dot').classList.add('streaming');
+  startTimer();
+}
+
+function stopStreaming() {
+  isStreaming = false;
+  document.getElementById('stream-btn').classList.remove('streaming');
+  document.getElementById('hud-status-text').textContent = 'STANDBY';
+  document.getElementById('hud-dot').classList.remove('streaming');
+  stopTimer();
+}
+
+// ── TIMER ──
+function startTimer() {
+  streamTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - streamStartTime) / 1000);
+    const m = Math.floor(s / 60).toString().padStart(2,'0');
+    const sec = (s % 60).toString().padStart(2,'0');
+    document.getElementById('hud-timer').textContent = `${m}:${sec}`;
+  }, 1000);
+}
+
+function stopTimer() {
+  if (streamTimer) { clearInterval(streamTimer); streamTimer = null; }
+  document.getElementById('hud-timer').textContent = '00:00';
+}
+
+// ── STUDIO REQUEST POLLING ──
+async function pollForRequests() {
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${scriptUrl}?operation=checkCameraRequest&deviceCode=${encodeURIComponent(deviceCode)}&username=${encodeURIComponent(userName)}`);
+      const data = await res.json();
+      if (data.hasRequest && data.request) {
+        showRequest(data.request);
+      }
+    } catch(e) {}
+  }, 5000);
+}
+
+function showRequest(request) {
+  document.getElementById('req-broadcast-name').textContent = request.broadcastTitle || 'Studio Broadcast';
+  document.getElementById('request-overlay').classList.add('visible');
+}
+
+async function acceptRequest() {
+  document.getElementById('request-overlay').classList.remove('visible');
+  document.getElementById('connecting-overlay').classList.add('visible');
+
+  try {
+    // WebRTC connection to studio
+    peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    localStream?.getTracks().forEach(t => peerConnection.addTrack(t, localStream));
+
+    // Get offer from studio via server
+    const res = await fetch(`${scriptUrl}?operation=getStudioOffer&deviceCode=${encodeURIComponent(deviceCode)}`);
+    const data = await res.json();
+    if (data.sdpOffer) {
+      await peerConnection.setRemoteDescription({ type:'offer', sdp:data.sdpOffer });
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+
+      // Send answer
+      await fetch(scriptUrl, {
+        method:'POST',
+        body:JSON.stringify({
+          operation: 'sendCameraAnswer',
+          deviceCode, username: userName,
+          sdpAnswer: answer.sdp
+        })
+      });
+    }
+
+    peerConnection.onicecandidate = async e => {
+      if (e.candidate) {
+        await fetch(scriptUrl, {
+          method:'POST',
+          body:JSON.stringify({
+            operation:'sendCameraIce',
+            deviceCode, username:userName,
+            candidate:JSON.stringify(e.candidate)
+          })
+        });
+      }
+    };
+
+    document.getElementById('connecting-overlay').classList.remove('visible');
+    document.getElementById('hud-status-text').textContent = 'CONNECTED';
+    document.getElementById('hud-dot').className = 'hud-dot streaming';
+    startStreaming();
+  } catch(e) {
+    document.getElementById('connecting-overlay').classList.remove('visible');
+  }
+}
+
+function declineRequest() {
+  document.getElementById('request-overlay').classList.remove('visible');
+  fetch(scriptUrl, {
+    method:'POST',
+    body:JSON.stringify({ operation:'declineCameraRequest', deviceCode, username:userName })
+  });
+}
+
+// ── QUALITY SIMULATION ──
+setInterval(() => {
+  if (!isStreaming) return;
+  const levels = ['good','ok','poor'];
+  const labels = ['GOOD','FAIR','POOR'];
+  const lvl = Math.random() > 0.85 ? (Math.random() > 0.5 ? 1 : 2) : 0;
+  document.getElementById('quality-bar').className = `quality-bar ${levels[lvl]}`;
+  document.getElementById('quality-label').textContent = labels[lvl];
+}, 3000);
+
+// ── INIT ──
+generateDeviceCode();
+
+// Auto-start camera if coming from studio request link
+const params = new URLSearchParams(window.location.search);
+if (params.get('auto')) {
+  startSelfBroadcast();
+}
+</script>
+</body>
+</html>

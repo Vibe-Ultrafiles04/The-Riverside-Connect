@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riverside Studio</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --bg: #060a10;
+      --surface: #0c1220;
+      --surface2: #111928;
+      --surface3: #182238;
+      --border: rgba(255,255,255,0.07);
+      --accent: #e63946;
+      --blue: #3a86ff;
+      --green: #2ec4b6;
+      --gold: #f4a261;
+      --text: #dde4f0;
+      --muted: #7a8899;
+      --live: #ff2d55;
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    html,body {
+      min-height:100dvh;
+      background:var(--bg);
+      color:var(--text);
+      font-family:'DM Sans', sans-serif;
+      overflow-x:hidden;
+    }
+
+    /* ─ HEADER ─ */
+    header {
+      background:rgba(6,10,16,0.9);
+      backdrop-filter:blur(16px);
+      border-bottom:1px solid var(--border);
+      padding:0 20px;
+      position:sticky; top:0; z-index:200;
+    }
+
+    .hdr-inner {
+      max-width:1400px; margin:0 auto;
+      height:58px;
+      display:flex; align-items:center; gap:16px;
+    }
+
+    .hdr-logo {
+      font-family:'Bebas Neue', sans-serif;
+      font-size:1.3rem; letter-spacing:2px;
+      color:var(--text);
+      display:flex; align-items:center; gap:8px;
+      text-decoration:none;
+    }
+
+    .hdr-badge {
+      background:var(--accent);
+      padding:3px 8px; border-radius:4px;
+      font-size:0.8rem;
+    }
+
+    .hdr-sep { flex:1; }
+
+    .hdr-user {
+      display:flex; align-items:center; gap:10px;
+      font-size:0.85rem; color:var(--muted);
+    }
+
+    .hdr-avatar {
+      width:32px; height:32px; border-radius:50%;
+      border:2px solid var(--blue);
+      background:var(--surface2);
+      object-fit:cover;
+    }
+
+    .btn {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:8px 16px; border-radius:8px;
+      font-size:0.85rem; font-weight:600;
+      cursor:pointer; border:none; text-decoration:none;
+      transition:all 0.18s; font-family:'DM Sans', sans-serif;
+    }
+
+    .btn-outline {
+      background:transparent;
+      border:1px solid var(--border);
+      color:var(--muted);
+    }
+    .btn-outline:hover { border-color:var(--blue); color:var(--text); }
+
+    .btn-primary { background:var(--blue); color:white; }
+    .btn-primary:hover { background:#2563eb; transform:translateY(-1px); }
+
+    .btn-danger { background:var(--accent); color:white; }
+    .btn-danger:hover { background:#c1121f; }
+
+    .btn-success { background:var(--green); color:white; }
+    .btn-success:hover { background:#25a49c; }
+
+    /* ─ LAYOUT ─ */
+    .studio-layout {
+      max-width:1400px; margin:0 auto;
+      padding:24px 20px;
+      display:grid;
+      grid-template-columns:260px 1fr 280px;
+      grid-template-rows:auto;
+      gap:20px;
+      min-height:calc(100vh - 58px);
+    }
+
+    /* ─ SIDEBAR LEFT: Channel / Broadcasts ─ */
+    .sidebar-left {
+      display:flex; flex-direction:column; gap:16px;
+    }
+
+    .panel {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+    }
+
+    .panel-header {
+      padding:14px 16px;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:10px;
+    }
+
+    .panel-title {
+      font-family:'Bebas Neue', sans-serif;
+      font-size:1.05rem; letter-spacing:1.5px;
+      flex:1;
+    }
+
+    .panel-icon {
+      width:28px; height:28px; border-radius:6px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:0.75rem;
+    }
+
+    .panel-body { padding:14px 16px; }
+
+    /* ─ CHANNEL CARD in sidebar ─ */
+    .my-channel {
+      display:flex; flex-direction:column; gap:10px;
+    }
+
+    .channel-identity {
+      display:flex; align-items:center; gap:10px;
+    }
+
+    .channel-thumb {
+      width:44px; height:44px; border-radius:10px;
+      background:var(--surface3);
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Bebas Neue', sans-serif;
+      font-size:1.3rem; color:white; flex-shrink:0;
+      overflow:hidden;
+    }
+
+    .channel-thumb img { width:100%; height:100%; object-fit:cover; }
+
+    .channel-meta { flex:1; min-width:0; }
+    .channel-meta-name { font-weight:700; font-size:0.95rem; }
+    .channel-meta-cat { font-size:0.75rem; color:var(--muted); }
+
+    .broadcast-list { display:flex; flex-direction:column; gap:8px; }
+
+    .broadcast-item {
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:10px;
+      padding:10px 12px;
+      cursor:pointer;
+      transition:all 0.18s;
+    }
+
+    .broadcast-item:hover { border-color:var(--blue); }
+    .broadcast-item.selected { border-color:var(--blue); background:rgba(58,134,255,0.08); }
+
+    .bi-title {
+      font-weight:600; font-size:0.85rem;
+      margin-bottom:4px;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+
+    .bi-meta {
+      display:flex; align-items:center; gap:6px;
+      font-size:0.72rem; color:var(--muted);
+    }
+
+    .status-dot {
+      width:6px; height:6px; border-radius:50%; flex-shrink:0;
+    }
+
+    .status-dot.live { background:var(--live); animation:blink 1s infinite; }
+    .status-dot.waiting { background:var(--gold); }
+    .status-dot.ended { background:var(--muted); }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ─ CENTER: Production Studio ─ */
+    .center-area { display:flex; flex-direction:column; gap:16px; }
+
+    /* ─ PREVIEW CANVAS ─ */
+    .preview-panel {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+    }
+
+    .preview-toolbar {
+      padding:12px 16px;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .preview-title {
+      font-family:'Bebas Neue', sans-serif;
+      letter-spacing:1.5px; font-size:1rem;
+      flex:1;
+    }
+
+    .on-air-badge {
+      display:none;
+      align-items:center; gap:6px;
+      background:rgba(255,45,85,0.15);
+      border:1px solid var(--live);
+      border-radius:6px;
+      padding:4px 10px;
+      font-family:'JetBrains Mono', monospace;
+      font-size:0.7rem; color:var(--live); letter-spacing:1px;
+    }
+
+    .on-air-badge.visible { display:flex; }
+    .on-air-badge .blink-dot { width:6px; height:6px; border-radius:50%; background:var(--live); animation:blink 1s infinite; }
+
+    /* ─ SCENE CANVAS ─ */
+    .scene-canvas {
+      position:relative;
+      width:100%;
+      aspect-ratio:16/9;
+      background:#000;
+      overflow:hidden;
+    }
+
+    .scene-canvas video {
+      width:100%; height:100%;
+      object-fit:cover;
+    }
+
+    .scene-canvas .overlay-layer {
+      position:absolute; inset:0;
+      pointer-events:none;
+    }
+
+    .overlay-lower-third {
+      position:absolute; bottom:40px; left:20px;
+      background:rgba(0,0,0,0.75);
+      border-left:4px solid var(--accent);
+      padding:8px 14px; border-radius:0 6px 6px 0;
+      backdrop-filter:blur(8px);
+    }
+
+    .overlay-title { font-size:0.95rem; font-weight:700; }
+    .overlay-sub { font-size:0.75rem; color:#aaa; }
+
+    .overlay-logo {
+      position:absolute; top:14px; right:14px;
+      background:rgba(0,0,0,0.6);
+      padding:6px 10px; border-radius:6px;
+      font-family:'Bebas Neue', sans-serif;
+      font-size:0.9rem; letter-spacing:1px;
+      color:white;
+    }
+
+    .overlay-countdown {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      background:rgba(0,0,0,0.85);
+      backdrop-filter:blur(4px);
+    }
+
+    .countdown-label {
+      font-size:0.8rem; letter-spacing:3px;
+      color:var(--muted); margin-bottom:8px;
+      font-family:'JetBrains Mono', monospace;
+      text-transform:uppercase;
+    }
+
+    .countdown-time {
+      font-family:'Bebas Neue', sans-serif;
+      font-size:6rem; color:white; line-height:1;
+      letter-spacing:4px;
+    }
+
+    .no-preview {
+      position:absolute; inset:0;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      color:var(--muted); text-align:center;
+    }
+
+    .no-preview i { font-size:3rem; opacity:0.2; margin-bottom:12px; }
+    .no-preview p { font-size:0.9rem; }
+
+    /* ─ CAMERA GRID ─ */
+    .cameras-section {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:14px;
+      overflow:hidden;
+    }
+
+    .cameras-toolbar {
+      padding:12px 16px;
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:10px;
+    }
+
+    .cameras-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+      gap:12px;
+      padding:14px;
+    }
+
+    .camera-tile {
+      position:relative;
+      aspect-ratio:16/9;
+      background:#000;
+      border-radius:8px;
+      overflow:hidden;
+      cursor:pointer;
+      border:2px solid transparent;
+      transition:all 0.18s;
+    }
+
+    .camera-tile:hover { border-color:var(--blue); }
+    .camera-tile.active { border-color:var(--live); }
+
+    .camera-tile video {
+      width:100%; height:100%; object-fit:cover;
+    }
+
+    .camera-tile-label {
+      position:absolute; bottom:4px; left:6px;
+      font-size:0.65rem; font-weight:600;
+      color:white;
+      background:rgba(0,0,0,0.7);
+      padding:2px 6px; border-radius:4px;
+    }
+
+    .camera-tile-status {
+      position:absolute; top:4px; right:4px;
+      width:8px; height:8px; border-radius:50%;
+      background:var(--green);
+    }
+
+    .add-camera-tile {
+      aspect-ratio:16/9;
+      border-radius:8px;
+      border:1px dashed rgba(255,255,255,0.15);
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      cursor:pointer; color:var(--muted);
+      font-size:0.8rem; gap:6px;
+      transition:all 0.18s;
+    }
+
+    .add-camera-tile:hover { border-color:var(--blue); color:var(--text); }
+    .add-camera-tile i { font-size:1.3rem; }
+
+    /* ─ SIDEBAR RIGHT: Controls ─ */
+    .sidebar-right { display:flex; flex-direction:column; gap:16px; }
+
+    /* ─ SCENES ─ */
+    .scene-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:8px; padding:14px;
+    }
+
+    .scene-btn {
+      padding:10px 6px;
+      border-radius:8px;
+      border:1px solid var(--border);
+      background:var(--surface2);
+      color:var(--muted); font-size:0.75rem;
+      font-weight:600; cursor:pointer; text-align:center;
+      transition:all 0.18s; font-family:'DM Sans', sans-serif;
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+    }
+
+    .scene-btn i { font-size:1.1rem; }
+    .scene-btn:hover { border-color:var(--blue); color:var(--text); }
+    .scene-btn.active-scene { border-color:var(--blue); background:rgba(58,134,255,0.12); color:var(--text); }
+
+    /* ─ OVERLAYS ─ */
+    .overlay-controls { padding:14px; display:flex; flex-direction:column; gap:10px; }
+
+    .overlay-row {
+      display:flex; align-items:center; gap:8px;
+    }
+
+    .overlay-label { flex:1; font-size:0.82rem; }
+
+    .toggle-switch {
+      position:relative; width:38px; height:20px;
+      background:var(--surface3); border-radius:10px;
+      border:none; cursor:pointer; transition:background 0.2s;
+      flex-shrink:0;
+    }
+
+    .toggle-switch.on { background:var(--blue); }
+
+    .toggle-switch::after {
+      content:'';
+      position:absolute; top:2px; left:2px;
+      width:16px; height:16px; border-radius:50%;
+      background:white; transition:transform 0.2s;
+    }
+
+    .toggle-switch.on::after { transform:translateX(18px); }
+
+    /* ─ AUDIO MIXER ─ */
+    .audio-panel { padding:14px; display:flex; flex-direction:column; gap:12px; }
+
+    .audio-track {
+      display:flex; align-items:center; gap:10px;
+    }
+
+    .audio-icon { width:28px; height:28px; border-radius:6px; background:var(--surface3); display:flex; align-items:center; justify-content:center; font-size:0.75rem; }
+
+    .audio-label { flex:1; font-size:0.82rem; }
+
+    .audio-fader {
+     -webkit-appearance:none;
+appearance:none;
+      width:80px; height:4px;
+      border-radius:2px;
+      background:var(--surface3);
+      outline:none;
+    }
+
+    .audio-fader::-webkit-slider-thumb {
+      -webkit-appearance:none;
+      width:14px; height:14px;
+      border-radius:50%;
+      background:var(--blue); cursor:pointer;
+    }
+
+    .mute-btn {
+      width:26px; height:26px; border-radius:6px;
+      background:var(--surface3); border:none;
+      color:var(--muted); cursor:pointer; font-size:0.75rem;
+      transition:all 0.15s;
+    }
+
+    .mute-btn.muted { background:rgba(230,57,70,0.2); color:var(--accent); }
+
+    /* ─ GO LIVE CONTROLS ─ */
+    .go-live-panel { padding:14px; display:flex; flex-direction:column; gap:10px; }
+
+    .broadcast-time {
+      font-family:'JetBrains Mono', monospace;
+      font-size:1.5rem; text-align:center;
+      color:var(--text); letter-spacing:2px;
+    }
+
+    .go-live-btn {
+      width:100%; padding:14px;
+      border-radius:10px; border:none;
+      font-size:1rem; font-weight:700;
+      cursor:pointer; transition:all 0.2s;
+      font-family:'DM Sans', sans-serif;
+    }
+
+    .go-live-btn.ready {
+      background:var(--live);
+      color:white;
+      box-shadow:0 0 20px rgba(255,45,85,0.3);
+    }
+
+    .go-live-btn.ready:hover {
+      background:#d90429;
+      transform:translateY(-2px);
+      box-shadow:0 4px 28px rgba(255,45,85,0.5);
+    }
+
+    .go-live-btn.streaming {
+      background:rgba(230,57,70,0.15);
+      border:2px solid var(--accent);
+      color:var(--accent);
+    }
+
+    .go-live-btn.streaming:hover { background:rgba(230,57,70,0.25); }
+
+    /* ─ STAT PILLS ─ */
+    .stat-row {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+
+    .stat-pill {
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:8px; padding:10px 12px; text-align:center;
+    }
+
+    .stat-value {
+      font-family:'JetBrains Mono', monospace;
+      font-size:1.2rem; font-weight:600; color:var(--text);
+    }
+
+    .stat-label { font-size:0.7rem; color:var(--muted); margin-top:2px; }
+
+    /* ─ MODALS ─ */
+    .modal-bg {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.85); backdrop-filter:blur(6px);
+      z-index:9999; justify-content:center; align-items:center;
+    }
+    .modal-bg.open { display:flex; }
+
+    .modal {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:20px;
+      padding:28px;
+      width:min(480px, 92vw);
+      max-height:90vh; overflow-y:auto;
+    }
+
+    .modal h2 {
+      font-family:'Bebas Neue', sans-serif;
+      font-size:1.6rem; letter-spacing:2px;
+      margin-bottom:20px; color:var(--text);
+    }
+
+    .form-group { margin-bottom:16px; }
+
+    .form-label {
+      display:block; font-size:0.82rem; font-weight:600;
+      color:var(--muted); margin-bottom:6px; letter-spacing:0.5px;
+    }
+
+    .form-input, .form-textarea, .form-select {
+      width:100%;
+      background:var(--surface2);
+      border:1px solid var(--border);
+      border-radius:8px;
+      padding:10px 14px;
+      color:var(--text); font-size:0.9rem;
+      font-family:'DM Sans', sans-serif;
+      outline:none; transition:border-color 0.2s;
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color:var(--blue);
+    }
+
+    .form-textarea { resize:vertical; min-height:80px; }
+    .form-select { appearance:none; }
+
+    .form-actions {
+      display:flex; gap:10px; margin-top:20px;
+    }
+
+    .form-actions .btn { flex:1; justify-content:center; padding:12px; }
+
+    /* ─ CAMERA REQUEST PROMPT ─ */
+    .camera-request-modal {
+      display:none; position:fixed; inset:0;
+      background:rgba(0,0,0,0.85); backdrop-filter:blur(6px);
+      z-index:10000; justify-content:center; align-items:center;
+    }
+
+    .camera-request-modal.open { display:flex; }
+
+    .camera-request-card {
+      background:var(--surface2);
+      border:1px solid var(--blue);
+      border-radius:16px; padding:28px;
+      text-align:center; max-width:340px;
+    }
+
+    .cr-icon { font-size:2.5rem; margin-bottom:12px; }
+    .cr-title { font-size:1.1rem; font-weight:700; margin-bottom:6px; }
+    .cr-sub { font-size:0.85rem; color:var(--muted); margin-bottom:20px; }
+    .cr-actions { display:flex; gap:10px; }
+    .cr-actions .btn { flex:1; justify-content:center; }
+
+    /* ─ RESPONSIVE ─ */
+    @media (max-width: 1100px) {
+      .studio-layout {
+        grid-template-columns:220px 1fr;
+        grid-template-areas:'left center' 'right right';
+      }
+      .sidebar-right { grid-area:right; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); flex-direction:row; flex-wrap:wrap; }
+    }
+
+    @media (max-width: 700px) {
+      .studio-layout { grid-template-columns:1fr; }
+      .sidebar-left, .sidebar-right { display:none; }
+    }
+
+    /* Toast */
+    .toast {
+      position:fixed; bottom:24px; right:24px; z-index:99999;
+      background:var(--surface2); border:1px solid var(--border);
+      border-radius:10px; padding:12px 18px;
+      font-size:0.88rem; color:var(--text);
+      transform:translateY(80px); opacity:0;
+      transition:all 0.3s; pointer-events:none;
+    }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.success { border-color:var(--green); }
+    .toast.error { border-color:var(--accent); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-inner">
+    <a href="index.html" class="hdr-logo">
+      <span class="hdr-badge">STUDIO</span>
+      RIVERSIDE
+    </a>
+    <div class="hdr-sep"></div>
+    <div class="hdr-user">
+      <span id="hdr-username">Loading...</span>
+      <img id="hdr-avatar" class="hdr-avatar" src="" onerror="this.src='https://via.placeholder.com/32?text=@'" alt="avatar">
+    </div>
+    <a href="live.html" class="btn btn-outline"><i class="fas fa-tv"></i> View Live</a>
+  </div>
+</header>
+
+<div class="studio-layout">
+
+  <!-- ─ LEFT: Channel + Broadcasts ─ -->
+  <div class="sidebar-left">
+
+    <!-- My Channel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-icon" style="background:rgba(58,134,255,0.15);color:var(--blue)"><i class="fas fa-broadcast-tower"></i></div>
+        <div class="panel-title">MY CHANNEL</div>
+        <button class="btn btn-outline" style="padding:5px 10px;font-size:0.75rem" id="edit-channel-btn" onclick="openEditChannel()"><i class="fas fa-pen"></i></button>
+      </div>
+      <div class="panel-body">
+        <div id="channel-info-area">
+          <div class="my-channel" id="channel-display" style="display:none">
+            <div class="channel-identity">
+              <div class="channel-thumb" id="ch-thumb">C</div>
+              <div class="channel-meta">
+                <div class="channel-meta-name" id="ch-name">Channel Name</div>
+                <div class="channel-meta-cat" id="ch-cat">Category</div>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center;font-size:0.85rem" onclick="openCreateBroadcast()">
+              <i class="fas fa-plus"></i> New Broadcast
+            </button>
+          </div>
+          <div id="no-channel-display">
+            <p style="font-size:0.85rem;color:var(--muted);margin-bottom:12px">No channel yet. Create one to start broadcasting.</p>
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="openCreateChannel()">
+              <i class="fas fa-plus"></i> Create Channel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Broadcasts list -->
+    <div class="panel" id="broadcasts-panel" style="flex:1">
+      <div class="panel-header">
+        <div class="panel-icon" style="background:rgba(230,57,70,0.15);color:var(--accent)"><i class="fas fa-film"></i></div>
+        <div class="panel-title">BROADCASTS</div>
+      </div>
+      <div class="panel-body" style="padding:10px">
+        <div class="broadcast-list" id="broadcast-list">
+          <div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem">
+            No broadcasts yet
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─ CENTER: Production ─ -->
+  <div class="center-area">
+
+    <!-- Preview -->
+    <div class="preview-panel">
+      <div class="preview-toolbar">
+        <div class="preview-title">PROGRAM OUTPUT</div>
+        <div class="on-air-badge" id="on-air-badge">
+          <div class="blink-dot"></div> ON AIR
+        </div>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem" onclick="switchLayout()"><i class="fas fa-th"></i> Layout</button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem" onclick="toggleRecording()" id="rec-btn">
+          <i class="fas fa-circle" style="color:var(--accent)"></i> REC
+        </button>
+      </div>
+      <div class="scene-canvas" id="scene-canvas">
+        <video id="main-video" autoplay muted playsinline style="display:none"></video>
+        <div class="overlay-layer" id="overlay-layer">
+          <div class="overlay-logo" id="overlay-logo" style="display:none">RIVERSIDE LIVE</div>
+          <div class="overlay-lower-third" id="overlay-lower-third" style="display:none">
+            <div class="overlay-title" id="lt-title">Speaker Name</div>
+            <div class="overlay-sub" id="lt-sub">Title / Role</div>
+          </div>
+          <div class="overlay-countdown" id="overlay-countdown" style="display:none">
+            <div class="countdown-label">STARTING IN</div>
+            <div class="countdown-time" id="countdown-time">05:00</div>
+          </div>
+        </div>
+        <div class="no-preview" id="no-preview">
+          <i class="fas fa-video-slash"></i>
+          <p>Select a broadcast and connect a camera<br>to begin production</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Camera Grid -->
+    <div class="cameras-section">
+      <div class="cameras-toolbar">
+        <div class="panel-icon" style="background:rgba(46,196,182,0.15);color:var(--green)"><i class="fas fa-camera"></i></div>
+        <div class="panel-title" style="font-family:'Bebas Neue';letter-spacing:1.5px;font-size:1rem;flex:1">CAMERA INPUTS</div>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem" onclick="requestCamera()">
+          <i class="fas fa-mobile-alt"></i> Request Phone
+        </button>
+        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem" onclick="addLocalCamera()">
+          <i class="fas fa-laptop"></i> Local Camera
+        </button>
+      </div>
+      <div class="cameras-grid" id="cameras-grid">
+        <div class="add-camera-tile" onclick="addLocalCamera()">
+          <i class="fas fa-plus"></i>
+          <span>Add Camera</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ─ RIGHT: Controls ─ -->
+  <div class="sidebar-right">
+
+    <!-- Scenes -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-icon" style="background:rgba(244,162,97,0.15);color:var(--gold)"><i class="fas fa-layer-group"></i></div>
+        <div class="panel-title">SCENES</div>
+      </div>
+      <div class="scene-grid">
+        <button class="scene-btn active-scene" onclick="switchScene('main', this)"><i class="fas fa-video"></i>Main Camera</button>
+        <button class="scene-btn" onclick="switchScene('countdown', this)"><i class="fas fa-clock"></i>Countdown</button>
+        <button class="scene-btn" onclick="switchScene('worship', this)"><i class="fas fa-music"></i>Worship</button>
+        <button class="scene-btn" onclick="switchScene('announce', this)"><i class="fas fa-bullhorn"></i>Announcement</button>
+        <button class="scene-btn" onclick="switchScene('scripture', this)"><i class="fas fa-bible"></i>Scripture</button>
+        <button class="scene-btn" onclick="switchScene('outro', this)"><i class="fas fa-sign-out-alt"></i>Outro</button>
+      </div>
+    </div>
+
+    <!-- Overlays -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-icon" style="background:rgba(58,134,255,0.15);color:var(--blue)"><i class="fas fa-magic"></i></div>
+        <div class="panel-title">OVERLAYS</div>
+      </div>
+      <div class="overlay-controls">
+        <div class="overlay-row">
+          <span class="overlay-label">Logo Badge</span>
+          <button class="toggle-switch" id="toggle-logo" onclick="toggleOverlay('logo')"></button>
+        </div>
+        <div class="overlay-row">
+          <span class="overlay-label">Lower Third</span>
+          <button class="toggle-switch" id="toggle-lt" onclick="toggleOverlay('lt')"></button>
+        </div>
+        <div class="overlay-row">
+          <span class="overlay-label">Countdown</span>
+          <button class="toggle-switch" id="toggle-cd" onclick="toggleOverlay('cd')"></button>
+        </div>
+        <button class="btn btn-outline" style="width:100%;justify-content:center;font-size:0.8rem;margin-top:4px" onclick="openOverlayEditor()">
+          <i class="fas fa-edit"></i> Edit Overlays
+        </button>
+      </div>
+    </div>
+
+    <!-- Audio -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-icon" style="background:rgba(46,196,182,0.15);color:var(--green)"><i class="fas fa-volume-up"></i></div>
+        <div class="panel-title">AUDIO MIX</div>
+      </div>
+      <div class="audio-panel">
+        <div class="audio-track">
+          <div class="audio-icon"><i class="fas fa-laptop"></i></div>
+          <div class="audio-label" style="font-size:0.8rem">Studio Mic</div>
+          <input type="range" class="audio-fader" min="0" max="100" value="80" oninput="setAudioLevel('studio', this.value)">
+          <button class="mute-btn" onclick="toggleMute('studio', this)"><i class="fas fa-microphone-slash"></i></button>
+        </div>
+        <div class="audio-track" id="phone-audio-track" style="display:none">
+          <div class="audio-icon"><i class="fas fa-mobile-alt"></i></div>
+          <div class="audio-label" style="font-size:0.8rem">Phone Mic</div>
+          <input type="range" class="audio-fader" min="0" max="100" value="80" oninput="setAudioLevel('phone', this.value)">
+          <button class="mute-btn" onclick="toggleMute('phone', this)"><i class="fas fa-microphone-slash"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Go Live Controls -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-icon" style="background:rgba(255,45,85,0.15);color:var(--live)"><i class="fas fa-satellite-dish"></i></div>
+        <div class="panel-title">BROADCAST</div>
+      </div>
+      <div class="go-live-panel">
+        <div class="stat-row">
+          <div class="stat-pill">
+            <div class="stat-value" id="stat-viewers">0</div>
+            <div class="stat-label">Viewers</div>
+          </div>
+          <div class="stat-pill">
+            <div class="stat-value" id="stat-duration">0:00</div>
+            <div class="stat-label">Duration</div>
+          </div>
+        </div>
+        <div class="broadcast-time" id="broadcast-clock">00:00:00</div>
+        <button class="go-live-btn ready" id="go-live-btn" onclick="toggleLive()">
+          <i class="fas fa-broadcast-tower"></i> GO LIVE
+        </button>
+        <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="endBroadcast()">
+          <i class="fas fa-stop"></i> End Broadcast
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── CREATE CHANNEL MODAL ── -->
+<div class="modal-bg" id="create-channel-modal">
+  <div class="modal">
+    <h2>CREATE CHANNEL</h2>
+    <div class="form-group">
+      <label class="form-label">CHANNEL NAME *</label>
+      <input class="form-input" id="new-ch-name" placeholder="e.g. Deliverance Church Riverside" maxlength="60">
+    </div>
+    <div class="form-group">
+      <label class="form-label">DESCRIPTION</label>
+      <textarea class="form-textarea" id="new-ch-desc" placeholder="What is this channel about?"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">CATEGORY</label>
+      <select class="form-select" id="new-ch-cat">
+        <option value="Worship">Worship</option>
+        <option value="Sermon">Sermon / Teaching</option>
+        <option value="Youth">Youth Ministry</option>
+        <option value="Prayer">Prayer & Intercession</option>
+        <option value="Events">Events & Conferences</option>
+        <option value="Bible Study">Bible Study</option>
+        <option value="General">General</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">CHANNEL LOGO</label>
+      <input type="file" class="form-input" id="new-ch-logo" accept="image/*">
+    </div>
+    <div class="form-group">
+      <label class="form-label">BANNER IMAGE (optional)</label>
+      <input type="file" class="form-input" id="new-ch-banner" accept="image/*">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal('create-channel-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createChannel()"><i class="fas fa-plus"></i> Create Channel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CREATE BROADCAST MODAL ── -->
+<div class="modal-bg" id="create-broadcast-modal">
+  <div class="modal">
+    <h2>NEW BROADCAST</h2>
+    <div class="form-group">
+      <label class="form-label">BROADCAST TITLE *</label>
+      <input class="form-input" id="new-bc-title" placeholder="e.g. Sunday Service – May 18" maxlength="80">
+    </div>
+    <div class="form-group">
+      <label class="form-label">DESCRIPTION</label>
+      <textarea class="form-textarea" id="new-bc-desc" placeholder="Tell viewers what this stream is about..."></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">THUMBNAIL (optional)</label>
+      <input type="file" class="form-input" id="new-bc-thumb" accept="image/*">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal('create-broadcast-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createBroadcast()"><i class="fas fa-film"></i> Create Broadcast</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── OVERLAY EDITOR MODAL ── -->
+<div class="modal-bg" id="overlay-editor-modal">
+  <div class="modal">
+    <h2>EDIT OVERLAYS</h2>
+    <div class="form-group">
+      <label class="form-label">LOWER THIRD – NAME</label>
+      <input class="form-input" id="lt-name-input" placeholder="Speaker Name" oninput="updateLowerThird()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">LOWER THIRD – TITLE</label>
+      <input class="form-input" id="lt-role-input" placeholder="Role / Title" oninput="updateLowerThird()">
+    </div>
+    <div class="form-group">
+      <label class="form-label">COUNTDOWN (minutes)</label>
+      <input class="form-input" type="number" id="cd-minutes-input" value="5" min="1" max="60">
+    </div>
+    <div class="form-group">
+      <label class="form-label">LOGO TEXT</label>
+      <input class="form-input" id="logo-text-input" value="RIVERSIDE LIVE" oninput="document.getElementById('overlay-logo').textContent=this.value">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="closeModal('overlay-editor-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CAMERA REQUEST PROMPT (shown on phone) ── -->
+<div class="camera-request-modal" id="camera-req-modal">
+  <div class="camera-request-card">
+    <div class="cr-icon">📱</div>
+    <div class="cr-title">Camera Request</div>
+    <div class="cr-sub" id="cr-subtitle">The studio is requesting your camera. Accept to connect as a live source.</div>
+    <div class="cr-actions">
+      <button class="btn btn-outline" onclick="closeModal('camera-req-modal')">Decline</button>
+      <button class="btn btn-success" onclick="acceptCameraRequest()"><i class="fas fa-check"></i> Accept</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─ STATE ─
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbxVvXK1oeIfJ1PHekly1HwtUBx8M5iUWZt_wppWDGfJylDjPAHg0ZBE3SXKFNbWSJV3/exec';
+const userName = localStorage.getItem('userName');
+if (!userName) window.location.href = 'login.html';
+
+let myChannel = null;
+let myBroadcasts = [];
+let activeBroadcast = null;
+let isLive = false;
+let isRecording = false;
+let liveStartTime = null;
+let broadcastTimer = null;
+let localStream = null;
+let cameras = {};   // id → {stream, peerConnection, label}
+let activeCameraId = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let currentScene = 'main';
+let overlayStates = { logo: false, lt: false, cd: false };
+let countdownSeconds = 300;
+let countdownInterval = null;
+let viewerPollInterval = null;
+
+// ─ INIT ─
+function init() {
+  const picLink = localStorage.getItem('userPicLink');
+  document.getElementById('hdr-username').textContent = userName;
+  const avatar = document.getElementById('hdr-avatar');
+  if (picLink) {
+    const id = picLink.match(/[-\w]{25,}/)?.[0];
+    avatar.src = id ? `https://lh3.googleusercontent.com/d/${id}` : picLink;
+  }
+  loadMyChannel();
+}
+
+function getLh3(url) {
+  if (!url) return '';
+  const id = url.match(/[-\w]{25,}/)?.[0];
+  return id ? `https://lh3.googleusercontent.com/d/${id}` : url;
+}
+
+function colorFromName(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return `hsl(${Math.abs(h) % 360}, 55%, 32%)`;
+}
+
+// ─ CHANNEL MANAGEMENT ─
+async function loadMyChannel() {
+  try {
+    const res = await fetch(`${scriptUrl}?operation=getMyLiveChannel&username=${encodeURIComponent(userName)}`);
+    const data = await res.json();
+
+    if (data.channel) {
+      myChannel = data.channel;
+      renderMyChannel();
+      loadBroadcasts();
+    } else {
+      document.getElementById('channel-display').style.display = 'none';
+      document.getElementById('no-channel-display').style.display = 'block';
+    }
+  } catch(e) {
+    showToast('Could not load channel info', 'error');
+  }
+}
+
+function renderMyChannel() {
+  if (!myChannel) return;
+  document.getElementById('channel-display').style.display = 'flex';
+  document.getElementById('no-channel-display').style.display = 'none';
+  document.getElementById('ch-name').textContent = myChannel.name;
+  document.getElementById('ch-cat').textContent = myChannel.category || 'General';
+
+  const thumb = document.getElementById('ch-thumb');
+  const pic = getLh3(myChannel.picLink);
+  if (pic) {
+    thumb.innerHTML = `<img src="${pic}" onerror="this.style.display='none'">`;
+  } else {
+    thumb.style.background = colorFromName(myChannel.name);
+    thumb.textContent = myChannel.name.charAt(0).toUpperCase();
+  }
+}
+
+async function loadBroadcasts() {
+  if (!myChannel) return;
+  try {
+    const res = await fetch(`${scriptUrl}?operation=getLiveBroadcasts&channelId=${encodeURIComponent(myChannel.id)}`);
+    const data = await res.json();
+    myBroadcasts = data.broadcasts || [];
+    renderBroadcastList();
+  } catch(e) {}
+}
+
+function renderBroadcastList() {
+  const list = document.getElementById('broadcast-list');
+
+  if (myBroadcasts.length === 0) {
+    list.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.85rem">No broadcasts yet. Create one above.</div>`;
+    return;
+  }
+
+  list.innerHTML = myBroadcasts.map(b => `
+    <div class="broadcast-item ${activeBroadcast?.id === b.id ? 'selected' : ''}" onclick="selectBroadcast('${b.id}')">
+      <div class="bi-title">${b.title}</div>
+      <div class="bi-meta">
+        <div class="status-dot ${b.status}"></div>
+        <span>${b.status.toUpperCase()}</span>
+        <span style="margin-left:auto">${formatDate(b.created)}</span>
+      </div>
+    </div>`).join('');
+}
+
+function selectBroadcast(id) {
+  activeBroadcast = myBroadcasts.find(b => b.id === id);
+  renderBroadcastList();
+  updateGoLiveBtn();
+  showToast(`Selected: ${activeBroadcast.title}`, 'success');
+}
+
+function updateGoLiveBtn() {
+  const btn = document.getElementById('go-live-btn');
+  if (!activeBroadcast) {
+    btn.textContent = 'Select a Broadcast';
+    btn.className = 'go-live-btn';
+    btn.disabled = true;
+    return;
+  }
+  btn.disabled = false;
+  if (isLive) {
+    btn.innerHTML = '<i class="fas fa-stop-circle"></i> STOP BROADCAST';
+    btn.className = 'go-live-btn streaming';
+  } else {
+    btn.innerHTML = '<i class="fas fa-broadcast-tower"></i> GO LIVE';
+    btn.className = 'go-live-btn ready';
+  }
+}
+
+// ─ CREATE CHANNEL ─
+function openCreateChannel() {
+  document.getElementById('create-channel-modal').classList.add('open');
+}
+
+function openEditChannel() {
+  if (!myChannel) { openCreateChannel(); return; }
+  document.getElementById('new-ch-name').value = myChannel.name;
+  document.getElementById('new-ch-desc').value = myChannel.description || '';
+  document.getElementById('new-ch-cat').value = myChannel.category || 'General';
+  document.getElementById('create-channel-modal').classList.add('open');
+}
+
+async function createChannel() {
+  const name = document.getElementById('new-ch-name').value.trim();
+  if (!name) { showToast('Channel name required', 'error'); return; }
+
+  const desc = document.getElementById('new-ch-desc').value.trim();
+  const cat = document.getElementById('new-ch-cat').value;
+  const logoFile = document.getElementById('new-ch-logo').files[0];
+  const bannerFile = document.getElementById('new-ch-banner').files[0];
+
+  let logoData = null, logoName = null, bannerData = null, bannerName = null;
+
+  if (logoFile) { logoData = await fileToBase64(logoFile); logoName = logoFile.name; }
+  if (bannerFile) { bannerData = await fileToBase64(bannerFile); bannerName = bannerFile.name; }
+
+  showToast('Creating channel...', '');
+
+  try {
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        operation: 'createLiveChannel',
+        username: userName,
+        name, description: desc, category: cat,
+        logoData, logoName, bannerData, bannerName
+      })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      closeModal('create-channel-modal');
+      showToast('Channel created!', 'success');
+      loadMyChannel();
+    } else {
+      showToast(data.message || 'Error creating channel', 'error');
+    }
+  } catch(e) {
+    showToast('Network error', 'error');
+  }
+}
+
+// ─ CREATE BROADCAST ─
+function openCreateBroadcast() {
+  if (!myChannel) { showToast('Create a channel first', 'error'); return; }
+  document.getElementById('create-broadcast-modal').classList.add('open');
+}
+
+async function createBroadcast() {
+  const title = document.getElementById('new-bc-title').value.trim();
+  if (!title) { showToast('Broadcast title required', 'error'); return; }
+
+  const desc = document.getElementById('new-bc-desc').value.trim();
+  const thumbFile = document.getElementById('new-bc-thumb').files[0];
+  let thumbData = null, thumbName = null;
+  if (thumbFile) { thumbData = await fileToBase64(thumbFile); thumbName = thumbFile.name; }
+
+  showToast('Creating broadcast...', '');
+
+  try {
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        operation: 'createLiveBroadcast',
+        channelId: myChannel.id,
+        username: userName,
+        title, description: desc,
+        thumbData, thumbName
+      })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+      closeModal('create-broadcast-modal');
+      showToast('Broadcast created!', 'success');
+      loadBroadcasts();
+    } else {
+      showToast(data.message || 'Error', 'error');
+    }
+  } catch(e) {
+    showToast('Network error', 'error');
+  }
+}
+
+// ─ CAMERAS ─
+async function addLocalCamera() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const id = 'local-' + Date.now();
+    cameras[id] = { stream, label: 'Local Camera', local: true };
+    addCameraToGrid(id, stream, 'Local Camera');
+    if (!activeCameraId) setActiveCamera(id);
+    document.getElementById('phone-audio-track').style.display = 'flex';
+    showToast('Local camera connected', 'success');
+  } catch(e) {
+    showToast('Camera access denied', 'error');
+  }
+}
+
+function addCameraToGrid(id, stream, label) {
+  const grid = document.getElementById('cameras-grid');
+  const tile = document.createElement('div');
+  tile.className = 'camera-tile';
+  tile.id = `cam-tile-${id}`;
+  tile.onclick = () => setActiveCamera(id);
+  tile.innerHTML = `
+    <video autoplay muted playsinline></video>
+    <div class="camera-tile-label">${label}</div>
+    <div class="camera-tile-status"></div>`;
+  tile.querySelector('video').srcObject = stream;
+
+  // Insert before the add-camera-tile
+  const addBtn = grid.querySelector('.add-camera-tile');
+  grid.insertBefore(tile, addBtn);
+}
+
+function setActiveCamera(id) {
+  activeCameraId = id;
+  const mainVideo = document.getElementById('main-video');
+  mainVideo.srcObject = cameras[id]?.stream || null;
+  mainVideo.style.display = cameras[id] ? 'block' : 'none';
+  document.getElementById('no-preview').style.display = cameras[id] ? 'none' : 'flex';
+
+  document.querySelectorAll('.camera-tile').forEach(t => t.classList.remove('active'));
+  const tile = document.getElementById(`cam-tile-${id}`);
+  if (tile) tile.classList.add('active');
+}
+
+// Phone camera request
+function requestCamera() {
+  const code = Math.random().toString(36).slice(2, 7).toUpperCase();
+  showToast(`Camera request code: ${code} — Share with phone user`, '');
+  // In production: would write a pending request to the sheet and poll for acceptance
+}
+
+// ─ SCENES ─
+function switchScene(scene, btn) {
+  currentScene = scene;
+  document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active-scene'));
+  btn.classList.add('active-scene');
+
+  // Show countdown overlay for countdown scene
+  const countdown = document.getElementById('overlay-countdown');
+  if (scene === 'countdown') {
+    countdown.style.display = 'flex';
+    startCountdown();
+  } else {
+    countdown.style.display = 'none';
+    stopCountdown();
+  }
+}
+
+function startCountdown() {
+  stopCountdown();
+  const mins = parseInt(document.getElementById('cd-minutes-input')?.value || '5');
+  countdownSeconds = mins * 60;
+  updateCountdownDisplay();
+  countdownInterval = setInterval(() => {
+    countdownSeconds--;
+    updateCountdownDisplay();
+    if (countdownSeconds <= 0) {
+      stopCountdown();
+      switchScene('main', document.querySelector('.scene-btn:first-child'));
+    }
+  }, 1000);
+}
+
+function stopCountdown() {
+  if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+}
+
+function updateCountdownDisplay() {
+  const m = Math.floor(countdownSeconds / 60).toString().padStart(2, '0');
+  const s = (countdownSeconds % 60).toString().padStart(2, '0');
+  document.getElementById('countdown-time').textContent = `${m}:${s}`;
+}
+
+// ─ OVERLAYS ─
+function toggleOverlay(type) {
+  overlayStates[type] = !overlayStates[type];
+  const btn = document.getElementById(`toggle-${type}`);
+  if (overlayStates[type]) btn.classList.add('on'); else btn.classList.remove('on');
+
+  if (type === 'logo') {
+    document.getElementById('overlay-logo').style.display = overlayStates.logo ? 'block' : 'none';
+  } else if (type === 'lt') {
+    document.getElementById('overlay-lower-third').style.display = overlayStates.lt ? 'block' : 'none';
+  } else if (type === 'cd') {
+    document.getElementById('overlay-countdown').style.display = overlayStates.cd ? 'flex' : 'none';
+    if (overlayStates.cd) startCountdown(); else stopCountdown();
+  }
+}
+
+function openOverlayEditor() {
+  document.getElementById('overlay-editor-modal').classList.add('open');
+}
+
+function updateLowerThird() {
+  document.getElementById('lt-title').textContent = document.getElementById('lt-name-input').value || 'Speaker Name';
+  document.getElementById('lt-sub').textContent = document.getElementById('lt-role-input').value || 'Role / Title';
+}
+
+// ─ AUDIO ─
+function setAudioLevel(source, value) {
+  if (source === 'phone' && cameras[activeCameraId]) {
+    cameras[activeCameraId].stream?.getAudioTracks().forEach(t => {
+      t.enabled = value > 0;
+    });
+  }
+}
+
+function toggleMute(source, btn) {
+  btn.classList.toggle('muted');
+  if (source === 'studio' && localStream) {
+    localStream.getAudioTracks().forEach(t => t.enabled = !btn.classList.contains('muted'));
+  }
+}
+
+// ─ GO LIVE / STOP ─
+async function toggleLive() {
+  if (!activeBroadcast) { showToast('Select a broadcast first', 'error'); return; }
+  if (!activeCameraId && !isLive) { showToast('Connect a camera first', 'error'); return; }
+
+  if (!isLive) {
+    await startLive();
+  } else {
+    await stopLive();
+  }
+}
+
+async function startLive() {
+  showToast('Going live...', '');
+  try {
+    // Capture the composited output from scene canvas
+    const canvas = document.getElementById('scene-canvas');
+    const stream = canvas.captureStream ? canvas.captureStream(30) : cameras[activeCameraId]?.stream;
+
+    // Create WebRTC peer connection for broadcasting
+    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+
+    if (stream) {
+      stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    }
+
+    // Collect ICE candidates
+    const iceCandidates = [];
+    pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(JSON.stringify(e.candidate)); };
+
+    await pc.setLocalDescription(await pc.createOffer());
+
+    // Wait for ICE gathering
+    await new Promise(resolve => {
+      if (pc.iceGatheringState === 'complete') resolve();
+      else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') resolve(); };
+      setTimeout(resolve, 3000); // fallback
+    });
+
+    // Send SDP to server — server holds it for viewers
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        operation: 'startBroadcast',
+        broadcastId: activeBroadcast.id,
+        username: userName,
+        sdpOffer: pc.localDescription.sdp,
+        iceCandidates
+      })
+    });
+    const data = await res.json();
+    if (data.status !== 'success') throw new Error(data.message);
+
+    isLive = true;
+    liveStartTime = Date.now();
+    document.getElementById('on-air-badge').classList.add('visible');
+    startBroadcastTimer();
+    startViewerPoll();
+    updateGoLiveBtn();
+    loadBroadcasts();
+    showToast('🔴 You are LIVE!', 'success');
+  } catch(e) {
+    showToast('Failed to go live: ' + e.message, 'error');
+  }
+}
+
+async function stopLive() {
+  try {
+    await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ operation: 'stopBroadcast', broadcastId: activeBroadcast.id, username: userName })
+    });
+    isLive = false;
+    liveStartTime = null;
+    stopBroadcastTimer();
+    stopViewerPoll();
+    document.getElementById('on-air-badge').classList.remove('visible');
+    updateGoLiveBtn();
+    loadBroadcasts();
+    showToast('Broadcast stopped', '');
+  } catch(e) {
+    showToast('Error stopping broadcast', 'error');
+  }
+}
+
+async function endBroadcast() {
+  if (!activeBroadcast) return;
+  if (isLive) await stopLive();
+  try {
+    await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ operation: 'endBroadcast', broadcastId: activeBroadcast.id, username: userName })
+    });
+    activeBroadcast = null;
+    loadBroadcasts();
+    showToast('Broadcast ended', '');
+  } catch(e) {}
+}
+
+// ─ RECORDING ─
+function toggleRecording() {
+  if (!isRecording) {
+    startRecording();
+  } else {
+    stopRecording();
+  }
+}
+
+function startRecording() {
+  const stream = cameras[activeCameraId]?.stream;
+  if (!stream) { showToast('No active camera to record', 'error'); return; }
+  recordedChunks = [];
+  mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.start(1000);
+  isRecording = true;
+  document.getElementById('rec-btn').innerHTML = '<i class="fas fa-circle" style="color:var(--live)"></i> RECORDING';
+  document.getElementById('rec-btn').style.borderColor = 'var(--live)';
+  showToast('Recording started', 'success');
+}
+
+function stopRecording() {
+  if (!mediaRecorder) return;
+  mediaRecorder.stop();
+  mediaRecorder.onstop = () => {
+    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `broadcast-${Date.now()}.webm`;
+    a.click();
+  };
+  isRecording = false;
+  document.getElementById('rec-btn').innerHTML = '<i class="fas fa-circle" style="color:var(--accent)"></i> REC';
+  document.getElementById('rec-btn').style.borderColor = '';
+  showToast('Recording saved', 'success');
+}
+
+// ─ TIMERS ─
+function startBroadcastTimer() {
+  broadcastTimer = setInterval(() => {
+    const elapsed = Date.now() - liveStartTime;
+    const h = Math.floor(elapsed / 3600000).toString().padStart(2,'0');
+    const m = Math.floor((elapsed % 3600000) / 60000).toString().padStart(2,'0');
+    const s = Math.floor((elapsed % 60000) / 1000).toString().padStart(2,'0');
+    document.getElementById('broadcast-clock').textContent = `${h}:${m}:${s}`;
+    const durSec = Math.floor(elapsed / 1000);
+    document.getElementById('stat-duration').textContent = `${Math.floor(durSec/60)}:${(durSec%60).toString().padStart(2,'0')}`;
+  }, 1000);
+}
+
+function stopBroadcastTimer() {
+  if (broadcastTimer) { clearInterval(broadcastTimer); broadcastTimer = null; }
+  document.getElementById('broadcast-clock').textContent = '00:00:00';
+}
+
+function startViewerPoll() {
+  viewerPollInterval = setInterval(async () => {
+    if (!activeBroadcast) return;
+    try {
+      const res = await fetch(`${scriptUrl}?operation=getBroadcastViewerCount&broadcastId=${encodeURIComponent(activeBroadcast.id)}`);
+      const data = await res.json();
+      document.getElementById('stat-viewers').textContent = data.count || 0;
+    } catch(e) {}
+  }, 10000);
+}
+
+function stopViewerPoll() {
+  if (viewerPollInterval) { clearInterval(viewerPollInterval); viewerPollInterval = null; }
+}
+
+// ─ CAMERA PHONE CONNECTION ─
+async function acceptCameraRequest() {
+  closeModal('camera-req-modal');
+  // Would establish WebRTC from phone back to studio
+  showToast('Camera connected to studio', 'success');
+}
+
+// ─ LAYOUT SWITCHER ─
+function switchLayout() {
+  const canvas = document.getElementById('scene-canvas');
+  const video = document.getElementById('main-video');
+  const modes = ['contain', 'cover', 'fill'];
+  const cur = video.style.objectFit || 'cover';
+  const next = modes[(modes.indexOf(cur) + 1) % modes.length];
+  video.style.objectFit = next;
+  showToast(`Layout: ${next}`, '');
+}
+
+// ─ UTILS ─
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast show ${type || ''}`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -555,8 +555,20 @@ function selectBroadcastFromList(broadcastId, channelId) {
 // ─── VIEWER PLAYER ───────────────────────────────────────────────────────────
 
 async function openPlayer(broadcastId, channelId) {
+  // Hard reset: kill any previous session completely before opening new one
+  if (activeBroadcastId) {
+    closePlayer();
+    await new Promise(r => setTimeout(r, 100));
+  }
+
   activeBroadcastId = broadcastId;
   connectionRetryCount = 0;
+
+  // Reset conn status before anything async runs
+  const connEl = document.getElementById('conn-status');
+  connEl.style.display = 'none';
+  connEl.style.opacity = '1';
+  document.getElementById('retry-btn').style.display = 'none';
 
   try {
     const res = await fetch(`${scriptUrl}?operation=getLiveBroadcast&broadcastId=${encodeURIComponent(broadcastId)}`);
@@ -597,14 +609,13 @@ async function openPlayer(broadcastId, channelId) {
     startChatPoll(broadcastId);
 
     fetch(scriptUrl, {
-      method:'POST',
-      body: JSON.stringify({ operation:'recordBroadcastView', broadcastId, username: userName })
+      method: 'POST',
+      body: JSON.stringify({ operation: 'recordBroadcastView', broadcastId, username: userName })
     });
   } catch(e) {
     console.error('Failed to open player', e);
   }
 }
-
 // ─── KEY FIX: Viewer creates the OFFER, studio answers ──────────────────────
 // This is the correct WebRTC flow for 1-studio-to-many-viewers:
 // Each viewer independently offers → studio answers each one separately.
@@ -632,21 +643,29 @@ async function startViewerConnection(broadcastId) {
       }
     };
 
-    peerConnection.onconnectionstatechange = () => {
-      const state = peerConnection?.connectionState;
-      console.log('PC State:', state);
-      if (state === 'connected') {
-        setConnStatus('connected', 'Connected');
-      } else if (state === 'failed' || state === 'closed') {
-        setConnStatus('failed', 'Connection lost');
-        if (connectionRetryCount < MAX_RETRIES) {
-          connectionRetryCount++;
-          setTimeout(() => startViewerConnection(broadcastId), 4000);
-        } else {
-          document.getElementById('retry-btn').style.display = 'inline-block';
-        }
-      }
-    };
+   peerConnection.onconnectionstatechange = () => {
+  // Guard: if modal was closed, ignore ALL state changes
+  if (!activeBroadcastId) return;
+
+  const state = peerConnection?.connectionState;
+  console.log('PC State:', state);
+
+  if (state === 'connected') {
+    setConnStatus('connected', 'Connected');
+  } else if (state === 'failed' || state === 'closed') {
+    // Only retry if we still have an active broadcast open
+    if (!activeBroadcastId) return;
+    setConnStatus('failed', 'Connection lost');
+    if (connectionRetryCount < MAX_RETRIES) {
+      connectionRetryCount++;
+      setTimeout(() => {
+        if (activeBroadcastId) startViewerConnection(activeBroadcastId);
+      }, 4000);
+    } else {
+      document.getElementById('retry-btn').style.display = 'inline-block';
+    }
+  }
+};
 
     // Step 1: Clean old signals first
     await fetch(scriptUrl, {
@@ -787,60 +806,82 @@ function retryConnection() {
 }
 
 function cleanupPeerConnection() {
+  // Kill all pending timers first
   if (iceCollectTimeout) { clearTimeout(iceCollectTimeout); iceCollectTimeout = null; }
   if (studioAnswerPoll) { clearTimeout(studioAnswerPoll); studioAnswerPoll = null; }
-  connectionRetryCount = MAX_RETRIES; // kill any pending retries
 
   if (peerConnection) {
+    // Strip ALL callbacks before closing — prevents ghost events
     peerConnection.ontrack = null;
     peerConnection.onicecandidate = null;
     peerConnection.onconnectionstatechange = null;
+    peerConnection.onicegatheringstatechange = null;
+    peerConnection.onsignalingstatechange = null;
     try { peerConnection.close(); } catch(e) {}
     peerConnection = null;
   }
 
   const video = document.getElementById('player-video');
-  if (video.srcObject) {
+  if (video && video.srcObject) {
     video.srcObject.getTracks().forEach(t => t.stop());
     video.srcObject = null;
   }
-  video.load(); // fully reset the video element
+  if (video) { video.load(); }
 }
 
 function closePlayer() {
-  const broadcastIdToClean = activeBroadcastId; // capture before nulling
+  const broadcastIdToClean = activeBroadcastId;
 
+  // 1. Hide modal FIRST
   document.getElementById('player-modal').classList.remove('open');
+
+  // 2. Null out active state BEFORE cleanup so no callbacks fire
+  activeBroadcastId = null;
+  activeBroadcastData = null;
+  connectionRetryCount = MAX_RETRIES; // block any pending retries
+
+  // 3. Stop all polling
+  if (chatPollInterval) { clearInterval(chatPollInterval); chatPollInterval = null; }
+  if (iceCollectTimeout) { clearTimeout(iceCollectTimeout); iceCollectTimeout = null; }
+  if (studioAnswerPoll) { clearTimeout(studioAnswerPoll); studioAnswerPoll = null; }
+
+  // 4. Full peer cleanup
   cleanupPeerConnection();
 
-  if (chatPollInterval) { clearInterval(chatPollInterval); chatPollInterval = null; }
+  // 5. Reset retry count only AFTER cleanup
+  connectionRetryCount = 0;
 
-  // Reset chat
+  // 6. Reset ALL UI state completely
+  const video = document.getElementById('player-video');
+  video.style.display = 'none';
+  video.src = '';
+  video.load();
+
+  const placeholder = document.getElementById('player-placeholder');
+  placeholder.style.display = 'none';
+
   document.getElementById('chat-messages').innerHTML = '';
   document.getElementById('chat-messages').dataset.count = '0';
   document.getElementById('viewer-count').textContent = '0 watching';
 
-  // Reset conn status fully
   const connEl = document.getElementById('conn-status');
   connEl.style.display = 'none';
   connEl.style.opacity = '1';
   document.getElementById('conn-dot').className = 'conn-dot';
   document.getElementById('conn-text').textContent = 'Connecting...';
-
-  // Hide retry button
   document.getElementById('retry-btn').style.display = 'none';
 
-  // Clean up backend signals
+  // 7. Clean backend signals
   if (broadcastIdToClean) {
     fetch(scriptUrl, {
       method: 'POST',
-      body: JSON.stringify({ operation: 'cleanupViewerSignals', broadcastId: broadcastIdToClean, viewerId: userName })
+      body: JSON.stringify({
+        operation: 'cleanupViewerSignals',
+        broadcastId: broadcastIdToClean,
+        viewerId: userName
+      })
     }).catch(() => {});
   }
-
-  activeBroadcastId = null;
-  activeBroadcastData = null;
-  connectionRetryCount = 0;
 }
 // ─── CHAT ────────────────────────────────────────────────────────────────────
 

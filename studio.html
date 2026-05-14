@@ -412,6 +412,7 @@ let overlayStates = { logo: false, lt: false, cd: false };
 let countdownSeconds = 300;
 let countdownInterval = null;
 let viewerPollInterval = null;
+let shouldReconnectCamera = false;
 
 // KEY: Track each viewer's individual peer connection
 // viewerId → { pc: RTCPeerConnection, state: string }
@@ -467,17 +468,45 @@ function getCompositeStream() {
   drawFrame();
   return stream;
 }
-// ─── INIT ───────────────────────────────────────────────────────────────────
-function init() {
-  const picLink = localStorage.getItem('userPicLink');
-  document.getElementById('hdr-username').textContent = userName;
-  const avatar = document.getElementById('hdr-avatar');
-  if (picLink) {
-    const id = picLink.match(/[-\w]{25,}/)?.[0];
-    avatar.src = id ? `https://lh3.googleusercontent.com/d/${id}` : picLink;
+
+// ─── LOAD CURRENT LIVE STATE ─────────────────────────────────────────────
+async function loadLiveState() {
+  if (!myChannel) return;
+
+  try {
+    // Get all broadcasts
+    const res = await fetch(`${scriptUrl}?operation=getLiveBroadcasts&channelId=${encodeURIComponent(myChannel.id)}`);
+    const data = await res.json();
+    myBroadcasts = data.broadcasts || [];
+
+    // Find if any broadcast is currently LIVE
+    const liveBroadcast = myBroadcasts.find(b => b.status === "live");
+
+    if (liveBroadcast) {
+      activeBroadcast = liveBroadcast;
+      isLive = true;
+      liveStartTime = Date.now() - 60000; // rough estimate
+
+      document.getElementById('on-air-badge').classList.add('visible');
+      document.getElementById('viewer-connections-badge').style.display = 'flex';
+      updateGoLiveBtn();
+      startBroadcastTimer();
+      startViewerPoll();
+      startViewerOfferPoller();
+
+      showToast(`🔴 Reconnected to live broadcast: ${liveBroadcast.title}`, 'success');
+    } else {
+      isLive = false;
+      updateGoLiveBtn();
+    }
+
+    renderBroadcastList();
+  } catch(e) {
+    console.error("Failed to load live state", e);
   }
-  loadMyChannel();
 }
+
+
 
 function getLh3(url) {
   if (!url) return '';
@@ -613,18 +642,47 @@ async function createBroadcast() {
 }
 
 // ─── CAMERAS ─────────────────────────────────────────────────────────────────
-async function addLocalCamera() {
+async function addLocalCamera(isReconnect = false) {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    const id = 'local-' + Date.now();
-    cameras[id] = { stream, label: 'Local Camera', local: true };
-    addCameraToGrid(id, stream, 'Local Camera');
-    if (!activeCameraId) setActiveCamera(id);
+    const stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { width: 1280, height: 720, facingMode: "user" }, 
+      audio: true 
+    });
+    
+    const id = isReconnect ? 'local-main' : 'local-' + Date.now();
+    
+    cameras[id] = { 
+      stream, 
+      label: isReconnect ? 'Local Camera (Reconnected)' : 'Local Camera', 
+      local: true 
+    };
+    
+    // If reconnecting, remove old tile first
+    if (isReconnect) {
+      const oldTile = document.getElementById(`cam-tile-local-main`);
+      if (oldTile) oldTile.remove();
+    }
+    
+    addCameraToGrid(id, stream, cameras[id].label);
+    
+    if (!activeCameraId || isReconnect) {
+      setActiveCamera(id);
+    }
+    
     document.getElementById('phone-audio-track').style.display = 'flex';
-    showToast('Local camera connected', 'success');
-  } catch(e) { showToast('Camera access denied', 'error'); }
+    
+    if (isReconnect) {
+      showToast('✅ Local camera reconnected successfully', 'success');
+    } else {
+      showToast('Local camera connected', 'success');
+    }
+    
+    return id;
+  } catch(e) {
+    console.error(e);
+    showToast('Camera access denied or unavailable', 'error');
+  }
 }
-
 function addCameraToGrid(id, stream, label) {
   const grid = document.getElementById('cameras-grid');
   const tile = document.createElement('div');
@@ -703,44 +761,49 @@ async function toggleLive() {
 }
 
 async function startLive() {
+  if (!activeBroadcast) return showToast('Select a broadcast first', 'error');
+  if (!activeCameraId) return showToast('Connect a camera first', 'error');
+
   showToast('Going live...', '');
+
   try {
     const stream = cameras[activeCameraId]?.stream;
-    if (!stream) { showToast('No active camera stream', 'error'); return; }
-compositeStream = getCompositeStream();
-  liveStream = compositeStream;
-    liveStream = stream;
-    viewerConnections = {};
-    
+    if (!stream) throw new Error('No camera stream');
 
-    // Mark broadcast as live on server (no SDP needed — viewers create offers now)
+    // Use composite if overlays are active, else raw stream
+    compositeStream = overlayStates.logo || overlayStates.lt ? getCompositeStream() : stream;
+    liveStream = compositeStream || stream;
+
     const res = await fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({
         operation: 'startBroadcast',
         broadcastId: activeBroadcast.id,
         username: userName,
-        sdpOffer: '',   // Empty — we no longer use a global offer
+        sdpOffer: '', 
         iceCandidates: []
       })
     });
+
     const data = await res.json();
-    if (data.status !== 'success') throw new Error(data.message);
+    if (data.status !== 'success') throw new Error(data.message || 'Failed to start');
 
     isLive = true;
     liveStartTime = Date.now();
+
     document.getElementById('on-air-badge').classList.add('visible');
     document.getElementById('viewer-connections-badge').style.display = 'flex';
+
     startBroadcastTimer();
     startViewerPoll();
-
-    // ── KEY: Start polling for viewer OFFERS and answering each one ──
     startViewerOfferPoller();
 
     updateGoLiveBtn();
-    loadBroadcasts();
-    showToast('🔴 You are LIVE!', 'success');
+    renderBroadcastList();
+
+    showToast('🔴 LIVE!', 'success');
   } catch(e) {
+    console.error(e);
     showToast('Failed to go live: ' + e.message, 'error');
   }
 }
@@ -1008,6 +1071,63 @@ function showToast(msg, type) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+async function init() {
+  const picLink = localStorage.getItem('userPicLink');
+  document.getElementById('hdr-username').textContent = userName;
+  
+  const avatar = document.getElementById('hdr-avatar');
+  if (picLink) {
+    const id = picLink.match(/[-\w]{25,}/)?.[0];
+    avatar.src = id ? `https://lh3.googleusercontent.com/d/${id}` : picLink;
+  }
+
+  await loadMyChannel();
+  await loadLiveState();        // This will now also handle camera reconnect
+}
+
+// ─── IMPROVED loadLiveState() ─────────────────────────────────────────────
+async function loadLiveState() {
+  if (!myChannel) return;
+
+  try {
+    const res = await fetch(`${scriptUrl}?operation=getLiveBroadcasts&channelId=${encodeURIComponent(myChannel.id)}`);
+    const data = await res.json();
+    myBroadcasts = data.broadcasts || [];
+
+    const liveBroadcast = myBroadcasts.find(b => b.status === "live");
+
+    if (liveBroadcast) {
+      activeBroadcast = liveBroadcast;
+      isLive = true;
+      liveStartTime = Date.now() - 60000;
+
+      document.getElementById('on-air-badge').classList.add('visible');
+      document.getElementById('viewer-connections-badge').style.display = 'flex';
+
+      updateGoLiveBtn();
+      startBroadcastTimer();
+      startViewerPoll();
+      startViewerOfferPoller();
+
+      // AUTO RECONNECT CAMERA
+      setTimeout(async () => {
+        if (!activeCameraId) {
+          await addLocalCamera(true);   // true = reconnect mode
+        }
+      }, 800);
+
+      showToast(`🔴 Reconnected to live broadcast: ${liveBroadcast.title}`, 'success');
+    } else {
+      isLive = false;
+      updateGoLiveBtn();
+    }
+
+    renderBroadcastList();
+  } catch(e) {
+    console.error("Failed to load live state", e);
+  }
+}
+// Call init when page loads
 init();
 </script>
 </body>

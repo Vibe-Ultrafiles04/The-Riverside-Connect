@@ -318,11 +318,11 @@ let activeBroadcastId = null;
 let activeBroadcastData = null; // store full broadcast object
 let chatPollInterval = null;
 let peerConnection = null;
+let iceCollectTimeout = null;
+let studioAnswerPoll = null;     // ← NEW
 let currentFilter = 'all';
 let connectionRetryCount = 0;
 const MAX_RETRIES = 3;
-let retryTimeout = null;
-let iceCollectTimeout = null;
 
 // ─── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -463,14 +463,71 @@ function updateTicker() {
 
 function openChannelPage(channelId) {
   const broadcasts = allBroadcasts[channelId] || [];
-  const live = broadcasts.find(b => b.status === 'live');
-  const waiting = broadcasts.find(b => b.status === 'waiting');
-  const target = live || waiting || broadcasts[0];
-  if (target) {
-    openPlayer(target.id, channelId);
-  } else {
-    alert('No broadcasts available for this channel yet.');
+  const ch = allChannels.find(c => c.id === channelId);
+
+  if (broadcasts.length === 0) {
+    alert(`No broadcasts yet for ${ch ? ch.name : 'this channel'}`);
+    return;
   }
+
+  // If there's only one broadcast → open it directly
+  if (broadcasts.length === 1) {
+    openPlayer(broadcasts[0].id, channelId);
+    return;
+  }
+
+  // Multiple broadcasts → Show a nice selection modal / list
+  showBroadcastSelectionModal(channelId, ch, broadcasts);
+}
+
+function showBroadcastSelectionModal(channelId, channel, broadcasts) {
+  let html = `
+    <div style="position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:2000; display:flex; align-items:center; justify-content:center;">
+      <div style="background:var(--surface); border-radius:16px; width:90%; max-width:520px; max-height:85vh; overflow:auto; padding:20px;">
+        <h2 style="margin-bottom:16px; text-align:center;">${channel ? channel.name : 'Channel'} Broadcasts</h2>
+        
+        <div style="display:flex; flex-direction:column; gap:12px;">
+  `;
+
+  broadcasts.sort((a,b) => new Date(b.created) - new Date(a.created)).forEach(b => {
+    const isLive = b.status === 'live';
+    const statusColor = isLive ? 'var(--live)' : b.status === 'waiting' ? 'var(--waiting)' : 'var(--ended)';
+    
+    html += `
+      <div onclick="selectBroadcastFromList('${b.id}', '${channelId}');" 
+           style="background:var(--surface2); padding:14px; border-radius:12px; cursor:pointer; border:2px solid ${isLive ? 'var(--live)' : 'transparent'};">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:600;">${b.title}</div>
+          <span style="color:${statusColor}; font-size:0.8rem; font-weight:700; font-family:JetBrains Mono;">
+            ${isLive ? '● LIVE' : b.status.toUpperCase()}
+          </span>
+        </div>
+        <div style="font-size:0.8rem; color:var(--muted); margin-top:4px;">
+          ${new Date(b.created).toLocaleDateString()}
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" 
+                style="margin-top:20px; width:100%; padding:12px; background:var(--surface2); border:none; border-radius:8px; color:var(--text); font-weight:600;">
+          Close
+        </button>
+      </div>
+    </div>
+  `;
+
+  const modal = document.createElement('div');
+  modal.innerHTML = html;
+  document.body.appendChild(modal);
+}
+
+function selectBroadcastFromList(broadcastId, channelId) {
+  // Remove all modals
+  document.querySelectorAll('div[style*="z-index:2000"]').forEach(el => el.remove());
+  openPlayer(broadcastId, channelId);
 }
 
 // ─── VIEWER PLAYER ───────────────────────────────────────────────────────────
@@ -531,102 +588,79 @@ async function openPlayer(broadcastId, channelId) {
 // Each viewer independently offers → studio answers each one separately.
 
 async function startViewerConnection(broadcastId) {
-  // Clean up any existing connection
-  cleanupPeerConnection();
+  cleanupPeerConnection(); // ← Critical: full cleanup first
+  connectionRetryCount = 0;
 
   try {
     peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' }
       ]
     });
 
     const video = document.getElementById('player-video');
 
-    // When we receive tracks from studio, show them
     peerConnection.ontrack = (e) => {
-      console.log('Track received from studio:', e.track.kind);
-      if (e.streams && e.streams[0]) {
+      if (e.streams?.[0]) {
         video.srcObject = e.streams[0];
-        video.play().catch(err => console.warn('Autoplay blocked:', err));
+        video.play().catch(() => {});
         setConnStatus('connected', 'Connected');
-        document.getElementById('retry-btn').style.display = 'none';
       }
     };
 
     peerConnection.onconnectionstatechange = () => {
-      const state = peerConnection?.connectionState;
-      console.log('Viewer PC state:', state);
-
-      if (state === 'connected') {
+      console.log('PC State:', peerConnection.connectionState);
+      if (peerConnection.connectionState === 'connected') {
         setConnStatus('connected', 'Connected');
-      } else if (state === 'failed' || state === 'disconnected') {
+      } else if (['failed', 'disconnected'].includes(peerConnection.connectionState)) {
         setConnStatus('failed', 'Connection lost');
-        document.getElementById('retry-btn').style.display = 'inline-block';
-
-        // Auto-retry once on failure
         if (connectionRetryCount < MAX_RETRIES) {
           connectionRetryCount++;
-          console.log(`Auto-retrying connection (attempt ${connectionRetryCount})...`);
-          retryTimeout = setTimeout(() => startViewerConnection(broadcastId), 3000);
+          setTimeout(() => startViewerConnection(broadcastId), 2500);
         }
       }
     };
 
-    peerConnection.onicecandidate = async (e) => {
+    peerConnection.onicecandidate = (e) => {
       if (e.candidate) {
-        // Send our ICE candidate to server for studio to use
-        try {
-          await fetch(scriptUrl, {
-            method: 'POST',
-            body: JSON.stringify({
-              operation: 'sendViewerIce',
-              broadcastId,
-              viewerId: userName,
-              candidate: JSON.stringify(e.candidate)
-            })
-          });
-        } catch(err) {
-          console.warn('Failed to send ICE candidate:', err);
-        }
+        fetch(scriptUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            operation: 'sendViewerIce',
+            broadcastId,
+            viewerId: userName,
+            candidate: JSON.stringify(e.candidate)
+          })
+        });
       }
     };
 
-    // STEP 1: Add a transceiver to tell studio we want to receive video+audio
-    // This is critical — without this, the offer won't request any tracks
     peerConnection.addTransceiver('video', { direction: 'recvonly' });
     peerConnection.addTransceiver('audio', { direction: 'recvonly' });
 
-    // STEP 2: Create our offer
     const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
-    // STEP 3: Wait for ICE gathering to complete (up to 3s)
-    await waitForIceGathering(peerConnection, 3000);
+    await waitForIceGathering(peerConnection, 3500);
 
-    // STEP 4: Send our offer to the server (studio will pick this up)
-    const sendRes = await fetch(scriptUrl, {
+    await fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({
-        operation: 'submitViewerAnswer',  // Reusing this endpoint — it stores our offer
+        operation: 'submitViewerAnswer',
         broadcastId,
         viewerId: userName,
-        sdpAnswer: peerConnection.localDescription.sdp  // We send our offer SDP here
+        sdpAnswer: peerConnection.localDescription.sdp
       })
     });
 
-    // STEP 5: Poll for studio's answer to our offer
     pollForStudioAnswer(broadcastId);
 
-  } catch(e) {
-    console.error('Viewer connection error:', e);
+  } catch (e) {
+    console.error(e);
     setConnStatus('failed', 'Failed to connect');
-    document.getElementById('retry-btn').style.display = 'inline-block';
   }
 }
-
 function waitForIceGathering(pc, timeoutMs) {
   return new Promise(resolve => {
     if (pc.iceGatheringState === 'complete') { resolve(); return; }
@@ -691,17 +725,22 @@ function retryConnection() {
 }
 
 function cleanupPeerConnection() {
-  if (retryTimeout) { clearTimeout(retryTimeout); retryTimeout = null; }
-  if (iceCollectTimeout) { clearTimeout(iceCollectTimeout); iceCollectTimeout = null; }
+  if (iceCollectTimeout) clearTimeout(iceCollectTimeout);
+  if (studioAnswerPoll) clearTimeout(studioAnswerPoll);
+  
   if (peerConnection) {
     peerConnection.ontrack = null;
     peerConnection.onicecandidate = null;
     peerConnection.onconnectionstatechange = null;
-    peerConnection.close();
+    try { peerConnection.close(); } catch(e){}
     peerConnection = null;
   }
+  
   const video = document.getElementById('player-video');
-  if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(t => t.stop());
+    video.srcObject = null;
+  }
 }
 
 function closePlayer() {

@@ -298,11 +298,14 @@
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-header">
-        <div class="panel-icon" style="background:rgba(58,134,255,0.15);color:var(--blue)"><i class="fas fa-magic"></i></div>
-        <div class="panel-title">OVERLAYS</div>
-      </div>
+   <div class="panel">
+  <div class="panel-header">
+    <div class="panel-icon" style="background:rgba(58,134,255,0.15);color:var(--blue)"><i class="fas fa-magic"></i></div>
+    <div class="panel-title">OVERLAYS</div>
+    <button class="btn btn-outline" style="padding:5px 10px;font-size:0.75rem" onclick="openOverlayEditor()">
+      <i class="fas fa-pen"></i>
+    </button>
+  </div>
       <div class="overlay-controls">
         <div class="overlay-row"><span class="overlay-label">Logo Badge</span><button class="toggle-switch" id="toggle-logo" onclick="toggleOverlay('logo')"></button></div>
         <div class="overlay-row"><span class="overlay-label">Lower Third</span><button class="toggle-switch" id="toggle-lt" onclick="toggleOverlay('lt')"></button></div>
@@ -415,7 +418,55 @@ let viewerPollInterval = null;
 let viewerConnections = {};
 let viewerAnswerPollInterval = null;
 let liveStream = null; // the stream being broadcast
+let compositeStream = null;
 
+function getCompositeStream() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  const previewVideo = document.getElementById('main-video');
+
+  canvas.width = 1280;
+  canvas.height = 720;
+
+  const stream = canvas.captureStream(30);
+
+  function drawFrame() {
+    if (!previewVideo.srcObject) return requestAnimationFrame(drawFrame);
+
+    ctx.drawImage(previewVideo, 0, 0, canvas.width, canvas.height);
+
+    // Logo Overlay
+    if (overlayStates.logo) {
+      ctx.fillStyle = 'rgba(255,255,255,0.95)';
+      ctx.font = 'bold 42px Bebas Neue';
+      ctx.textAlign = 'right';
+      ctx.fillText(document.getElementById('overlay-logo').textContent || 'RIVERSIDE LIVE', canvas.width - 40, 70);
+    }
+
+    // Lower Third
+    if (overlayStates.lt) {
+      const lt = document.getElementById('overlay-lower-third');
+      if (lt.style.display !== 'none') {
+        ctx.fillStyle = 'rgba(0,0,0,0.75)';
+        ctx.fillRect(60, canvas.height - 110, 620, 80);
+        ctx.fillStyle = '#e63946';
+        ctx.fillRect(60, canvas.height - 110, 8, 80);
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 28px DM Sans';
+        ctx.textAlign = 'left';
+        ctx.fillText(document.getElementById('lt-title').textContent, 90, canvas.height - 65);
+        ctx.font = '22px DM Sans';
+        ctx.fillText(document.getElementById('lt-sub').textContent, 90, canvas.height - 35);
+      }
+    }
+
+    requestAnimationFrame(drawFrame);
+  }
+
+  drawFrame();
+  return stream;
+}
 // ─── INIT ───────────────────────────────────────────────────────────────────
 function init() {
   const picLink = localStorage.getItem('userPicLink');
@@ -656,9 +707,11 @@ async function startLive() {
   try {
     const stream = cameras[activeCameraId]?.stream;
     if (!stream) { showToast('No active camera stream', 'error'); return; }
-
+compositeStream = getCompositeStream();
+  liveStream = compositeStream;
     liveStream = stream;
     viewerConnections = {};
+    
 
     // Mark broadcast as live on server (no SDP needed — viewers create offers now)
     const res = await fetch(scriptUrl, {

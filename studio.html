@@ -961,7 +961,7 @@ appearance:none;
 
 <script>
 // ─ STATE ─
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbygp2-CU0rgs4eOq9vTALV7fFTuPRgIOa6wl2xhbSmoxqXZpXPP7mBMg1hT_PfE8uTs/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbxEzhow6SW5W9yPgiV9-u6D15n4QId1IRWdMRaIMv0VbU7JcSTTyJOTefNzvK5C4W14/exec';
 const userName = localStorage.getItem('userName');
 if (!userName) window.location.href = 'login.html';
 
@@ -1341,43 +1341,48 @@ async function toggleLive() {
 async function startLive() {
   showToast('Going live...', '');
   try {
-    // Capture the composited output from scene canvas
-    const canvas = document.getElementById('scene-canvas');
-    const stream = canvas.captureStream ? canvas.captureStream(30) : cameras[activeCameraId]?.stream;
+    const stream = cameras[activeCameraId]?.stream;
+    if (!stream) { showToast('No active camera stream', 'error'); return; }
 
-    // Create WebRTC peer connection for broadcasting
-    const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+    // Store stream for new viewer connections
+    window._liveStream = stream;
+    window._viewerConnections = {};
 
-    if (stream) {
-      stream.getTracks().forEach(t => pc.addTrack(t, stream));
-    }
+    // Create the "offer" PC just to generate an SDP to store on the server
+    // (viewers use this to know the codec/track layout)
+    const offerPc = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    });
+    stream.getTracks().forEach(t => offerPc.addTrack(t, stream));
 
-    // Collect ICE candidates
     const iceCandidates = [];
-    pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(JSON.stringify(e.candidate)); };
+    offerPc.onicecandidate = e => { if (e.candidate) iceCandidates.push(JSON.stringify(e.candidate)); };
 
-    await pc.setLocalDescription(await pc.createOffer());
-
-    // Wait for ICE gathering
+    await offerPc.setLocalDescription(await offerPc.createOffer());
     await new Promise(resolve => {
-      if (pc.iceGatheringState === 'complete') resolve();
-      else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') resolve(); };
-      setTimeout(resolve, 3000); // fallback
+      if (offerPc.iceGatheringState === 'complete') resolve();
+      else offerPc.onicegatheringstatechange = () => { if (offerPc.iceGatheringState === 'complete') resolve(); };
+      setTimeout(resolve, 3000);
     });
 
-    // Send SDP to server — server holds it for viewers
     const res = await fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({
         operation: 'startBroadcast',
         broadcastId: activeBroadcast.id,
         username: userName,
-        sdpOffer: pc.localDescription.sdp,
+        sdpOffer: offerPc.localDescription.sdp,
         iceCandidates
       })
     });
     const data = await res.json();
     if (data.status !== 'success') throw new Error(data.message);
+
+    // Keep offerPc reference — we'll close it later
+    window._offerPc = offerPc;
+
+    // Start polling for viewer answers — each viewer gets their own PC
+    pollForViewerAnswers();
 
     isLive = true;
     liveStartTime = Date.now();
@@ -1392,6 +1397,62 @@ async function startLive() {
   }
 }
 
+function pollForViewerAnswers() {
+  if (window._viewerPollInterval) clearInterval(window._viewerPollInterval);
+
+  window._viewerPollInterval = setInterval(async () => {
+    if (!isLive || !activeBroadcast) return;
+
+    try {
+      const res = await fetch(`${scriptUrl}?operation=getViewerAnswers&broadcastId=${encodeURIComponent(activeBroadcast.id)}`);
+      const data = await res.json();
+
+      for (const sig of (data.answers || [])) {
+        const vid = sig.viewerId;
+        // Skip if we already have a connected PC for this viewer
+        if (window._viewerConnections[vid]) continue;
+
+        // Create a fresh PC for this viewer
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+        });
+
+        window._viewerConnections[vid] = pc;
+
+        // Add the live stream tracks
+        window._liveStream?.getTracks().forEach(t => pc.addTrack(t, window._liveStream));
+
+        // Re-create offer so this PC has local description
+        const iceForViewer = [];
+        pc.onicecandidate = async e => {
+          if (e.candidate) {
+            iceForViewer.push(JSON.stringify(e.candidate));
+            // Send ICE to server for this specific viewer
+            await fetch(scriptUrl, {
+              method: 'POST',
+              body: JSON.stringify({
+                operation: 'sendStudioIceForViewer',
+                broadcastId: activeBroadcast.id,
+                viewerId: vid,
+                candidate: JSON.stringify(e.candidate)
+              })
+            });
+          }
+        };
+
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          await pc.setRemoteDescription({ type: 'answer', sdp: sig.sdpAnswer });
+          showToast(`Viewer connected`, 'success');
+        } catch(err) {
+          console.warn('Viewer PC setup failed for', vid, err);
+          delete window._viewerConnections[vid];
+        }
+      }
+    } catch(e) {}
+  }, 3000);
+}
 async function stopLive() {
   try {
     await fetch(scriptUrl, {
@@ -1405,6 +1466,14 @@ async function stopLive() {
     document.getElementById('on-air-badge').classList.remove('visible');
     updateGoLiveBtn();
     loadBroadcasts();
+
+    // Clean up all viewer connections
+    if (window._viewerPollInterval) { clearInterval(window._viewerPollInterval); window._viewerPollInterval = null; }
+    Object.values(window._viewerConnections || {}).forEach(pc => pc.close());
+    window._viewerConnections = {};
+    if (window._offerPc) { window._offerPc.close(); window._offerPc = null; }
+    window._liveStream = null;
+
     showToast('Broadcast stopped', '');
   } catch(e) {
     showToast('Error stopping broadcast', 'error');
@@ -1539,6 +1608,33 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = `toast show ${type || ''}`;
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─ POLL FOR VIEWER ANSWERS (so viewers can actually receive the stream) ─
+function pollForViewerAnswers(pc) {
+  const seen = new Set();
+
+  const interval = setInterval(async () => {
+    if (!isLive) { clearInterval(interval); return; }
+    if (!activeBroadcast) return;
+
+    try {
+      const res = await fetch(`${scriptUrl}?operation=getBroadcastChat&broadcastId=${encodeURIComponent(activeBroadcast.id)}`);
+      // Use signals sheet instead — fetch viewer answers
+      const sigRes = await fetch(`${scriptUrl}?operation=getViewerAnswers&broadcastId=${encodeURIComponent(activeBroadcast.id)}`);
+      const sigData = await sigRes.json();
+
+      for (const sig of (sigData.answers || [])) {
+        if (seen.has(sig.viewerId)) continue;
+        seen.add(sig.viewerId);
+        try {
+          // Each viewer needs their own PC (for true broadcasting, use a media server;
+          // for small groups this works)
+          await pc.setRemoteDescription({ type: 'answer', sdp: sig.sdpAnswer });
+        } catch(e) {}
+      }
+    } catch(e) {}
+  }, 3000);
 }
 
 // ─ CONNECT PHONE CAMERA BY CODE ─

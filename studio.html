@@ -733,9 +733,19 @@ appearance:none;
       <div class="cameras-toolbar">
         <div class="panel-icon" style="background:rgba(46,196,182,0.15);color:var(--green)"><i class="fas fa-camera"></i></div>
         <div class="panel-title" style="font-family:'Bebas Neue';letter-spacing:1.5px;font-size:1rem;flex:1">CAMERA INPUTS</div>
-        <button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem" onclick="requestCamera()">
-          <i class="fas fa-mobile-alt"></i> Request Phone
-        </button>
+        <div style="display:flex;align-items:center;gap:8px">
+  <input 
+    id="phone-code-input" 
+    class="form-input" 
+    style="width:110px;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-size:0.85rem;letter-spacing:2px;text-transform:uppercase" 
+    placeholder="CODE" 
+    maxlength="5"
+    oninput="this.value=this.value.toUpperCase()"
+  >
+  <button class="btn btn-success" style="padding:6px 14px;font-size:0.8rem" onclick="connectPhoneByCode()">
+    <i class="fas fa-link"></i> Connect
+  </button>
+</div>
         <button class="btn btn-outline" style="padding:6px 12px;font-size:0.8rem" onclick="addLocalCamera()">
           <i class="fas fa-laptop"></i> Local Camera
         </button>
@@ -951,7 +961,7 @@ appearance:none;
 
 <script>
 // ─ STATE ─
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbxIpJuIOrgjq_RVWm40-RJSE40SsSbaSZ5R2EMTF4gH6p774oMoNaj4bjACt5v4JAUc/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbygp2-CU0rgs4eOq9vTALV7fFTuPRgIOa6wl2xhbSmoxqXZpXPP7mBMg1hT_PfE8uTs/exec';
 const userName = localStorage.getItem('userName');
 if (!userName) window.location.href = 'login.html';
 
@@ -1232,12 +1242,6 @@ function setActiveCamera(id) {
   if (tile) tile.classList.add('active');
 }
 
-// Phone camera request
-function requestCamera() {
-  const code = Math.random().toString(36).slice(2, 7).toUpperCase();
-  showToast(`Camera request code: ${code} — Share with phone user`, '');
-  // In production: would write a pending request to the sheet and poll for acceptance
-}
 
 // ─ SCENES ─
 function switchScene(scene, btn) {
@@ -1535,6 +1539,81 @@ function showToast(msg, type) {
   t.textContent = msg;
   t.className = `toast show ${type || ''}`;
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─ CONNECT PHONE CAMERA BY CODE ─
+async function connectPhoneByCode() {
+  const code = document.getElementById('phone-code-input').value.trim().toUpperCase();
+  if (code.length < 4) { showToast('Enter a valid code', 'error'); return; }
+
+  showToast('Connecting to phone...', '');
+
+  // Create a peer connection to receive the phone's stream
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+  });
+
+  pc.ontrack = (e) => {
+    const id = 'phone-' + code;
+    const stream = e.streams[0];
+    cameras[id] = { stream, label: `Phone (${code})`, local: false };
+    // Only add tile if not already there
+    if (!document.getElementById(`cam-tile-${id}`)) {
+      addCameraToGrid(id, stream, `Phone (${code})`);
+      document.getElementById('phone-audio-track').style.display = 'flex';
+    }
+    if (!activeCameraId) setActiveCamera(id);
+    showToast(`Phone camera (${code}) connected!`, 'success');
+  };
+
+  try {
+    // Fetch the phone's SDP offer from backend
+    const res = await fetch(`${scriptUrl}?operation=getCameraOffer&deviceCode=${encodeURIComponent(code)}`);
+    const data = await res.json();
+
+    if (!data.sdpOffer) {
+      showToast('No camera found with that code. Is the phone ready?', 'error');
+      return;
+    }
+
+    // Set remote description (phone's offer)
+    await pc.setRemoteDescription({ type: 'offer', sdp: data.sdpOffer });
+
+    // Add phone's ICE candidates
+    for (const cand of (data.iceCandidates || [])) {
+      try { await pc.addIceCandidate(JSON.parse(cand)); } catch(e) {}
+    }
+
+    // Create answer
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    // Wait for ICE gathering
+    const studioIce = [];
+    pc.onicecandidate = e => { if (e.candidate) studioIce.push(JSON.stringify(e.candidate)); };
+    await new Promise(resolve => {
+      if (pc.iceGatheringState === 'complete') resolve();
+      else pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') resolve(); };
+      setTimeout(resolve, 3000);
+    });
+
+    // Send answer back to phone via backend
+    await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        operation: 'postCameraAnswer',
+        deviceCode: code,
+        sdpAnswer: pc.localDescription.sdp,
+        iceCandidates: studioIce
+      })
+    });
+
+    // Store PC reference
+    cameras['phone-' + code] = { ...(cameras['phone-' + code] || {}), peerConnection: pc };
+
+  } catch(e) {
+    showToast('Connection failed: ' + e.message, 'error');
+  }
 }
 
 init();

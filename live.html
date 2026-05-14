@@ -823,7 +823,15 @@ function updateTicker() {
 }
 
 function openChannelPage(channelId) {
-  window.location.href = `live-channel.html?channelId=${encodeURIComponent(channelId)}`;
+  const broadcasts = allBroadcasts[channelId] || [];
+  const live = broadcasts.find(b => b.status === 'live');
+  const waiting = broadcasts.find(b => b.status === 'waiting');
+  const target = live || waiting || broadcasts[0];
+  if (target) {
+    openPlayer(target.id, channelId);
+  } else {
+    alert('No broadcasts available for this channel yet.');
+  }
 }
 
 // ── VIEWER PLAYER ──
@@ -846,7 +854,7 @@ async function openPlayer(broadcastId, channelId) {
     const video = document.getElementById('player-video');
     const placeholder = document.getElementById('player-placeholder');
 
-    if (b.status === 'live' && b.viewerSdpOffer) {
+    if (b.status === 'live' && b.hasSdpOffer) {
       video.style.display = 'block';
       placeholder.style.display = 'none';
       await connectViewerStream(broadcastId, video);

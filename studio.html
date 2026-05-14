@@ -1167,12 +1167,20 @@ async function createBroadcast() {
         thumbData, thumbName
       })
     });
-    const data = await res.json();
+   const data = await res.json();
     if (data.status === 'success') {
       closeModal('create-broadcast-modal');
       showToast('Broadcast created!', 'success');
-      loadBroadcasts();
-    } else {
+      await loadBroadcasts();
+      // Auto-select the newly created broadcast
+      const newest = myBroadcasts[0];
+      if (newest) {
+        activeBroadcast = newest;
+        renderBroadcastList();
+        updateGoLiveBtn();
+        showToast(`Selected: ${newest.title}`, 'success');
+      }
+    }else {
       showToast(data.message || 'Error', 'error');
     }
   } catch(e) {

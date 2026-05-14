@@ -310,7 +310,7 @@
 </div>
 
 <script>
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbyT3zK7VZy0Xik-umZ22a9WDeSTda_i2CBrDgEpcS4miuXX2QHUyHTOIg3AUMvsPMVH/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbyxsrcsAGAdvX0OUYYsJvTnXEBVe_tif6-8pn6UFszqt_9UOzWY_5Vtcpg-dopT-x3P/exec';
 const userName = localStorage.getItem('userName') || 'Guest';
 let allChannels = [];
 let allBroadcasts = {};
@@ -588,14 +588,15 @@ async function openPlayer(broadcastId, channelId) {
 // Each viewer independently offers → studio answers each one separately.
 
 async function startViewerConnection(broadcastId) {
-  cleanupPeerConnection();   // Full cleanup first
+  cleanupPeerConnection();
   connectionRetryCount = 0;
 
   try {
     peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
       ]
     });
 
@@ -610,50 +611,45 @@ async function startViewerConnection(broadcastId) {
     };
 
     peerConnection.onconnectionstatechange = () => {
-      console.log('PC State:', peerConnection.connectionState);
-      if (peerConnection.connectionState === 'connected') {
+      const state = peerConnection?.connectionState;
+      console.log('PC State:', state);
+      if (state === 'connected') {
         setConnStatus('connected', 'Connected');
-      } else if (['failed', 'disconnected'].includes(peerConnection.connectionState)) {
+      } else if (state === 'failed' || state === 'closed') {
         setConnStatus('failed', 'Connection lost');
         if (connectionRetryCount < MAX_RETRIES) {
           connectionRetryCount++;
-          setTimeout(() => startViewerConnection(broadcastId), 2500);
+          setTimeout(() => startViewerConnection(broadcastId), 4000);
+        } else {
+          document.getElementById('retry-btn').style.display = 'inline-block';
         }
       }
     };
 
-    peerConnection.onicecandidate = (e) => {
-      if (e.candidate) {
-        fetch(scriptUrl, {
-          method: 'POST',
-          body: JSON.stringify({
-            operation: 'sendViewerIce',
-            broadcastId,
-            viewerId: userName,
-            candidate: JSON.stringify(e.candidate)
-          })
-        });
-      }
-    };
-
-    // Tell studio to clean old data first
+    // Step 1: Clean old signals first
     await fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({
-        operation: 'cleanupViewerSignals',   // ← New operation
+        operation: 'cleanupViewerSignals',
         broadcastId,
         viewerId: userName
       })
     });
 
-    // Create new offer
-    const offer = await peerConnection.createOffer();
+    // Step 2: Create offer
+    const offer = await peerConnection.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: true
+    });
     await peerConnection.setLocalDescription(offer);
 
-    await waitForIceGathering(peerConnection, 3500);
+    // Step 3: Wait for ICE gathering (longer timeout)
+    await waitForIceGathering(peerConnection, 5000);
 
-    // Send offer to studio
-    await fetch(scriptUrl, {
+    console.log('Sending offer SDP to backend...');
+
+    // Step 4: Send offer to studio via backend
+    const submitRes = await fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({
         operation: 'submitViewerAnswer',
@@ -662,14 +658,19 @@ async function startViewerConnection(broadcastId) {
         sdpAnswer: peerConnection.localDescription.sdp
       })
     });
+    const submitData = await submitRes.json();
+    console.log('Offer submitted:', submitData.status);
 
+    // Step 5: Poll for studio's answer
     pollForStudioAnswer(broadcastId);
 
   } catch (e) {
-    console.error(e);
+    console.error('startViewerConnection error:', e);
     setConnStatus('failed', 'Failed to connect');
+    document.getElementById('retry-btn').style.display = 'inline-block';
   }
 }
+
 function waitForIceGathering(pc, timeoutMs) {
   return new Promise(resolve => {
     if (pc.iceGatheringState === 'complete') { resolve(); return; }
@@ -684,10 +685,25 @@ async function pollForStudioAnswer(broadcastId) {
   if (iceCollectTimeout) clearTimeout(iceCollectTimeout);
 
   let attempts = 0;
-  const maxAttempts = 20; // 20 × 2s = 40 seconds max wait
+  const maxAttempts = 30;  // 30 × 3s = 90 seconds — studio needs time to see offer and respond
+  const pollInterval = 3000;
 
   const poll = async () => {
-    if (!peerConnection || !activeBroadcastId || peerConnection.connectionState === 'connected') return;
+    if (!peerConnection || !activeBroadcastId) return;
+    
+    // Already have remote description — stop polling
+    if (peerConnection.currentRemoteDescription) {
+      console.log('Already have remote description, stopping poll');
+      return;
+    }
+
+    // Connection succeeded — stop polling  
+    if (peerConnection.connectionState === 'connected') return;
+    
+    // Too many failed connection states — stop
+    if (peerConnection.connectionState === 'failed' || 
+        peerConnection.connectionState === 'closed') return;
+
     if (attempts >= maxAttempts) {
       console.warn('Timed out waiting for studio answer');
       setConnStatus('failed', 'Studio not responding');
@@ -697,33 +713,48 @@ async function pollForStudioAnswer(broadcastId) {
     attempts++;
 
     try {
-      // Studio stores its answer using the sendStudioIceForViewer endpoint
-      // We check the signals sheet for a studio-answer type for our viewerId
-      const res = await fetch(`${scriptUrl}?operation=getStudioAnswerForViewer&broadcastId=${encodeURIComponent(broadcastId)}&viewerId=${encodeURIComponent(userName)}`);
+      const res = await fetch(
+        `${scriptUrl}?operation=getStudioAnswerForViewer` +
+        `&broadcastId=${encodeURIComponent(broadcastId)}` +
+        `&viewerId=${encodeURIComponent(userName)}`
+      );
       const data = await res.json();
 
       if (data.sdpAnswer && peerConnection && !peerConnection.currentRemoteDescription) {
-        console.log('Received studio answer, setting remote description...');
-        await peerConnection.setRemoteDescription({ type: 'answer', sdp: data.sdpAnswer });
+        console.log('Got studio answer! Setting remote description...');
+        
+        try {
+          await peerConnection.setRemoteDescription({ 
+            type: 'answer', 
+            sdp: data.sdpAnswer 
+          });
+          console.log('Remote description set successfully');
 
-        // Also apply any ICE candidates from studio
-        for (const cand of (data.iceCandidates || [])) {
-          try {
-            await peerConnection.addIceCandidate(JSON.parse(cand));
-          } catch(err) {
-            console.warn('ICE add error:', err);
+          // Apply any ICE candidates from studio
+          for (const cand of (data.iceCandidates || [])) {
+            try {
+              await peerConnection.addIceCandidate(JSON.parse(cand));
+            } catch (err) {
+              console.warn('ICE candidate error (non-fatal):', err.message);
+            }
           }
+          return; // Done — stop polling
+        } catch (sdpErr) {
+          console.error('Failed to set remote description:', sdpErr);
+          // Don't return — retry might help if timing issue
         }
-        return; // Done — stop polling
+      } else {
+        console.log(`Poll attempt ${attempts}/${maxAttempts} — no answer yet`);
       }
-    } catch(e) {
-      console.warn('Poll error:', e);
+    } catch (e) {
+      console.warn('Poll fetch error:', e.message);
     }
 
-    iceCollectTimeout = setTimeout(poll, 2000);
+    iceCollectTimeout = setTimeout(poll, pollInterval);
   };
 
-  iceCollectTimeout = setTimeout(poll, 1500); // Give studio 1.5s to see our offer first
+  // Give studio 2 seconds to notice the offer before first poll
+  iceCollectTimeout = setTimeout(poll, 2000);
 }
 
 function retryConnection() {

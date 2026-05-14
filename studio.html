@@ -390,7 +390,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbyT3zK7VZy0Xik-umZ22a9WDeSTda_i2CBrDgEpcS4miuXX2QHUyHTOIg3AUMvsPMVH/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbyxsrcsAGAdvX0OUYYsJvTnXEBVe_tif6-8pn6UFszqt_9UOzWY_5Vtcpg-dopT-x3P/exec';
 const userName = localStorage.getItem('userName');
 if (!userName) window.location.href = 'login.html';
 
@@ -816,89 +816,128 @@ function startViewerOfferPoller() {
     if (!isLive || !activeBroadcast) return;
 
     try {
-      // Fetch all viewer offers (stored as "viewer-answer" type in signals sheet)
-      const res = await fetch(`${scriptUrl}?operation=getViewerAnswers&broadcastId=${encodeURIComponent(activeBroadcast.id)}`);
+      const res = await fetch(
+        `${scriptUrl}?operation=getViewerAnswers` +
+        `&broadcastId=${encodeURIComponent(activeBroadcast.id)}`
+      );
       const data = await res.json();
 
       for (const sig of (data.answers || [])) {
         const viewerId = sig.viewerId;
-        const viewerSdp = sig.sdpAnswer; // This is actually the viewer's OFFER
+        const viewerSdp = sig.sdpAnswer;
 
-        // Skip if we already have a working connection for this viewer
-        if (viewerConnections[viewerId]) {
-          const state = viewerConnections[viewerId].connectionState;
-          if (state === 'connected' || state === 'connecting') continue;
-          // If failed, remove and retry
-          if (state === 'failed' || state === 'closed') {
-            viewerConnections[viewerId].close();
+        if (!viewerId || !viewerSdp) continue;
+
+        const existing = viewerConnections[viewerId];
+        
+        if (existing) {
+          const state = existing.connectionState;
+          // Only skip if genuinely connected
+          if (state === 'connected') continue;
+          
+          // Clean up bad connections before retrying
+          if (state === 'failed' || state === 'closed' || state === 'disconnected') {
+            console.log(`Cleaning up ${state} connection for viewer: ${viewerId}`);
+            try { existing.close(); } catch(e) {}
             delete viewerConnections[viewerId];
-          } else {
-            continue;
+          } else if (state === 'connecting' || state === 'new') {
+            // Still in progress — check if it's been stuck too long
+            // We track connection start time to detect stuck connections
+            if (existing._startTime && (Date.now() - existing._startTime) > 30000) {
+              console.log(`Connection stuck for viewer ${viewerId}, retrying`);
+              try { existing.close(); } catch(e) {}
+              delete viewerConnections[viewerId];
+            } else {
+              continue; // Still legitimately connecting
+            }
           }
         }
 
-        console.log(`New viewer offer from: ${viewerId}`);
-        await connectToViewer(viewerId, viewerSdp);
+        console.log(`Processing offer from viewer: ${viewerId}`);
+        connectToViewer(viewerId, viewerSdp);  // Don't await — process in parallel
       }
 
-      // Update connected viewer count display
-      const connectedCount = Object.values(viewerConnections).filter(
-        pc => pc.connectionState === 'connected'
-      ).length;
+      // Update connected viewer count
+      const connectedCount = Object.values(viewerConnections)
+        .filter(pc => pc.connectionState === 'connected').length;
       document.getElementById('connected-viewers-count').textContent = connectedCount;
 
-    } catch(e) {
-      console.warn('Viewer offer poll error:', e);
+    } catch (e) {
+      console.warn('Viewer offer poll error:', e.message);
     }
   }, 3000);
 }
-
 async function connectToViewer(viewerId, viewerOfferSdp) {
-  // Clean any existing connection for this viewer
+  // Guard against duplicate processing
   if (viewerConnections[viewerId]) {
+    const state = viewerConnections[viewerId].connectionState;
+    if (state === 'connected' || state === 'connecting' || state === 'new') {
+      return;
+    }
     try { viewerConnections[viewerId].close(); } catch(e) {}
-    delete viewerConnections[viewerId];
   }
+
+  console.log(`Creating peer connection for viewer: ${viewerId}`);
 
   try {
     const pc = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' }
       ]
     });
 
+    pc._startTime = Date.now();  // Track when connection started
     viewerConnections[viewerId] = pc;
 
     // Add tracks from current live stream
-    if (liveStream) {
-      liveStream.getTracks().forEach(track => {
-        pc.addTrack(track, liveStream);
+    const stream = liveStream || cameras[activeCameraId]?.stream;
+    if (stream) {
+      stream.getTracks().forEach(track => {
+        pc.addTrack(track, stream);
       });
+    } else {
+      console.warn('No stream available for viewer:', viewerId);
+      delete viewerConnections[viewerId];
+      return;
     }
 
     pc.onconnectionstatechange = () => {
-      console.log(`Viewer ${viewerId} → ${pc.connectionState}`);
+      const state = pc.connectionState;
+      console.log(`Viewer ${viewerId} → ${state}`);
+
       const connectedCount = Object.values(viewerConnections)
         .filter(p => p.connectionState === 'connected').length;
       document.getElementById('connected-viewers-count').textContent = connectedCount;
+
+      if (state === 'failed' || state === 'closed') {
+        // Remove from map so next poll cycle can retry
+        if (viewerConnections[viewerId] === pc) {
+          delete viewerConnections[viewerId];
+        }
+      }
     };
 
     const iceCandidates = [];
+    
     pc.onicecandidate = (e) => {
-      if (e.candidate) iceCandidates.push(JSON.stringify(e.candidate));
+      if (e.candidate) {
+        iceCandidates.push(JSON.stringify(e.candidate));
+      }
     };
 
-    // Set remote offer from viewer
+    // Set the viewer's offer as remote description
     await pc.setRemoteDescription({ type: 'offer', sdp: viewerOfferSdp });
 
     // Create answer
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
-    // Wait for ICE gathering
+    // Wait for ICE gathering with generous timeout
     await new Promise(resolve => {
       if (pc.iceGatheringState === 'complete') return resolve();
+      
       const handler = () => {
         if (pc.iceGatheringState === 'complete') {
           pc.removeEventListener('icegatheringstatechange', handler);
@@ -906,11 +945,13 @@ async function connectToViewer(viewerId, viewerOfferSdp) {
         }
       };
       pc.addEventListener('icegatheringstatechange', handler);
-      setTimeout(resolve, 4000); // safety timeout
+      setTimeout(resolve, 5000); // 5 second safety timeout
     });
 
-    // Send answer to viewer
-    await fetch(scriptUrl, {
+    console.log(`ICE gathered for ${viewerId}: ${iceCandidates.length} candidates`);
+
+    // Send answer back to viewer via backend
+    const res = await fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({
         operation: 'sendStudioAnswerForViewer',
@@ -920,12 +961,15 @@ async function connectToViewer(viewerId, viewerOfferSdp) {
         iceCandidates: iceCandidates
       })
     });
-
-    console.log(`✅ Answer sent to viewer: ${viewerId}`);
+    const data = await res.json();
+    console.log(`Answer sent to viewer ${viewerId}:`, data.status);
 
   } catch (e) {
-    console.error(`Failed to connect to viewer ${viewerId}:`, e);
-    delete viewerConnections[viewerId];
+    console.error(`Failed to connect to viewer ${viewerId}:`, e.message);
+    if (viewerConnections[viewerId]) {
+      try { viewerConnections[viewerId].close(); } catch(err) {}
+      delete viewerConnections[viewerId];
+    }
   }
 }
 async function stopLive() {

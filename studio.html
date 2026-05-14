@@ -854,6 +854,12 @@ function startViewerOfferPoller() {
 }
 
 async function connectToViewer(viewerId, viewerOfferSdp) {
+  // Clean any existing connection for this viewer
+  if (viewerConnections[viewerId]) {
+    try { viewerConnections[viewerId].close(); } catch(e) {}
+    delete viewerConnections[viewerId];
+  }
+
   try {
     const pc = new RTCPeerConnection({
       iceServers: [
@@ -864,7 +870,7 @@ async function connectToViewer(viewerId, viewerOfferSdp) {
 
     viewerConnections[viewerId] = pc;
 
-    // Add all live stream tracks to this viewer's connection
+    // Add tracks from current live stream
     if (liveStream) {
       liveStream.getTracks().forEach(track => {
         pc.addTrack(track, liveStream);
@@ -872,61 +878,56 @@ async function connectToViewer(viewerId, viewerOfferSdp) {
     }
 
     pc.onconnectionstatechange = () => {
-      console.log(`Viewer ${viewerId} connection: ${pc.connectionState}`);
-      const count = Object.values(viewerConnections).filter(p => p.connectionState === 'connected').length;
-      document.getElementById('connected-viewers-count').textContent = count;
+      console.log(`Viewer ${viewerId} → ${pc.connectionState}`);
+      const connectedCount = Object.values(viewerConnections)
+        .filter(p => p.connectionState === 'connected').length;
+      document.getElementById('connected-viewers-count').textContent = connectedCount;
     };
 
-    // Collect ICE candidates for this viewer
     const iceCandidates = [];
     pc.onicecandidate = (e) => {
       if (e.candidate) iceCandidates.push(JSON.stringify(e.candidate));
     };
 
-    // Set the viewer's offer as remote description
+    // Set remote offer from viewer
     await pc.setRemoteDescription({ type: 'offer', sdp: viewerOfferSdp });
 
-    // Create our answer
+    // Create answer
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
-    // Wait for ICE gathering (up to 3s)
+    // Wait for ICE gathering
     await new Promise(resolve => {
-      if (pc.iceGatheringState === 'complete') { resolve(); return; }
-      const check = () => { if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); resolve(); } };
-      pc.addEventListener('icegatheringstatechange', check);
-      setTimeout(() => { pc.removeEventListener('icegatheringstatechange', check); resolve(); }, 3000);
+      if (pc.iceGatheringState === 'complete') return resolve();
+      const handler = () => {
+        if (pc.iceGatheringState === 'complete') {
+          pc.removeEventListener('icegatheringstatechange', handler);
+          resolve();
+        }
+      };
+      pc.addEventListener('icegatheringstatechange', handler);
+      setTimeout(resolve, 4000); // safety timeout
     });
 
-    // Send our answer + ICE candidates to server for this viewer
+    // Send answer to viewer
     await fetch(scriptUrl, {
       method: 'POST',
       body: JSON.stringify({
         operation: 'sendStudioAnswerForViewer',
         broadcastId: activeBroadcast.id,
-        viewerId,
+        viewerId: viewerId,
         sdpAnswer: pc.localDescription.sdp,
-        iceCandidates
+        iceCandidates: iceCandidates
       })
     });
 
-    console.log(`Answer sent to viewer: ${viewerId}`);
+    console.log(`✅ Answer sent to viewer: ${viewerId}`);
 
-    // Also add any ICE candidates the viewer sent
-    try {
-      const iceRes = await fetch(`${scriptUrl}?operation=getViewerIceCandidates&broadcastId=${encodeURIComponent(activeBroadcast.id)}&viewerId=${encodeURIComponent(viewerId)}`);
-      const iceData = await iceRes.json();
-      for (const cand of (iceData.candidates || [])) {
-        try { await pc.addIceCandidate(JSON.parse(cand)); } catch(e) {}
-      }
-    } catch(e) {}
-
-  } catch(e) {
+  } catch (e) {
     console.error(`Failed to connect to viewer ${viewerId}:`, e);
     delete viewerConnections[viewerId];
   }
 }
-
 async function stopLive() {
   try {
     await fetch(scriptUrl, { method: 'POST', body: JSON.stringify({ operation: 'stopBroadcast', broadcastId: activeBroadcast.id, username: userName }) });

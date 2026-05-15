@@ -1117,7 +1117,9 @@ function setActiveCamera(id) {
   activeCameraId = id;
   document.querySelectorAll('.cam-tile').forEach(t => t.classList.remove('active'));
   document.getElementById(`cam-tile-${id}`)?.classList.add('active');
+  if (isLive) liveStream = cameras[id]?.stream || null;
 }
+
 function removeCam(id) {
   if (activeCameraId === id) activeCameraId = null;
   cameras[id]?.stream?.getTracks().forEach(t=>t.stop());
@@ -1329,7 +1331,7 @@ async function startLive() {
       camStream.getAudioTracks().forEach(t => compositeStream.addTrack(t));
     }
 
-   
+    liveStream = compositeStream;
 
     const res = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
       operation:'startBroadcast', broadcastId:activeBroadcast.id,
@@ -1432,8 +1434,11 @@ async function connectToViewer(viewerId, offerSdp) {
     pc._startTime = Date.now();
     viewerConnections[viewerId] = pc;
 
-   if (!compositeStream) { delete viewerConnections[viewerId]; return; }
-    compositeStream.getTracks().forEach(t => pc.addTrack(t, compositeStream));
+    // Send the COMPOSITE stream (with overlays baked in)
+    const stream = liveStream || compositeStream;
+    if (stream) stream.getTracks().forEach(t => pc.addTrack(t, stream));
+    else { delete viewerConnections[viewerId]; return; }
+
     pc.onconnectionstatechange = () => {
       const cnt = Object.values(viewerConnections).filter(p=>p.connectionState==='connected').length;
       document.getElementById('vc-count').textContent = cnt;

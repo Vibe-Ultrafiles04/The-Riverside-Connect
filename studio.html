@@ -651,7 +651,7 @@
 /* ══════════════════════════════════════════════════════════════════
    CONSTANTS & STATE
 ══════════════════════════════════════════════════════════════════ */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXnqITiBKSqehXUq82t92brbQnJ1J_kHo1nEgHQvunTur3D-trUdG4LSpPd0_7yHRO/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVg0Rb-NPCMk3eLynXCe3Z8kMv0ByX3RS5oQsvv_CHrfs9rDnOn7QHJM9km3j0swD0/exec';
 const ME = localStorage.getItem('userName');
 if (!ME) window.location.href = 'login.html';
 
@@ -1421,10 +1421,11 @@ function startViewerOfferPoller() {
 }
 
 async function connectToViewer(viewerId, offerSdp) {
+  // Always close and recreate — viewer may be reconnecting
   if (viewerConnections[viewerId]) {
-    const s = viewerConnections[viewerId].connectionState;
-    if (s==='connected'||s==='connecting'||s==='new') return;
     try { viewerConnections[viewerId].close(); } catch {}
+    delete viewerConnections[viewerId];
+    await new Promise(r => setTimeout(r, 300)); // small delay before recreating
   }
   try {
     const pc = new RTCPeerConnection({ iceServers:[

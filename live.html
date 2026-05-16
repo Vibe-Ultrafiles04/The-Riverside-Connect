@@ -962,7 +962,7 @@
 /* ═══════════════════════════════════════════════════════
    CONFIG & STATE
 ═══════════════════════════════════════════════════════ */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXnqITiBKSqehXUq82t92brbQnJ1J_kHo1nEgHQvunTur3D-trUdG4LSpPd0_7yHRO/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVg0Rb-NPCMk3eLynXCe3Z8kMv0ByX3RS5oQsvv_CHrfs9rDnOn7QHJM9km3j0swD0/exec';
 const ME = localStorage.getItem('userName') || 'Guest';
 
 let allChannels     = [];
@@ -1284,10 +1284,18 @@ async function startViewerConn(bcastId) {
     }
   };
 
-  // Clean old signals
-  await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
-    operation:'cleanupViewerSignals', broadcastId:bcastId, viewerId:ME
-  })});
+ // First, clean up any old signals from previous session
+await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
+  operation:'cleanupViewerSignals', broadcastId:bcastId, viewerId:ME
+})});
+
+// Small delay to ensure cleanup completes before writing new offer
+await sleep(500);
+
+await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
+  operation:'submitViewerAnswer', broadcastId:bcastId, viewerId:ME,
+  sdpAnswer: peerConn.localDescription.sdp
+})});
 
   const offer = await peerConn.createOffer({ offerToReceiveAudio:true, offerToReceiveVideo:true });
   await peerConn.setLocalDescription(offer);
@@ -1308,7 +1316,7 @@ async function pollForAnswer(bcastId) {
     if (!peerConn || !activeBcastId) return;
     if (peerConn.currentRemoteDescription || peerConn.connectionState==='connected') return;
     if (peerConn.connectionState==='failed'||peerConn.connectionState==='closed') return;
-    if (tries++ >= 30) { setConnUI('failed','Studio not responding'); document.getElementById('retry-btn').style.display='inline-flex'; return; }
+    if (tries++ >= 40) { setConnUI('failed','Studio not responding'); document.getElementById('retry-btn').style.display='inline-flex'; return; }
     try {
       const r = await fetch(`${SCRIPT_URL}?operation=getStudioAnswerForViewer&broadcastId=${encodeURIComponent(bcastId)}&viewerId=${encodeURIComponent(ME)}`);
       const d = await r.json();
@@ -1322,7 +1330,7 @@ async function pollForAnswer(bcastId) {
     } catch {}
     iceTimer = setTimeout(go, 3000);
   };
-  iceTimer = setTimeout(go, 2000);
+ iceTimer = setTimeout(go, 4000); // Give studio more time to process
 }
 
 function retryConn() {
@@ -1361,9 +1369,10 @@ function clearTimer() {
 
 function closePlayer() {
   const toClean = activeBcastId;
-  document.getElementById('player-overlay').classList.remove('open');
   activeBcastId = null;
-  retryCount    = MAX_RETRIES;
+  retryCount    = 0; // Reset so reconnection works properly
+
+  document.getElementById('player-overlay').classList.remove('open');
 
   if (chatPoll)   { clearInterval(chatPoll); chatPoll = null; }
   clearTimer();

@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riverside Live – Watch</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+    :root {
+      --bg:       #0a0a0c;
+      --bg1:      #111116;
+      --bg2:      #18181f;
+      --bg3:      #1e1e28;
+      --border:   rgba(255,255,255,0.07);
+      --border2:  rgba(255,255,255,0.12);
+      --red:      #ff3b3b;
+      --red-glow: rgba(255,59,59,0.25);
+      --blue:     #4f8eff;
+      --teal:     #00d2b8;
+      --amber:    #ffb347;
+      --text:     #f0f0f5;
+      --text2:    #9999aa;
+      --text3:    #555566;
+      --radius:   12px;
+      --radius-lg:18px;
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { background:var(--bg); color:var(--text); font-family:'Manrope',sans-serif; min-height:100dvh; overflow-x:hidden; }
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:var(--bg1); }
+    ::-webkit-scrollbar-thumb { background:var(--bg3); border-radius:99px; }
+
+    /* ── NAV ── */
+    nav {
+      position:sticky; top:0; z-index:200;
+      background:rgba(10,10,12,0.88);
+      backdrop-filter:blur(24px) saturate(160%);
+      border-bottom:1px solid var(--border);
+      height:58px; display:flex; align-items:center;
+    }
+    .nav-inner { width:100%; max-width:1380px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:12px; }
+    .logo { display:flex; align-items:center; gap:9px; text-decoration:none; flex-shrink:0; }
+    .logo-mark { width:34px; height:34px; border-radius:8px; background:var(--red); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:0.85rem; color:white; }
+    .logo-name { font-family:'Syne',sans-serif; font-weight:700; font-size:1.05rem; letter-spacing:1.5px; color:var(--text); text-transform:uppercase; }
+    .nav-back { display:flex; align-items:center; gap:7px; padding:7px 14px; border-radius:999px; background:transparent; border:1px solid var(--border); color:var(--text2); font-size:0.82rem; font-weight:600; text-decoration:none; transition:all 0.18s; flex-shrink:0; font-family:'Manrope',sans-serif; cursor:pointer; }
+    .nav-back:hover { border-color:var(--border2); color:var(--text); background:var(--bg2); }
+    .nav-spacer { flex:1; }
+    .nav-channel-info { display:flex; align-items:center; gap:10px; }
+    .nav-ch-avatar { width:30px; height:30px; border-radius:50%; background:var(--bg2); overflow:hidden; display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:0.75rem; color:white; flex-shrink:0; }
+    .nav-ch-avatar img { width:100%; height:100%; object-fit:cover; }
+    .nav-ch-name { font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; }
+    .nav-ch-cat { font-size:0.72rem; color:var(--text2); }
+
+    /* ── CHANNEL HERO BAND ── */
+    .channel-hero {
+      position: relative; overflow: hidden;
+      height: 180px;
+      background: var(--bg1);
+    }
+    .channel-hero-banner { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0.35; }
+    .channel-hero-gradient { position:absolute; inset:0; background:linear-gradient(to right, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.6) 50%, transparent 100%), linear-gradient(to top, rgba(10,10,12,0.9) 0%, transparent 60%); }
+    .channel-hero-content {
+      position:relative; z-index:2;
+      max-width:1380px; margin:0 auto;
+      padding:28px 24px 22px;
+      display:flex; align-items:flex-end; gap:18px;
+    }
+    .channel-hero-pic { width:72px; height:72px; border-radius:14px; border:3px solid rgba(255,255,255,0.12); background:var(--bg2); overflow:hidden; display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:800; font-size:1.6rem; color:white; flex-shrink:0; }
+    .channel-hero-pic img { width:100%; height:100%; object-fit:cover; }
+    .channel-hero-meta { flex:1; min-width:0; }
+    .channel-hero-name { font-family:'Syne',sans-serif; font-weight:800; font-size:clamp(1.3rem,3vw,2rem); letter-spacing:-0.5px; }
+    .channel-hero-desc { font-size:0.85rem; color:var(--text2); margin-top:4px; max-width:500px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .channel-hero-badges { display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap; }
+    .ch-badge { padding:3px 10px; border-radius:4px; font-size:0.68rem; font-weight:700; font-family:'JetBrains Mono',monospace; letter-spacing:0.5px; }
+    .ch-badge.live { background:rgba(255,59,59,0.15); border:1px solid rgba(255,59,59,0.4); color:var(--red); }
+    .ch-badge.cat { background:rgba(79,142,255,0.1); border:1px solid rgba(79,142,255,0.25); color:var(--blue); }
+    .ch-badge.count { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); color:var(--text2); }
+    .pulse-dot { width:5px; height:5px; border-radius:50%; background:var(--red); display:inline-block; margin-right:3px; animation:blink-dot 1.1s ease-in-out infinite; }
+    @keyframes blink-dot { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── SLIDE STRIP ── */
+    .slide-section { max-width:1380px; margin:0 auto; padding:24px 24px 0; }
+    .slide-section-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+    .slide-section-title { font-family:'Syne',sans-serif; font-size:0.72rem; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--text3); }
+    .slide-section-line { flex:1; height:1px; background:var(--border); }
+    .slide-section-count { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--text3); }
+    .slide-nav-btns { display:flex; gap:6px; }
+    .slide-nav-btn { width:30px; height:30px; border-radius:7px; background:var(--bg2); border:1px solid var(--border); color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.75rem; transition:all 0.18s; }
+    .slide-nav-btn:hover { background:var(--bg3); color:var(--text); border-color:var(--border2); }
+    .slide-nav-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+    .slides-viewport { overflow:hidden; }
+    .slides-track {
+      display:flex; gap:14px;
+      transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      cursor: grab;
+    }
+    .slides-track.dragging { cursor: grabbing; transition: none; }
+
+    /* Individual broadcast slide card */
+    .slide-card {
+      flex-shrink: 0;
+      width: 260px;
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.22s cubic-bezier(.22,.68,0,1.2), border-color 0.2s, box-shadow 0.2s;
+      position: relative;
+    }
+    .slide-card:hover { transform:translateY(-4px); border-color:rgba(255,255,255,0.14); box-shadow:0 16px 40px rgba(0,0,0,0.5); }
+    .slide-card.is-live { border-color:rgba(255,59,59,0.3); }
+    .slide-card.is-live:hover { border-color:rgba(255,59,59,0.5); box-shadow:0 16px 40px rgba(255,59,59,0.15); }
+    .slide-card.active-card { border-color:var(--blue); box-shadow:0 0 0 2px rgba(79,142,255,0.25); }
+
+    .slide-thumb { width:100%; aspect-ratio:16/9; background:var(--bg2); position:relative; overflow:hidden; }
+    .slide-thumb-img { width:100%; height:100%; object-fit:cover; transition:transform 0.4s; }
+    .slide-card:hover .slide-thumb-img { transform:scale(1.05); }
+    .slide-thumb-gradient { position:absolute; inset:0; background:linear-gradient(to top,rgba(10,10,12,0.9) 0%,transparent 60%); }
+    .slide-thumb-placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+    .slide-thumb-placeholder i { font-size:2rem; opacity:0.1; }
+
+    .slide-status-badge { position:absolute; top:8px; left:8px; padding:2px 7px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:0.6rem; font-weight:600; letter-spacing:1px; display:flex; align-items:center; gap:4px; }
+    .slide-status-badge.live { background:var(--red); color:white; }
+    .slide-status-badge.live .dot { width:4px; height:4px; border-radius:50%; background:white; animation:blink-dot 1.1s infinite; }
+    .slide-status-badge.waiting { background:rgba(255,179,71,0.15); border:1px solid rgba(255,179,71,0.4); color:var(--amber); }
+    .slide-status-badge.ended { background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.1); color:var(--text3); }
+
+    .slide-play-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.2s; }
+    .slide-card:hover .slide-play-overlay { opacity:1; }
+    .slide-play-btn { width:44px; height:44px; border-radius:50%; background:rgba(255,59,59,0.85); display:flex; align-items:center; justify-content:center; color:white; font-size:0.9rem; backdrop-filter:blur(4px); }
+
+    .slide-body { padding:12px 12px 14px; }
+    .slide-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.85rem; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:4px; }
+    .slide-meta { display:flex; align-items:center; gap:6px; font-size:0.7rem; color:var(--text3); font-family:'JetBrains Mono',monospace; }
+    .slide-meta-dot { width:3px; height:3px; border-radius:50%; background:var(--text3); }
+
+    /* ── "VIEW ALL" CARD ── */
+    .slide-card-all {
+      flex-shrink: 0; width: 160px;
+      background: var(--bg2);
+      border: 1px dashed rgba(255,255,255,0.1);
+      border-radius: var(--radius-lg);
+      overflow: hidden; cursor: pointer;
+      display: flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:8px; padding:20px;
+      text-align:center; color:var(--text2);
+      transition:all 0.18s;
+    }
+    .slide-card-all:hover { border-color:var(--border2); background:var(--bg3); color:var(--text); }
+    .slide-card-all i { font-size:1.5rem; color:var(--text3); }
+    .slide-card-all span { font-size:0.75rem; font-weight:600; }
+
+    /* ── PLAYER SECTION ── */
+    .player-section {
+      max-width:1380px; margin:0 auto;
+      padding:20px 24px 32px;
+      display:none;
+    }
+    .player-section.open { display:block; }
+
+    .player-container {
+      background: var(--bg1);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Player top bar */
+    .player-topbar {
+      height: 54px; flex-shrink:0;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      display:flex; align-items:center; gap:12px; padding:0 16px;
+    }
+    .player-close-btn { width:32px; height:32px; border-radius:7px; background:var(--bg3); border:1px solid var(--border); color:var(--text2); font-size:0.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all 0.18s; flex-shrink:0; }
+    .player-close-btn:hover { background:var(--bg3); color:var(--text); border-color:var(--border2); }
+    .player-meta { flex:1; min-width:0; }
+    .player-channel-label { font-size:0.68rem; color:var(--text2); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+    .player-stream-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.92rem; color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .player-status { padding:4px 10px; border-radius:5px; font-family:'JetBrains Mono',monospace; font-size:0.65rem; font-weight:600; letter-spacing:1px; flex-shrink:0; }
+    .player-status.live { background:rgba(255,59,59,0.15); border:1px solid rgba(255,59,59,0.4); color:var(--red); }
+    .player-status.waiting { background:rgba(255,179,71,0.1); border:1px solid rgba(255,179,71,0.3); color:var(--amber); }
+    .player-status.ended { background:var(--bg3); border:1px solid var(--border); color:var(--text3); }
+
+    /* Slide navigation inside player */
+    .player-slide-nav {
+      display:flex; align-items:center; gap:6px;
+    }
+    .ps-nav-btn { width:28px; height:28px; border-radius:6px; background:var(--bg3); border:1px solid var(--border); color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.7rem; transition:all 0.15s; }
+    .ps-nav-btn:hover { background:rgba(79,142,255,0.15); color:var(--blue); border-color:var(--blue); }
+    .ps-nav-btn:disabled { opacity:0.3; cursor:not-allowed; }
+    .ps-counter { font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--text2); padding:0 4px; }
+
+    /* Player body: video + chat side by side */
+    .player-body { display:flex; overflow:hidden; }
+
+    /* Video area */
+    .video-area { flex:1; background:#000; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; min-height:360px; }
+    .video-area video { width:100%; height:100%; object-fit:contain; max-height:calc(100vh - 160px); }
+    .conn-status { position:absolute; top:12px; left:12px; background:rgba(0,0,0,0.72); border:1px solid rgba(255,255,255,0.1); backdrop-filter:blur(8px); border-radius:7px; padding:5px 10px; display:flex; align-items:center; gap:6px; font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--text2); display:none; }
+    .conn-dot { width:6px; height:6px; border-radius:50%; background:var(--amber); flex-shrink:0; }
+    .conn-dot.connected { background:var(--teal); }
+    .conn-dot.failed { background:var(--red); }
+    .video-placeholder { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; text-align:center; padding:24px; }
+    .placeholder-icon { width:72px; height:72px; border-radius:50%; background:var(--bg2); display:flex; align-items:center; justify-content:center; font-size:1.8rem; color:var(--text3); margin-bottom:4px; }
+    .video-placeholder h3 { font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; color:var(--text); }
+    .video-placeholder p { font-size:0.82rem; color:var(--text2); max-width:260px; }
+    .retry-btn { margin-top:8px; padding:8px 20px; border-radius:7px; background:var(--blue); border:none; color:white; font-size:0.82rem; font-weight:600; cursor:pointer; font-family:'Manrope',sans-serif; transition:background 0.18s; display:none; }
+    .retry-btn:hover { background:#3a76e0; }
+
+    /* Chat panel */
+    .chat-panel { width:300px; flex-shrink:0; background:var(--bg1); border-left:1px solid var(--border); display:flex; flex-direction:column; }
+    .chat-header { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+    .chat-header-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.82rem; flex:1; }
+    .viewer-badge { display:flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--text2); background:var(--bg2); padding:3px 7px; border-radius:999px; }
+    .chat-messages { flex:1; overflow-y:auto; padding:10px; display:flex; flex-direction:column; gap:9px; scrollbar-width:thin; scrollbar-color:var(--bg3) transparent; min-height:200px; }
+    .chat-msg { display:flex; gap:8px; align-items:flex-start; }
+    .chat-msg-avatar { width:26px; height:26px; border-radius:50%; background:var(--bg2); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.62rem; font-weight:700; color:var(--blue); overflow:hidden; }
+    .chat-msg-avatar img { width:100%; height:100%; object-fit:cover; }
+    .chat-msg-name { font-size:0.7rem; font-weight:700; color:var(--blue); margin-bottom:2px; }
+    .chat-msg-text { font-size:0.8rem; line-height:1.45; color:var(--text2); }
+    .reactions-row { padding:7px 10px; border-top:1px solid var(--border); display:flex; gap:5px; }
+    .reaction-btn { padding:4px 8px; border-radius:7px; background:var(--bg2); border:1px solid var(--border); font-size:0.95rem; cursor:pointer; transition:all 0.18s; line-height:1; }
+    .reaction-btn:hover { background:var(--bg3); transform:scale(1.15); }
+    .chat-input-row { padding:10px; border-top:1px solid var(--border); display:flex; gap:7px; }
+    .chat-input { flex:1; background:var(--bg2); border:1px solid var(--border); border-radius:7px; padding:7px 10px; color:var(--text); font-family:'Manrope',sans-serif; font-size:0.82rem; outline:none; transition:border-color 0.18s; }
+    .chat-input:focus { border-color:var(--blue); }
+    .chat-input::placeholder { color:var(--text3); }
+    .chat-send-btn { width:34px; height:34px; border-radius:7px; background:var(--blue); border:none; color:white; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.18s; flex-shrink:0; }
+    .chat-send-btn:hover { background:#3a76e0; }
+
+    /* ── ALL BROADCASTS MODAL ── */
+    .all-modal-overlay { display:none; position:fixed; inset:0; z-index:8000; background:rgba(0,0,0,0.88); backdrop-filter:blur(10px); align-items:center; justify-content:center; }
+    .all-modal-overlay.open { display:flex; }
+    .all-modal { background:var(--bg1); border:1px solid var(--border); border-radius:20px; width:min(540px,94vw); max-height:82vh; overflow-y:auto; padding:22px; }
+    .all-modal-title { font-family:'Syne',sans-serif; font-weight:800; font-size:1.15rem; margin-bottom:16px; display:flex; align-items:center; gap:10px; }
+    .all-modal-title button { margin-left:auto; width:30px; height:30px; border-radius:7px; background:var(--bg2); border:1px solid var(--border); color:var(--text2); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.8rem; transition:all 0.15s; }
+    .all-modal-title button:hover { background:var(--bg3); color:var(--text); }
+    .all-modal-item { background:var(--bg2); border:1px solid var(--border); border-radius:9px; padding:12px 14px; cursor:pointer; margin-bottom:9px; transition:all 0.18s; display:flex; align-items:center; gap:12px; }
+    .all-modal-item:hover { border-color:var(--border2); background:var(--bg3); }
+    .all-modal-item.is-live { border-color:rgba(255,59,59,0.3); }
+    .all-modal-item-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .all-modal-item-dot.live { background:var(--red); animation:blink-dot 1.1s infinite; }
+    .all-modal-item-dot.waiting { background:var(--amber); }
+    .all-modal-item-dot.ended { background:var(--text3); }
+    .all-modal-item-info { flex:1; min-width:0; }
+    .all-modal-item-title { font-weight:700; font-size:0.88rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .all-modal-item-date { font-size:0.72rem; color:var(--text2); margin-top:2px; }
+    .all-modal-close-btn { width:100%; padding:11px; background:var(--bg2); border:1px solid var(--border); border-radius:9px; color:var(--text); font-weight:600; font-size:0.85rem; cursor:pointer; font-family:'Manrope',sans-serif; margin-top:4px; transition:background 0.18s; }
+    .all-modal-close-btn:hover { background:var(--bg3); }
+
+    /* ── EMPTY / LOADING ── */
+    .page-loader { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:80px 20px; gap:14px; color:var(--text2); }
+    .loader-spinner { width:36px; height:36px; border:3px solid var(--bg3); border-top-color:var(--red); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to{ transform:rotate(360deg); } }
+
+    .empty-placeholder { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:60px 24px; gap:12px; color:var(--text2); text-align:center; }
+    .empty-placeholder i { font-size:2rem; color:var(--text3); }
+    .empty-placeholder h3 { font-family:'Syne',sans-serif; font-weight:700; color:var(--text); font-size:1rem; }
+    .empty-placeholder p { font-size:0.85rem; max-width:280px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width:800px) {
+      .player-body { flex-direction:column; }
+      .video-area { min-height:50vw; max-height:56vw; }
+      .video-area video { max-height:56vw; }
+      .chat-panel { width:100%; border-left:none; border-top:1px solid var(--border); height:280px; }
+      .channel-hero { height:auto; }
+      .channel-hero-content { flex-direction:column; align-items:flex-start; padding:20px 16px 16px; }
+      .slide-section { padding:20px 16px 0; }
+      .player-section { padding:16px 16px 24px; }
+      .nav-inner { padding:0 14px; }
+      .logo-name { display:none; }
+      .slide-card { width:220px; }
+      .slide-card-all { width:130px; }
+    }
+
+    @media (max-width:480px) {
+      .slide-card { width:190px; }
+      .slide-card-all { width:110px; }
+      .chat-panel { height:240px; }
+      .player-topbar { gap:8px; padding:0 10px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="logo">
+      <div class="logo-mark">R</div>
+      <span class="logo-name">Riverside</span>
+    </a>
+    <a href="live.html" class="nav-back"><i class="fas fa-arrow-left"></i> Channels</a>
+    <div class="nav-spacer"></div>
+    <div class="nav-channel-info" id="nav-channel-info" style="display:none">
+      <div class="nav-ch-avatar" id="nav-ch-avatar">R</div>
+      <div>
+        <div class="nav-ch-name" id="nav-ch-name">—</div>
+        <div class="nav-ch-cat" id="nav-ch-cat">—</div>
+      </div>
+    </div>
+    <a href="studio.html" style="display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;background:var(--red);color:white;font-size:0.82rem;font-weight:600;text-decoration:none;flex-shrink:0;transition:all 0.18s;"><i class="fas fa-broadcast-tower"></i><span style="white-space:nowrap">Go Live</span></a>
+  </div>
+</nav>
+
+<!-- CHANNEL HERO -->
+<div class="channel-hero" id="channel-hero">
+  <div class="page-loader" id="hero-loader">
+    <div class="loader-spinner"></div>
+    <span style="font-size:0.82rem">Loading channel…</span>
+  </div>
+  <img src="" id="hero-banner" class="channel-hero-banner" style="display:none" onerror="this.style.display='none'">
+  <div class="channel-hero-gradient" id="hero-gradient" style="display:none"></div>
+  <div class="channel-hero-content" id="hero-content" style="display:none">
+    <div class="channel-hero-pic" id="hero-pic">R</div>
+    <div class="channel-hero-meta">
+      <div class="channel-hero-name" id="hero-name">Channel</div>
+      <div class="channel-hero-desc" id="hero-desc"></div>
+      <div class="channel-hero-badges" id="hero-badges"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SLIDES SECTION -->
+<div class="slide-section" id="slide-section" style="display:none">
+  <div class="slide-section-header">
+    <span class="slide-section-title">Broadcasts</span>
+    <div class="slide-section-line"></div>
+    <span class="slide-section-count" id="slide-count">—</span>
+    <div class="slide-nav-btns">
+      <button class="slide-nav-btn" id="prev-btn" onclick="slidePrev()" disabled title="Previous"><i class="fas fa-chevron-left"></i></button>
+      <button class="slide-nav-btn" id="next-btn" onclick="slideNext()" title="Next"><i class="fas fa-chevron-right"></i></button>
+    </div>
+  </div>
+  <div class="slides-viewport" id="slides-viewport">
+    <div class="slides-track" id="slides-track">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- PLAYER SECTION -->
+<div class="player-section" id="player-section">
+  <div class="player-container" id="player-container">
+
+    <div class="player-topbar">
+      <button class="player-close-btn" onclick="closePlayer()" title="Close player"><i class="fas fa-times"></i></button>
+      <div class="player-meta">
+        <div class="player-channel-label" id="p-ch-label">Channel</div>
+        <div class="player-stream-title" id="p-stream-title">Stream</div>
+      </div>
+      <div class="player-slide-nav" id="player-slide-nav">
+        <button class="ps-nav-btn" id="ps-prev" onclick="playerPrev()" title="Previous broadcast"><i class="fas fa-chevron-left"></i></button>
+        <span class="ps-counter" id="ps-counter">1 / 1</span>
+        <button class="ps-nav-btn" id="ps-next" onclick="playerNext()" title="Next broadcast"><i class="fas fa-chevron-right"></i></button>
+      </div>
+      <div class="player-status live" id="p-status">● LIVE</div>
+    </div>
+
+    <div class="player-body">
+      <!-- VIDEO -->
+      <div class="video-area">
+        <video id="player-video" autoplay playsinline controls style="display:none"></video>
+
+        <div class="conn-status" id="conn-status">
+          <div class="conn-dot" id="conn-dot"></div>
+          <span id="conn-text">Connecting…</span>
+        </div>
+
+        <div class="video-placeholder" id="video-placeholder">
+          <div class="placeholder-icon"><i class="fas fa-satellite-dish"></i></div>
+          <h3 id="ph-title">Select a broadcast</h3>
+          <p id="ph-sub">Click a broadcast above to start watching.</p>
+          <button class="retry-btn" id="retry-btn" onclick="retryConn()"><i class="fas fa-redo"></i>&ensp;Retry</button>
+        </div>
+      </div>
+
+      <!-- CHAT -->
+      <div class="chat-panel">
+        <div class="chat-header">
+          <i class="fas fa-comments" style="color:var(--blue);font-size:0.85rem"></i>
+          <span class="chat-header-title">Live Chat</span>
+          <div class="viewer-badge"><i class="fas fa-eye"></i><span id="viewer-count">0</span></div>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="reactions-row">
+          <button class="reaction-btn" onclick="react('🙏')">🙏</button>
+          <button class="reaction-btn" onclick="react('🔥')">🔥</button>
+          <button class="reaction-btn" onclick="react('❤️')">❤️</button>
+          <button class="reaction-btn" onclick="react('👏')">👏</button>
+          <button class="reaction-btn" onclick="react('🎉')">🎉</button>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" type="text" placeholder="Say something…" maxlength="200" onkeydown="if(event.key==='Enter')sendChat()">
+          <button class="chat-send-btn" onclick="sendChat()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- "View All" broadcasts modal -->
+<div class="all-modal-overlay" id="all-modal-overlay">
+  <div class="all-modal">
+    <div class="all-modal-title">
+      All Broadcasts
+      <button onclick="closeAllModal()"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="all-modal-list"></div>
+    <button class="all-modal-close-btn" onclick="closeAllModal()">Close</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG & STATE
+═══════════════════════════════════════════════════════ */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVg0Rb-NPCMk3eLynXCe3Z8kMv0ByX3RS5oQsvv_CHrfs9rDnOn7QHJM9km3j0swD0/exec';
+const ME = localStorage.getItem('userName') || 'Guest';
+
+// Page state
+let channelId    = '';
+let channelData  = null;
+let broadcasts   = [];
+let activeBcastIdx  = -1;   // index in broadcasts[]
+let activeBcastId   = null;
+
+// Slide strip state
+let slideOffset    = 0;
+let slideCardWidth = 274;   // 260 + 14 gap
+const SLIDE_STEP   = 1;
+
+// WebRTC state
+let peerConn    = null;
+let iceTimer    = null;
+let retryCount  = 0;
+const MAX_RETRIES = 3;
+
+// Chat state
+let chatPoll = null;
+
+/* ═══════════════════════════════════════════════════════
+   UTILS
+═══════════════════════════════════════════════════════ */
+const lh3 = url => { if(!url)return''; const id=url.match(/[-\w]{25,}/)?.[0]; return id?`https://lh3.googleusercontent.com/d/${id}`:url; };
+const hslFromStr = s => { let h=0; for(let i=0;i<s.length;i++)h=s.charCodeAt(i)+((h<<5)-h); return `hsl(${Math.abs(h)%360},50%,30%)`; };
+const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const fmtDate = iso => { if(!iso)return''; const d=new Date(iso); return d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); };
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  channelId = params.get('channel') || '';
+  if (!channelId) { window.location.href = 'live.html'; return; }
+
+  await loadChannel();
+  await loadBroadcasts();
+  setupDrag();
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOAD CHANNEL
+═══════════════════════════════════════════════════════ */
+async function loadChannel() {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getLiveChannels`);
+    const d = await r.json();
+    const channels = d.channels || [];
+    channelData = channels.find(c=>c.id===channelId) || null;
+    if (channelData) renderChannelHero();
+    else {
+      document.getElementById('hero-loader').innerHTML = `
+        <i class="fas fa-exclamation-triangle" style="font-size:2rem;color:var(--amber)"></i>
+        <span>Channel not found.</span>
+        <a href="live.html" style="color:var(--blue);font-size:0.85rem;">← Back to channels</a>`;
+    }
+  } catch {
+    document.getElementById('hero-loader').innerHTML = `<span style="color:var(--text2)">Failed to load channel.</span>`;
+  }
+}
+
+function renderChannelHero() {
+  const ch = channelData;
+  const pic    = lh3(ch.picLink);
+  const banner = lh3(ch.bannerLink);
+
+  // Banner
+  if (banner) {
+    const img = document.getElementById('hero-banner');
+    img.src = banner; img.style.display='block';
+    document.getElementById('hero-gradient').style.display='block';
+  }
+
+  // Channel pic
+  const picEl = document.getElementById('hero-pic');
+  if (pic) { picEl.innerHTML=`<img src="${pic}" onerror="this.style.display='none'">`; }
+  else { picEl.style.background=hslFromStr(ch.name||'x'); picEl.textContent=(ch.name||'?')[0].toUpperCase(); }
+
+  document.getElementById('hero-name').textContent = ch.name||'Channel';
+  document.getElementById('hero-desc').textContent = ch.description||'';
+
+  // Nav
+  document.getElementById('nav-channel-info').style.display='flex';
+  document.getElementById('nav-ch-name').textContent = ch.name||'Channel';
+  document.getElementById('nav-ch-cat').textContent = ch.category||'General';
+  const navAv = document.getElementById('nav-ch-avatar');
+  if (pic) navAv.innerHTML=`<img src="${pic}" onerror="this.style.display='none'">`;
+  else { navAv.style.background=hslFromStr(ch.name||'x'); navAv.textContent=(ch.name||'?')[0].toUpperCase(); }
+
+  document.title = `${ch.name} – Riverside Live`;
+
+  // Hide loader, show hero
+  document.getElementById('hero-loader').style.display='none';
+  document.getElementById('hero-content').style.display='flex';
+}
+
+/* ═══════════════════════════════════════════════════════
+   LOAD BROADCASTS
+═══════════════════════════════════════════════════════ */
+async function loadBroadcasts() {
+  try {
+    const r = await fetch(`${SCRIPT_URL}?operation=getLiveBroadcasts&channelId=${encodeURIComponent(channelId)}`);
+    const d = await r.json();
+    broadcasts = (d.broadcasts||[]).sort((a,b)=>{
+      // Live first, then waiting, then ended by date desc
+      const order = { live:0, waiting:1, ended:2 };
+      const oa=(order[a.status]??3), ob=(order[b.status]??3);
+      if(oa!==ob) return oa-ob;
+      return new Date(b.created)-new Date(a.created);
+    });
+    renderHeroBadges();
+    renderSlides();
+    document.getElementById('slide-section').style.display='block';
+
+    // Auto-open first live broadcast
+    const firstLive = broadcasts.findIndex(b=>b.status==='live');
+    if (firstLive>=0) openPlayer(firstLive);
+  } catch {
+    document.getElementById('slide-section').style.display='block';
+    document.getElementById('slides-track').innerHTML=`
+      <div class="empty-placeholder" style="min-width:300px">
+        <i class="fas fa-satellite-dish"></i>
+        <h3>No broadcasts found</h3>
+        <p>This channel has no broadcasts yet.</p>
+      </div>`;
+  }
+}
+
+function renderHeroBadges() {
+  const ch = channelData;
+  const liveCnt  = broadcasts.filter(b=>b.status==='live').length;
+  const totalCnt = broadcasts.length;
+  let html = '';
+  if (ch?.category) html+=`<div class="ch-badge cat">${esc(ch.category)}</div>`;
+  if (liveCnt>0) html+=`<div class="ch-badge live"><span class="pulse-dot"></span>${liveCnt} LIVE NOW</div>`;
+  if (totalCnt>0) html+=`<div class="ch-badge count">${totalCnt} BROADCAST${totalCnt!==1?'S':''}</div>`;
+  document.getElementById('hero-badges').innerHTML=html;
+}
+
+function renderSlides() {
+  const track = document.getElementById('slides-track');
+  document.getElementById('slide-count').textContent = broadcasts.length + ' broadcast'+(broadcasts.length!==1?'s':'');
+
+  if (!broadcasts.length) {
+    track.innerHTML=`<div class="empty-placeholder" style="min-width:280px"><i class="fas fa-film"></i><h3>No broadcasts yet</h3><p>Check back soon!</p></div>`;
+    return;
+  }
+
+  const cards = broadcasts.map((b,i)=>{
+    const thumb = lh3(b.thumbLink);
+    const thumbHtml = thumb
+      ? `<img src="${thumb}" class="slide-thumb-img" onerror="this.style.display='none'">`
+      : `<div class="slide-thumb-placeholder"><i class="fas fa-photo-video"></i></div>`;
+
+    const badgeHtml = b.status==='live'
+      ? `<div class="slide-status-badge live"><div class="dot"></div>LIVE</div>`
+      : b.status==='waiting'
+      ? `<div class="slide-status-badge waiting">⏳ SOON</div>`
+      : `<div class="slide-status-badge ended">■ ENDED</div>`;
+
+    return `
+    <div class="slide-card ${b.status==='live'?'is-live':''}" id="slide-${b.id}" onclick="openPlayer(${i})">
+      <div class="slide-thumb">
+        ${thumbHtml}
+        <div class="slide-thumb-gradient"></div>
+        ${badgeHtml}
+        <div class="slide-play-overlay"><div class="slide-play-btn"><i class="fas fa-play"></i></div></div>
+      </div>
+      <div class="slide-body">
+        <div class="slide-title">${esc(b.title)}</div>
+        <div class="slide-meta">
+          <span>${b.status.toUpperCase()}</span>
+          <div class="slide-meta-dot"></div>
+          <span>${fmtDate(b.created)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // "View All" card (shown when more than 3 broadcasts)
+  const viewAllCard = broadcasts.length > 3
+    ? `<div class="slide-card-all" onclick="openAllModal()">
+        <i class="fas fa-th-list"></i>
+        <span>View All<br>${broadcasts.length} Broadcasts</span>
+       </div>`
+    : '';
+
+  track.innerHTML = cards + viewAllCard;
+  updateSlideNavBtns();
+}
+
+/* ═══════════════════════════════════════════════════════
+   SLIDE NAVIGATION
+═══════════════════════════════════════════════════════ */
+function getSlideCardWidth() {
+  const first = document.querySelector('.slide-card');
+  if (first) return first.offsetWidth + 14;
+  return 274;
+}
+
+function updateSlideNavBtns() {
+  const track = document.getElementById('slides-track');
+  const viewport = document.getElementById('slides-viewport');
+  const totalW = track.scrollWidth;
+  const visibleW = viewport.clientWidth;
+  document.getElementById('prev-btn').disabled = slideOffset <= 0;
+  document.getElementById('next-btn').disabled = (slideOffset * getSlideCardWidth()) >= totalW - visibleW - 10;
+}
+
+function slideNext() {
+  slideOffset++;
+  applySlideTransform();
+}
+
+function slidePrev() {
+  if (slideOffset > 0) slideOffset--;
+  applySlideTransform();
+}
+
+function applySlideTransform() {
+  const w = getSlideCardWidth();
+  document.getElementById('slides-track').style.transform = `translateX(-${slideOffset*w}px)`;
+  updateSlideNavBtns();
+}
+
+/* Touch/drag support */
+function setupDrag() {
+  const track = document.getElementById('slides-track');
+  let startX=0, startOffset=0, dragging=false;
+
+  track.addEventListener('mousedown', e=>{
+    dragging=true; startX=e.clientX; startOffset=slideOffset*getSlideCardWidth();
+    track.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const dx=startX-e.clientX;
+    track.style.transform=`translateX(-${Math.max(0,startOffset+dx)}px)`;
+  });
+  window.addEventListener('mouseup', e=>{
+    if(!dragging) return;
+    dragging=false; track.classList.remove('dragging');
+    const dx=startX-e.clientX;
+    const w=getSlideCardWidth();
+    const newOffset=Math.round((startOffset+dx)/w);
+    slideOffset=Math.max(0,newOffset);
+    applySlideTransform();
+  });
+
+  // Touch
+  track.addEventListener('touchstart', e=>{ dragging=true; startX=e.touches[0].clientX; startOffset=slideOffset*getSlideCardWidth(); },{passive:true});
+  track.addEventListener('touchmove', e=>{
+    if(!dragging) return;
+    const dx=startX-e.touches[0].clientX;
+    track.style.transform=`translateX(-${Math.max(0,startOffset+dx)}px)`;
+  },{passive:true});
+  track.addEventListener('touchend', e=>{
+    if(!dragging) return;
+    dragging=false;
+    const dx=startX-e.changedTouches[0].clientX;
+    const w=getSlideCardWidth();
+    const newOffset=Math.round((startOffset+dx)/w);
+    slideOffset=Math.max(0,newOffset);
+    applySlideTransform();
+  });
+}
+
+/* ═══════════════════════════════════════════════════════
+   OPEN / CLOSE PLAYER
+═══════════════════════════════════════════════════════ */
+async function openPlayer(idx) {
+  if (idx < 0 || idx >= broadcasts.length) return;
+
+  // Cleanup previous connection if different broadcast
+  if (activeBcastId && broadcasts[idx]?.id !== activeBcastId) {
+    await teardownPlayer();
+    await sleep(80);
+  }
+
+  activeBcastIdx = idx;
+  const b = broadcasts[idx];
+  activeBcastId = b.id;
+  retryCount = 0;
+
+  // Update slide card highlight
+  document.querySelectorAll('.slide-card').forEach(c=>c.classList.remove('active-card'));
+  document.getElementById(`slide-${b.id}`)?.classList.add('active-card');
+
+  // Scroll slide into view
+  scrollSlideIntoView(idx);
+
+  // Update player header
+  document.getElementById('p-ch-label').textContent = channelData?.name||'Channel';
+  document.getElementById('p-stream-title').textContent = b.title;
+  updatePlayerStatusPill(b.status);
+  updatePlayerSlideNav();
+
+  // Show player section
+  document.getElementById('player-section').classList.add('open');
+  document.getElementById('player-section').scrollIntoView({behavior:'smooth',block:'start'});
+
+  const vid = document.getElementById('player-video');
+  const ph  = document.getElementById('video-placeholder');
+
+  if (b.status === 'live') {
+    vid.style.display='block'; ph.style.display='none';
+    setConnUI('connecting','Connecting to stream…');
+    startChatPoll(b.id);
+    await startViewerConn(b.id);
+  } else {
+    vid.style.display='none'; ph.style.display='flex';
+    document.getElementById('conn-status').style.display='none';
+    document.getElementById('retry-btn').style.display='none';
+    document.getElementById('ph-title').textContent = b.status==='waiting' ? "Stream hasn't started" : "Stream has ended";
+    document.getElementById('ph-sub').textContent   = b.status==='waiting' ? 'The host will go live soon — stay tuned!' : 'This broadcast has finished.';
+    startChatPoll(b.id);
+  }
+
+  // Record view
+  fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({ operation:'recordBroadcastView', broadcastId:b.id, username:ME }) });
+}
+
+function scrollSlideIntoView(idx) {
+  const card = document.getElementById(`slide-${broadcasts[idx]?.id}`);
+  if (!card) return;
+  const viewport = document.getElementById('slides-viewport');
+  const vW = viewport.clientWidth;
+  const cLeft = card.offsetLeft;
+  const cW = card.offsetWidth;
+  if (cLeft < slideOffset*getSlideCardWidth()) {
+    slideOffset = Math.max(0, Math.floor(cLeft/getSlideCardWidth()));
+    applySlideTransform();
+  } else if (cLeft+cW > slideOffset*getSlideCardWidth()+vW) {
+    slideOffset = Math.ceil((cLeft+cW-vW)/getSlideCardWidth());
+    applySlideTransform();
+  }
+}
+
+function updatePlayerStatusPill(status) {
+  const pill = document.getElementById('p-status');
+  if (status==='live')    { pill.className='player-status live';    pill.textContent='● LIVE'; }
+  else if(status==='waiting'){ pill.className='player-status waiting'; pill.textContent='⏳ SOON'; }
+  else                       { pill.className='player-status ended';   pill.textContent='■ ENDED'; }
+}
+
+function updatePlayerSlideNav() {
+  const total = broadcasts.length;
+  document.getElementById('ps-counter').textContent = `${activeBcastIdx+1} / ${total}`;
+  document.getElementById('ps-prev').disabled = activeBcastIdx <= 0;
+  document.getElementById('ps-next').disabled = activeBcastIdx >= total-1;
+  document.getElementById('player-slide-nav').style.display = total>1 ? 'flex' : 'none';
+}
+
+function playerPrev() { if(activeBcastIdx>0) openPlayer(activeBcastIdx-1); }
+function playerNext() { if(activeBcastIdx<broadcasts.length-1) openPlayer(activeBcastIdx+1); }
+
+async function closePlayer() {
+  await teardownPlayer();
+  document.getElementById('player-section').classList.remove('open');
+  document.querySelectorAll('.slide-card').forEach(c=>c.classList.remove('active-card'));
+  activeBcastId=null; activeBcastIdx=-1;
+}
+
+async function teardownPlayer() {
+  if (chatPoll) { clearInterval(chatPoll); chatPoll=null; }
+  if (window._vcPoll) { clearInterval(window._vcPoll); window._vcPoll=null; }
+  clearTimer();
+  cleanupPC();
+  resetConnUI();
+  document.getElementById('chat-messages').innerHTML='';
+  document.getElementById('chat-messages').dataset.count='0';
+  document.getElementById('viewer-count').textContent='0';
+  const vid=document.getElementById('player-video');
+  vid.style.display='none'; if(vid.src){vid.src='';vid.load();}
+  document.getElementById('video-placeholder').style.display='flex';
+  document.getElementById('ph-title').textContent='Select a broadcast';
+  document.getElementById('ph-sub').textContent='Click a broadcast above to start watching.';
+  if (activeBcastId) {
+    await fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify({ operation:'cleanupViewerSignals', broadcastId:activeBcastId, viewerId:ME })}).catch(()=>{});
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   WebRTC VIEWER
+═══════════════════════════════════════════════════════ */
+async function startViewerConn(bcastId) {
+  cleanupPC();
+
+  peerConn = new RTCPeerConnection({
+    iceServers:[
+      {urls:'stun:stun.l.google.com:19302'},
+      {urls:'stun:stun1.l.google.com:19302'}
+    ]
+  });
+
+  const vid=document.getElementById('player-video');
+
+  peerConn.ontrack = e => {
+    if(e.streams?.[0]){ vid.srcObject=e.streams[0]; vid.play().catch(()=>{}); setConnUI('connected','Connected'); }
+  };
+
+  peerConn.onconnectionstatechange = () => {
+    if(!activeBcastId) return;
+    const s=peerConn?.connectionState;
+    if(s==='connected'){setConnUI('connected','Connected');return;}
+    if(s==='failed'||s==='closed'){
+      setConnUI('failed','Connection lost');
+      if(retryCount<MAX_RETRIES){ retryCount++; setTimeout(()=>{ if(activeBcastId)startViewerConn(activeBcastId); },4000); }
+      else { document.getElementById('retry-btn').style.display='inline-flex'; }
+    }
+  };
+
+  // Cleanup old signals
+  await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({operation:'cleanupViewerSignals',broadcastId:bcastId,viewerId:ME})});
+  await sleep(500);
+
+  const offer=await peerConn.createOffer({offerToReceiveAudio:true,offerToReceiveVideo:true});
+  await peerConn.setLocalDescription(offer);
+  await waitIce(peerConn,5000);
+
+  await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({operation:'submitViewerAnswer',broadcastId:bcastId,viewerId:ME,sdpAnswer:peerConn.localDescription.sdp})});
+  pollForAnswer(bcastId);
+}
+
+async function pollForAnswer(bcastId) {
+  clearTimer();
+  let tries=0;
+  const go=async()=>{
+    if(!peerConn||!activeBcastId) return;
+    if(peerConn.currentRemoteDescription||peerConn.connectionState==='connected') return;
+    if(['failed','closed'].includes(peerConn.connectionState)) return;
+    if(tries++>=40){setConnUI('failed','Studio not responding');document.getElementById('retry-btn').style.display='inline-flex';return;}
+    try{
+      const r=await fetch(`${SCRIPT_URL}?operation=getStudioAnswerForViewer&broadcastId=${encodeURIComponent(bcastId)}&viewerId=${encodeURIComponent(ME)}`);
+      const d=await r.json();
+      if(d.sdpAnswer&&peerConn&&!peerConn.currentRemoteDescription){
+        await peerConn.setRemoteDescription({type:'answer',sdp:d.sdpAnswer});
+        for(const c of (d.iceCandidates||[])){ try{await peerConn.addIceCandidate(JSON.parse(c));}catch{} }
+        return;
+      }
+    }catch{}
+    iceTimer=setTimeout(go,3000);
+  };
+  iceTimer=setTimeout(go,4000);
+}
+
+function retryConn() {
+  if(!activeBcastId) return;
+  document.getElementById('retry-btn').style.display='none';
+  setConnUI('connecting','Reconnecting…');
+  startViewerConn(activeBcastId);
+}
+
+function waitIce(pc,ms) {
+  return new Promise(res=>{
+    if(pc.iceGatheringState==='complete') return res();
+    const fn=()=>{if(pc.iceGatheringState==='complete'){pc.removeEventListener('icegatheringstatechange',fn);res();}};
+    pc.addEventListener('icegatheringstatechange',fn);
+    setTimeout(()=>{pc.removeEventListener('icegatheringstatechange',fn);res();},ms);
+  });
+}
+
+function cleanupPC() {
+  clearTimer();
+  if(peerConn){
+    peerConn.ontrack=peerConn.onicecandidate=peerConn.onconnectionstatechange=peerConn.onicegatheringstatechange=null;
+    try{peerConn.close();}catch{}
+    peerConn=null;
+  }
+  const v=document.getElementById('player-video');
+  if(v?.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;}
+  if(v) v.load();
+}
+
+function clearTimer() {
+  if(iceTimer){clearTimeout(iceTimer);iceTimer=null;}
+}
+
+/* ═══════════════════════════════════════════════════════
+   CONN UI
+═══════════════════════════════════════════════════════ */
+function setConnUI(state,text) {
+  const el=document.getElementById('conn-status');
+  const dot=document.getElementById('conn-dot');
+  el.style.display='flex'; el.style.opacity='1';
+  dot.className='conn-dot'+(state==='connected'?' connected':state==='failed'?' failed':'');
+  document.getElementById('conn-text').textContent=text;
+  if(state==='connected') setTimeout(()=>{el.style.opacity='0';setTimeout(()=>el.style.display='none',500);},3000);
+}
+function resetConnUI() {
+  const el=document.getElementById('conn-status');
+  el.style.display='none'; el.style.opacity='1';
+  document.getElementById('conn-dot').className='conn-dot';
+  document.getElementById('conn-text').textContent='Connecting…';
+  document.getElementById('retry-btn').style.display='none';
+}
+
+/* ═══════════════════════════════════════════════════════
+   CHAT
+═══════════════════════════════════════════════════════ */
+function startChatPoll(bId) {
+  if(chatPoll){clearInterval(chatPoll);chatPoll=null;}
+  loadChat(bId);
+  chatPoll=setInterval(()=>loadChat(bId),5000);
+
+  if(window._vcPoll){clearInterval(window._vcPoll);}
+  window._vcPoll=setInterval(async()=>{
+    if(!activeBcastId) return;
+    try{
+      const r=await fetch(`${SCRIPT_URL}?operation=getBroadcastViewerCount&broadcastId=${encodeURIComponent(activeBcastId)}`);
+      const d=await r.json();
+      document.getElementById('viewer-count').textContent=d.count||0;
+    }catch{}
+  },3000);
+}
+
+async function loadChat(bId) {
+  try{
+    const r=await fetch(`${SCRIPT_URL}?operation=getBroadcastChat&broadcastId=${encodeURIComponent(bId)}&since=0`);
+    const d=await r.json();
+    const msgs=d.messages||[];
+    const box=document.getElementById('chat-messages');
+    const atBottom=box.scrollHeight-box.clientHeight<=box.scrollTop+5;
+    if(msgs.length!==+(box.dataset.count||0)){
+      box.dataset.count=msgs.length;
+      box.innerHTML=msgs.map(m=>{
+        const pic=lh3(m.picLink);
+        const init=(m.name||'?')[0].toUpperCase();
+        return `<div class="chat-msg">
+          <div class="chat-msg-avatar" style="${pic?'':'background:'+hslFromStr(m.name||'x')}">
+            ${pic?`<img src="${pic}" onerror="this.style.display='none'">`:init}
+          </div>
+          <div><div class="chat-msg-name">${esc(m.name)}</div><div class="chat-msg-text">${esc(m.message)}</div></div>
+        </div>`;
+      }).join('');
+      if(atBottom) box.scrollTop=box.scrollHeight;
+    }
+    document.getElementById('viewer-count').textContent=d.viewerCount||0;
+  }catch{}
+}
+
+async function sendChat() {
+  const inp=document.getElementById('chat-input');
+  const msg=inp.value.trim();
+  if(!msg||!activeBcastId) return;
+  inp.value='';
+  const picLink=localStorage.getItem('userPicLink')||'';
+  await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({operation:'sendBroadcastChat',broadcastId:activeBcastId,name:ME,message:msg,picLink})});
+  loadChat(activeBcastId);
+}
+
+async function react(emoji) {
+  if(!activeBcastId) return;
+  await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({operation:'sendBroadcastChat',broadcastId:activeBcastId,name:ME,message:emoji,picLink:localStorage.getItem('userPicLink')||''})});
+}
+
+/* ═══════════════════════════════════════════════════════
+   ALL MODAL
+═══════════════════════════════════════════════════════ */
+function openAllModal() {
+  const sorted=[...broadcasts].sort((a,b)=>{
+    const o={live:0,waiting:1,ended:2};
+    const oa=o[a.status]??3, ob=o[b.status]??3;
+    if(oa!==ob) return oa-ob;
+    return new Date(b.created)-new Date(a.created);
+  });
+  document.getElementById('all-modal-list').innerHTML=sorted.map(b=>`
+    <div class="all-modal-item ${b.status==='live'?'is-live':''}" onclick="pickFromModal('${b.id}')">
+      <div class="all-modal-item-dot ${b.status}"></div>
+      <div class="all-modal-item-info">
+        <div class="all-modal-item-title">${esc(b.title)}</div>
+        <div class="all-modal-item-date">${fmtDate(b.created)} · ${b.status.toUpperCase()}</div>
+      </div>
+      <i class="fas fa-chevron-right" style="color:var(--text3);font-size:0.72rem"></i>
+    </div>`).join('');
+  document.getElementById('all-modal-overlay').classList.add('open');
+}
+
+function pickFromModal(bId) {
+  closeAllModal();
+  const idx=broadcasts.findIndex(b=>b.id===bId);
+  if(idx>=0) openPlayer(idx);
+}
+
+function closeAllModal() {
+  document.getElementById('all-modal-overlay').classList.remove('open');
+}
+
+/* ═══════════════════════════════════════════════════════
+   CLEANUP ON LEAVE
+═══════════════════════════════════════════════════════ */
+window.addEventListener('beforeunload',()=>{
+  if(activeBcastId) navigator.sendBeacon(SCRIPT_URL,JSON.stringify({operation:'cleanupViewerSignals',broadcastId:activeBcastId,viewerId:ME}));
+  cleanupPC();
+});
+
+/* ── BOOT ── */
+init();
+</script>
+</body>
+</html>

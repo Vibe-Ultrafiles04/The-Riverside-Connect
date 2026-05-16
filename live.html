@@ -1371,10 +1371,12 @@ function closePlayer() {
   activeBcastId = null;
   retryCount    = 0; // Reset so reconnection works properly
 
-  document.getElementById('player-overlay').classList.remove('open');
+ const vcEl = document.getElementById('viewer-count');
+  vcEl.textContent = '0';
+  vcEl.style.color = '';
 
-  if (chatPoll)   { clearInterval(chatPoll); chatPoll = null; }
-  clearTimer();
+ if (chatPoll) { clearInterval(chatPoll); chatPoll = null; }
+  if (window._vcPoll) { clearInterval(window._vcPoll); window._vcPoll = null; }
   cleanupPC();
   retryCount = 0;
 
@@ -1416,8 +1418,27 @@ function resetConnUI() {
 ═══════════════════════════════════════════════════════ */
 function startChatPoll(bId) {
   loadChat(bId);
-  chatPoll = setInterval(()=>loadChat(bId), 5000);
-}
+  chatPoll = setInterval(() => loadChat(bId), 5000);
+
+  
+  // Drive viewer count from actual WebRTC connection state
+  if (window._vcPoll) clearInterval(window._vcPoll);
+  window._vcPoll = setInterval(() => {
+    if (!peerConn) return;
+    const state = peerConn.connectionState;
+    const el = document.getElementById('viewer-count');
+    if (state === 'connected') {
+      // We are one real connected viewer — show it live
+      el.textContent = '● Live';
+      el.style.color = 'var(--teal)';
+    } else if (state === 'connecting' || state === 'new') {
+      el.textContent = '⟳ Connecting';
+      el.style.color = 'var(--amber)';
+    } else {
+      el.textContent = '○ Off';
+      el.style.color = 'var(--text3)';
+    }
+  }, 1000);
 
 async function loadChat(bId) {
   try {

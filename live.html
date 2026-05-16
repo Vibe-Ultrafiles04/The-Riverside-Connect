@@ -1292,10 +1292,10 @@ await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
 // Small delay to ensure cleanup completes before writing new offer
 await sleep(500);
 
-await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
-  operation:'submitViewerAnswer', broadcastId:bcastId, viewerId:ME,
-  sdpAnswer: peerConn.localDescription.sdp
-})});
+// Cleanup old signals in background — don't await it
+  fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
+    operation:'cleanupViewerSignals', broadcastId:bcastId, viewerId:ME
+  })}).catch(()=>{});
 
   const offer = await peerConn.createOffer({ offerToReceiveAudio:true, offerToReceiveVideo:true });
   await peerConn.setLocalDescription(offer);
@@ -1305,7 +1305,6 @@ await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({
     operation:'submitViewerAnswer', broadcastId:bcastId, viewerId:ME,
     sdpAnswer: peerConn.localDescription.sdp
   })});
-
   pollForAnswer(bcastId);
 }
 

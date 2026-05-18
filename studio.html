@@ -310,10 +310,125 @@
     .pip-pill:hover { background:rgba(155,93,229,0.2); }
 
     /* ── RESPONSIVE ── */
-    @media (max-width:900px) {
-      .studio { grid-template-columns:1fr; }
-      .left-col, .right-col { display:none; }
-    }
+@media (max-width: 900px) {
+  .studio {
+    grid-template-columns: 1fr;
+    padding: 12px 10px;
+    gap: 10px;
+  }
+
+  .left-col, .right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Make panels more mobile-friendly */
+  .panel {
+    margin-bottom: 12px;
+  }
+
+  .panel-hdr {
+    padding: 12px 14px;
+  }
+
+  .cameras-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .cam-tile {
+    aspect-ratio: 16/9;
+  }
+
+  /* Camera controls - stack horizontally on mobile */
+  .cam-controls-overlay {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    background: rgba(0,0,0,0.7);
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .cam-ctrl-btn {
+    width: 38px;
+    height: 38px;
+    font-size: 0.9rem;
+  }
+
+  /* Monitor bar - allow wrapping */
+  .monitor-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .scenes-grid {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 8px;
+  }
+
+  .scene-btn {
+    padding: 12px 6px;
+    font-size: 0.75rem;
+  }
+
+  /* Modals */
+  .modal {
+    width: 94vw;
+    padding: 20px;
+    margin: 10px;
+  }
+
+  /* Go Live button - bigger on mobile */
+  .go-live-btn {
+    padding: 16px;
+    font-size: 1.05rem;
+  }
+
+  /* Toast */
+  .toast {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: none;
+  }
+
+  /* Zoom bar */
+  .zoom-bar {
+    padding: 8px 12px 12px;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 480px) {
+  .studio {
+    padding: 8px 8px;
+  }
+
+  .hdr {
+    padding: 0 12px;
+  }
+
+  .cameras-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .cam-controls-overlay {
+    top: 8px;
+    right: 8px;
+    padding: 5px;
+  }
+
+  .scene-btn i {
+    font-size: 1.1rem;
+  }
+}
   </style>
 </head>
 <body>

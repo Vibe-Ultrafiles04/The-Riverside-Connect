@@ -343,7 +343,7 @@
       <div class="panel-hdr">
         <div class="panel-hdr-icon" style="background:rgba(61,139,255,0.12);color:var(--blue)"><i class="fas fa-broadcast-tower"></i></div>
         <div class="panel-hdr-title">My Channel</div>
-        <button class="btn btn-ghost btn-icon" onclick="openEditChannel()"><i class="fas fa-pen"></i></button>
+       <button class="btn btn-ghost btn-icon" onclick="openCreateChannel()" title="New Channel"><i class="fas fa-plus"></i></button>
       </div>
       <div class="panel-body">
         <div id="ch-display" style="display:none">
@@ -614,7 +614,8 @@
 <!-- ══ MODALS ══ -->
 <div class="modal-bg" id="modal-ch">
   <div class="modal">
-    <h2>Channel Setup</h2>
+    <h2 id="modal-ch-title">Channel Setup</h2>
+<input type="hidden" id="editing-channel-id" value="">
     <div class="fg"><label>Channel Name *</label><input id="new-ch-name" placeholder="e.g. Riverside Church" maxlength="60"></div>
     <div class="fg"><label>Description</label><textarea id="new-ch-desc" placeholder="What is this channel about?"></textarea></div>
     <div class="fg"><label>Category</label>
@@ -651,12 +652,13 @@
 /* ══════════════════════════════════════════════════════════════════
    CONSTANTS & STATE
 ══════════════════════════════════════════════════════════════════ */
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVg0Rb-NPCMk3eLynXCe3Z8kMv0ByX3RS5oQsvv_CHrfs9rDnOn7QHJM9km3j0swD0/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzkdNPwEu9nOVH2GmqYUny-Yx3R_r00O_HbTABTfigUfk-FwRGIRNKSc8wJVyfTTQYR/exec';
 const ME = localStorage.getItem('userName');
 if (!ME) window.location.href = 'login.html';
 
 // Channel & broadcast state
 let myChannel = null;
+let myChannels = [];
 let myBroadcasts = [];
 let activeBroadcast = null;
 
@@ -1549,46 +1551,178 @@ async function loadMyChannel() {
   try {
     const r = await fetch(`${SCRIPT_URL}?operation=getMyLiveChannel&username=${encodeURIComponent(ME)}`);
     const d = await r.json();
-    if (d.channel) { myChannel = d.channel; renderMyChannel(); loadBroadcasts(); }
-    else { document.getElementById('ch-display').style.display='none'; document.getElementById('no-ch-display').style.display='block'; }
+    // Support both old (single channel) and new (multi-channel) response
+    myChannels = d.channels || (d.channel ? [d.channel] : []);
+    myChannel = myChannels[0] || null;
+    renderMyChannel();
+    if (myChannels.length > 0) await loadBroadcasts();
   } catch { showToast('Could not load channel', 'error'); }
 }
 
 function renderMyChannel() {
-  if (!myChannel) return;
+  if (!myChannels || myChannels.length === 0) {
+    document.getElementById('ch-display').style.display = 'none';
+    document.getElementById('no-ch-display').style.display = 'block';
+    return;
+  }
   document.getElementById('ch-display').style.display = 'block';
   document.getElementById('no-ch-display').style.display = 'none';
-  document.getElementById('ch-name').textContent = myChannel.name;
-  document.getElementById('ch-cat').textContent  = myChannel.category || 'General';
+  renderChannelSelector();
+  // Show the currently selected channel's info
+  const ch = myChannel || myChannels[0];
+  myChannel = ch;
+  document.getElementById('ch-name').textContent = ch.name;
+  document.getElementById('ch-cat').textContent = ch.category || 'General';
   const thumb = document.getElementById('ch-thumb');
-  const pic = lh3(myChannel.picLink);
+  const pic = lh3(ch.picLink);
   if (pic) thumb.innerHTML = `<img src="${pic}" onerror="this.style.display='none'">`;
-  else { thumb.style.background = hsl(myChannel.name); thumb.textContent = myChannel.name[0].toUpperCase(); }
+  else { thumb.style.background = hsl(ch.name); thumb.textContent = ch.name[0].toUpperCase(); }
 }
 
+function renderChannelSelector() {
+  let existing = document.getElementById('ch-selector-wrap');
+  if (existing) existing.remove();
+
+  const wrap = document.createElement('div');
+  wrap.id = 'ch-selector-wrap';
+  wrap.style.cssText = 'margin-bottom:10px;display:flex;flex-direction:column;gap:6px;';
+
+  myChannels.forEach(ch => {
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:6px;padding:7px 9px;border-radius:7px;border:1px solid ${ch.id===myChannel?.id?'var(--blue)':'var(--border)'};background:${ch.id===myChannel?.id?'rgba(61,139,255,0.08)':'var(--bg2)'};cursor:pointer;transition:all 0.15s;`;
+
+    const nameEl = document.createElement('span');
+    nameEl.style.cssText = 'flex:1;font-size:0.8rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    nameEl.textContent = ch.name;
+    nameEl.onclick = () => {
+      myChannel = ch;
+      document.getElementById('ch-name').textContent = ch.name;
+      document.getElementById('ch-cat').textContent = ch.category || 'General';
+      const thumb = document.getElementById('ch-thumb');
+      const pic = lh3(ch.picLink);
+      if (pic) thumb.innerHTML = `<img src="${pic}" onerror="this.style.display='none'">`;
+      else { thumb.style.background = hsl(ch.name); thumb.textContent = ch.name[0].toUpperCase(); }
+      loadBroadcasts();
+      renderChannelSelector();
+    };
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'btn btn-ghost btn-icon';
+    editBtn.style.cssText = 'width:22px;height:22px;font-size:0.62rem;flex-shrink:0';
+    editBtn.innerHTML = '<i class="fas fa-pen"></i>';
+    editBtn.title = 'Edit';
+    editBtn.onclick = (e) => { e.stopPropagation(); myChannel = ch; openEditChannel(); };
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn btn-ghost btn-icon';
+    delBtn.style.cssText = 'width:22px;height:22px;font-size:0.62rem;color:var(--red);flex-shrink:0';
+    delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+    delBtn.title = 'Delete';
+    delBtn.onclick = (e) => { e.stopPropagation(); promptDeleteChannel(ch); };
+
+    row.appendChild(nameEl);
+    row.appendChild(editBtn);
+    row.appendChild(delBtn);
+    wrap.appendChild(row);
+  });
+
+  // Insert before ch-identity
+  const identity = document.querySelector('.ch-identity');
+  if (identity) identity.parentNode.insertBefore(wrap, identity);
+}
+
+
 async function loadBroadcasts() {
+  // Only load broadcasts for the currently selected channel
   if (!myChannel) return;
   try {
     const r = await fetch(`${SCRIPT_URL}?operation=getLiveBroadcasts&channelId=${encodeURIComponent(myChannel.id)}`);
     const d = await r.json();
-    myBroadcasts = d.broadcasts || [];
+    // Filter to only this user's broadcasts (double safety)
+    myBroadcasts = (d.broadcasts || []).filter(b => 
+      b.creator?.trim().toLowerCase() === ME.trim().toLowerCase()
+    );
     renderBroadcastList();
   } catch {}
 }
 
 function renderBroadcastList() {
   const el = document.getElementById('bcast-list');
-  if (!myBroadcasts.length) { el.innerHTML='<div style="text-align:center;padding:18px;font-size:0.78rem;color:var(--text3)">No broadcasts yet</div>'; return; }
-  el.innerHTML = myBroadcasts.map(b=>`
-    <div class="bcast-item ${activeBroadcast?.id===b.id?'sel':''}" onclick="selectBroadcast('${b.id}')">
-      <div class="bcast-item-title">${b.title}</div>
+  if (!myBroadcasts.length) {
+    el.innerHTML = '<div style="text-align:center;padding:18px;font-size:0.78rem;color:var(--text3)">No broadcasts yet</div>';
+    return;
+  }
+  el.innerHTML = myBroadcasts.map(b => `
+    <div class="bcast-item ${activeBroadcast?.id === b.id ? 'sel' : ''}" id="bcast-${b.id}">
+      <div class="bcast-item-title" onclick="selectBroadcast('${b.id}')">${b.title}</div>
       <div class="bcast-item-meta">
         <div class="sdot ${b.status}"></div>
-        <span>${b.status.toUpperCase()}</span>
-        <span style="margin-left:auto">${fmtDate(b.created)}</span>
+        <span onclick="selectBroadcast('${b.id}')">${b.status.toUpperCase()}</span>
+        <span style="margin-left:auto" onclick="selectBroadcast('${b.id}')">${fmtDate(b.created)}</span>
+        <button class="btn btn-ghost btn-icon" style="width:20px;height:20px;color:var(--red);font-size:0.65rem;flex-shrink:0"
+          onclick="event.stopPropagation();promptDeleteBroadcast('${b.id}','${b.title.replace(/'/g,"\\'")}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+      <div class="delete-confirm" id="del-confirm-${b.id}" style="display:none;margin-top:7px;background:rgba(255,51,68,0.08);border:1px solid rgba(255,51,68,0.25);border-radius:6px;padding:8px 10px;font-size:0.75rem;color:var(--text2);">
+        <div style="margin-bottom:7px;color:var(--text)">Delete "<b>${b.title}</b>"?</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-red btn-sm" style="flex:1;justify-content:center;font-size:0.72rem" 
+            onclick="event.stopPropagation();confirmDeleteBroadcast('${b.id}')">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+          <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center;font-size:0.72rem"
+            onclick="event.stopPropagation();cancelDeleteBroadcast('${b.id}')">
+            Cancel
+          </button>
+        </div>
       </div>
     </div>`).join('');
 }
+
+function promptDeleteChannel(ch) {
+  // Close any existing confirm
+  document.getElementById('ch-delete-confirm')?.remove();
+
+  const body = document.getElementById('ch-display');
+  const div = document.createElement('div');
+  div.id = 'ch-delete-confirm';
+  div.style.cssText = 'margin-top:10px;background:rgba(255,51,68,0.08);border:1px solid rgba(255,51,68,0.25);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--text2)';
+  div.innerHTML = `
+    <div style="margin-bottom:8px;color:var(--text)">Delete <b>${ch.name}</b> and all its broadcasts?</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-red btn-sm" id="ch-del-confirm-btn" style="flex:1;justify-content:center">
+        <i class="fas fa-trash"></i> Yes, delete
+      </button>
+      <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="document.getElementById('ch-delete-confirm').remove()">
+        Cancel
+      </button>
+    </div>`;
+  body.appendChild(div);
+
+  document.getElementById('ch-del-confirm-btn').onclick = async () => {
+    div.innerHTML = '<div style="text-align:center;padding:4px;color:var(--text3);font-size:0.75rem"><i class="fas fa-spinner fa-spin"></i> Deleting…</div>';
+    try {
+      const r = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'deleteLiveChannel', channelId:ch.id, username:ME })});
+      const d = await r.json();
+      if (d.status === 'success') {
+        if (activeBroadcast && myBroadcasts.find(b => b.id === activeBroadcast.id)) {
+          activeBroadcast = null; updateGoLiveBtn();
+        }
+        div.remove();
+        await loadMyChannel();
+        showToast('Channel deleted', 'success');
+      } else { div.remove(); showToast(d.message || 'Error', 'error'); }
+    } catch { div.remove(); showToast('Network error', 'error'); }
+  };
+}
+
+
+function cancelDeleteBroadcast(broadcastId) {
+  const el = document.getElementById(`del-confirm-${broadcastId}`);
+  if (el) el.style.display = 'none';
+}
+
 
 function selectBroadcast(id) {
   activeBroadcast = myBroadcasts.find(b=>b.id===id);
@@ -1616,14 +1750,25 @@ async function loadLiveState() {
   } catch(e) { console.error(e); }
 }
 
-function openCreateChannel() { document.getElementById('modal-ch').classList.add('open'); }
-function openEditChannel()   {
+function openCreateChannel() {
+  document.getElementById('modal-ch-title').textContent = 'New Channel';
+  document.getElementById('editing-channel-id').value = '';
+  document.getElementById('new-ch-name').value = '';
+  document.getElementById('new-ch-desc').value = '';
+  document.getElementById('new-ch-cat').value = 'General';
+  document.getElementById('modal-ch').classList.add('open');
+}
+
+function openEditChannel() {
   if (!myChannel) { openCreateChannel(); return; }
+  document.getElementById('modal-ch-title').textContent = 'Edit Channel';
+  document.getElementById('editing-channel-id').value = myChannel.id;
   document.getElementById('new-ch-name').value = myChannel.name;
   document.getElementById('new-ch-desc').value = myChannel.description || '';
-  document.getElementById('new-ch-cat').value  = myChannel.category || 'General';
-  openCreateChannel();
+  document.getElementById('new-ch-cat').value = myChannel.category || 'General';
+  document.getElementById('modal-ch').classList.add('open');
 }
+
 function openCreateBroadcast() { if (!myChannel) { showToast('Create a channel first', 'error'); return; } document.getElementById('modal-bc').classList.add('open'); }
 
 async function saveChannel() {
@@ -1633,18 +1778,24 @@ async function saveChannel() {
   const cat  = document.getElementById('new-ch-cat').value;
   const lf   = document.getElementById('new-ch-logo').files[0];
   const bf   = document.getElementById('new-ch-banner').files[0];
+  const editingId = document.getElementById('editing-channel-id').value;
   let ld=null,ln=null,bd=null,bn=null;
   if (lf) { ld=await f2b(lf); ln=lf.name; }
   if (bf) { bd=await f2b(bf); bn=bf.name; }
-  showToast('Saving channel…','');
+  showToast(editingId ? 'Saving changes…' : 'Creating channel…', '');
   try {
-    const r = await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify({operation:'createLiveChannel',username:ME,name,description:desc,category:cat,logoData:ld,logoName:ln,bannerData:bd,bannerName:bn})});
+    const body = editingId
+      ? { operation:'editLiveChannel', channelId:editingId, username:ME, name, description:desc, category:cat, logoData:ld, logoName:ln }
+      : { operation:'createLiveChannel', username:ME, name, description:desc, category:cat, logoData:ld, logoName:ln, bannerData:bd, bannerName:bn };
+    const r = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify(body) });
     const d = await r.json();
-    if (d.status==='success') { closeModal('modal-ch'); showToast('Channel saved!','success'); loadMyChannel(); }
-    else showToast(d.message||'Error','error');
+    if (d.status==='success') {
+      closeModal('modal-ch');
+      showToast(editingId ? 'Channel updated!' : 'Channel created!', 'success');
+      await loadMyChannel();
+    } else showToast(d.message||'Error','error');
   } catch { showToast('Network error','error'); }
 }
-
 async function saveBroadcast() {
   const title = document.getElementById('new-bc-title').value.trim();
   if (!title) { showToast('Title required','error'); return; }
@@ -1662,6 +1813,71 @@ async function saveBroadcast() {
       if (myBroadcasts[0]) { activeBroadcast=myBroadcasts[0]; renderBroadcastList(); updateGoLiveBtn(); }
     } else showToast(d.message||'Error','error');
   } catch { showToast('Network error','error'); }
+}
+
+async function confirmDeleteBroadcast(broadcastId) {
+  if (isLive && activeBroadcast?.id === broadcastId) {
+    showToast('Stop the broadcast first', 'error'); return;
+  }
+  const tile = document.getElementById(`bcast-${broadcastId}`);
+  if (tile) tile.style.opacity = '0.5';
+  try {
+    const r = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'deleteLiveBroadcast', broadcastId, username:ME })});
+    const d = await r.json();
+    if (d.status === 'success') {
+      if (activeBroadcast?.id === broadcastId) { activeBroadcast = null; updateGoLiveBtn(); }
+      await loadBroadcasts();
+      showToast('Broadcast deleted', 'success');
+    } else {
+      if (tile) tile.style.opacity = '1';
+      showToast(d.message || 'Error', 'error');
+    }
+  } catch {
+    if (tile) tile.style.opacity = '1';
+    showToast('Network error', 'error');
+  }
+}
+
+async function confirmDeleteChannel() {
+  if (!myChannel) return;
+  // Show inline confirm inside the channel panel
+  const body = document.getElementById('ch-display');
+  const existingConfirm = document.getElementById('ch-delete-confirm');
+  if (existingConfirm) { existingConfirm.remove(); return; } // toggle off
+
+  const div = document.createElement('div');
+  div.id = 'ch-delete-confirm';
+  div.style.cssText = 'margin-top:10px;background:rgba(255,51,68,0.08);border:1px solid rgba(255,51,68,0.25);border-radius:8px;padding:10px 12px;font-size:0.78rem;color:var(--text2)';
+  div.innerHTML = `
+    <div style="margin-bottom:8px;color:var(--text)">Delete <b>${myChannel.name}</b> and all its broadcasts?</div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-red btn-sm" id="ch-del-confirm-btn" style="flex:1;justify-content:center">
+        <i class="fas fa-trash"></i> Yes, delete
+      </button>
+      <button class="btn btn-ghost btn-sm" style="flex:1;justify-content:center" onclick="document.getElementById('ch-delete-confirm').remove()">
+        Cancel
+      </button>
+    </div>`;
+  body.appendChild(div);
+
+  document.getElementById('ch-del-confirm-btn').onclick = async () => {
+    div.innerHTML = '<div style="text-align:center;padding:4px;color:var(--text3);font-size:0.75rem"><i class="fas fa-spinner fa-spin"></i> Deleting…</div>';
+    try {
+      const r = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'deleteLiveChannel', channelId:myChannel.id, username:ME })});
+      const d = await r.json();
+      if (d.status === 'success') {
+        myChannel = null; myChannels = []; myBroadcasts = []; activeBroadcast = null;
+        renderMyChannel(); renderBroadcastList(); updateGoLiveBtn();
+        showToast('Channel deleted', 'success');
+      } else {
+        div.remove();
+        showToast(d.message || 'Error', 'error');
+      }
+    } catch {
+      div.remove();
+      showToast('Network error', 'error');
+    }
+  };
 }
 
 /* ══════════════════════════════════════════════════════════════════

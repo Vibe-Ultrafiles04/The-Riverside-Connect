@@ -1723,7 +1723,13 @@ function cancelDeleteBroadcast(broadcastId) {
   if (el) el.style.display = 'none';
 }
 
+function promptDeleteBroadcast(broadcastId, broadcastTitle) {
+  // Hide any other open confirms first
+  document.querySelectorAll('.delete-confirm').forEach(el => el.style.display = 'none');
 
+  const el = document.getElementById(`del-confirm-${broadcastId}`);
+  if (el) el.style.display = 'block';
+}
 function selectBroadcast(id) {
   activeBroadcast = myBroadcasts.find(b=>b.id===id);
   renderBroadcastList(); updateGoLiveBtn();

@@ -1450,7 +1450,16 @@ main.main {
   </div>
  <div id="mediaPreview" style="display:none;"></div>
   <textarea id="postContent" placeholder="What's on your mind?"></textarea>
-  
+  <div id="scheduleSection" style="margin-bottom:12px;">
+  <label style="color:#94a3b8; font-size:0.9rem; display:flex; align-items:center; gap:8px; cursor:pointer;">
+    <input type="checkbox" id="scheduleToggle" style="accent-color:#60a5fa;">
+    Schedule this post
+  </label>
+  <input type="datetime-local" id="scheduledTime" 
+         style="display:none; margin-top:8px; width:100%; padding:12px; border-radius:12px;
+                border:1px solid rgba(96,165,250,0.4); background:rgba(255,255,255,0.08);
+                color:white; font-size:0.95rem;">
+</div>
  <div id="eventsContainer" style="display:none;"></div>
 
 
@@ -1548,7 +1557,7 @@ main.main {
 <div id="toast-container"></div>
 
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygp2-CU0rgs4eOq9vTALV7fFTuPRgIOa6wl2xhbSmoxqXZpXPP7mBMg1hT_PfE8uTs/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzSUT74PDqSO8KaewgjvE2ObNu5YCfM4RZDqC-bibXs6JVvrRiHIhpf4zOdppIlF-s4/exec';
 
 // Store events per post for quick lookup when clicking dates
 const postEventsMap = new Map(); // postId → array of events
@@ -2579,6 +2588,9 @@ mediaInput.onchange = function(e) {
     mediaPreview.innerHTML = '';
     mediaPreview.appendChild(preview);
     mediaPreview.style.display = 'block';
+    document.getElementById('scheduleToggle').checked = false;
+document.getElementById('scheduledTime').style.display = 'none';
+document.getElementById('scheduledTime').value = '';
   };
   reader.readAsDataURL(file);
 };
@@ -2910,14 +2922,17 @@ async function submitPost() {
   }
 
   try {
-    const payload = {
-      operation: "createChannelPost",
-      channelId: currentChannelId,
-      author: currentUserName,
-      content: content || "",
-      file: fileData || (events.length > 0 ? { events } : null)
-    };
+   const scheduleToggle = document.getElementById('scheduleToggle');
+const scheduledTimeVal = document.getElementById('scheduledTime').value;
 
+const payload = {
+  operation: "createChannelPost",
+  channelId: currentChannelId,
+  author: currentUserName,
+  content: content || "",
+  file: fileData || (events.length > 0 ? { events } : null),
+  scheduledTime: (scheduleToggle.checked && scheduledTimeVal) ? new Date(scheduledTimeVal).toISOString() : null
+};
     const res = await fetch(SCRIPT_URL, {
       method: "POST",
       body: JSON.stringify(payload)
@@ -3905,6 +3920,16 @@ navigator.serviceWorker?.addEventListener('message', (event) => {
     if (newPostId) {
       setTimeout(() => scrollToPost(newPostId), 600);
     }
+  }
+});
+
+document.getElementById('scheduleToggle').addEventListener('change', function() {
+  const input = document.getElementById('scheduledTime');
+  input.style.display = this.checked ? 'block' : 'none';
+  if (this.checked && !input.value) {
+    // Default to 1 hour from now
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    input.value = d.toISOString().slice(0, 16);
   }
 });
 </script>

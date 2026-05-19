@@ -751,8 +751,30 @@
                 <span style="color: #94a3b8;">Add images or videos</span>
             </div>
             <div class="preview-container" id="preview-container"></div>
+            <!-- Scheduled time picker -->
+<div id="schedule-section" style="display:flex;flex-direction:column;gap:8px;">
+  <label style="color:#94a3b8;font-size:0.9rem;display:flex;align-items:center;gap:8px;">
+    <input type="checkbox" id="schedule-toggle" style="width:16px;height:16px;accent-color:#3b82f6;">
+    Schedule for later
+  </label>
+  <div id="schedule-picker" style="display:none;background:rgba(255,255,255,0.06);border-radius:12px;padding:14px;gap:10px;flex-direction:column;">
+    <input type="datetime-local" id="schedule-input" style="
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(96,165,250,0.3);
+      border-radius:8px;
+      color:white;
+      padding:10px 14px;
+      font-size:1rem;
+      width:100%;
+      outline:none;
+      color-scheme:dark;
+    ">
+    <p id="schedule-preview" style="color:#60a5fa;font-size:0.85rem;margin:0;"></p>
+  </div>
+</div>
             <button id="send-ann-btn">Post Announcement</button>
         </div>
+        
     </div>
     
     <input type="file" id="file-input" accept="image/*,video/*" multiple style="display:none;">
@@ -760,7 +782,7 @@
     <div class="bottom-bar"></div>
     <div id="announcements"></div>
     <script>
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbygp2-CU0rgs4eOq9vTALV7fFTuPRgIOa6wl2xhbSmoxqXZpXPP7mBMg1hT_PfE8uTs/exec';
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbzSUT74PDqSO8KaewgjvE2ObNu5YCfM4RZDqC-bibXs6JVvrRiHIhpf4zOdppIlF-s4/exec';
       let userName = localStorage.getItem('userName');
 
         if (!userName) {
@@ -776,7 +798,12 @@
         const fileInput = document.getElementById('file-input');
         const previewContainer = document.getElementById('preview-container');
         const sendAnnBtn = document.getElementById('send-ann-btn');
-        
+        // Schedule toggle
+const scheduleToggle = document.getElementById('schedule-toggle');
+const schedulePicker = document.getElementById('schedule-picker');
+const scheduleInput  = document.getElementById('schedule-input');
+const schedulePreview = document.getElementById('schedule-preview');
+
         let lastAnnouncementCount = 0;
         let pollingInterval = null;
         let selectedFiles = []; // Array for multiple files
@@ -814,6 +841,30 @@
             });
             this.value = ''; // Allow re-selecting same files
         });
+
+        // Set minimum to "now + 5 min"
+function refreshMinTime() {
+  const now = new Date(Date.now() + 5 * 60 * 1000);
+  const pad = n => String(n).padStart(2, '0');
+  scheduleInput.min = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+scheduleToggle.addEventListener('change', () => {
+  schedulePicker.style.display = scheduleToggle.checked ? 'flex' : 'none';
+  if (scheduleToggle.checked) {
+    refreshMinTime();
+    scheduleInput.focus();
+  } else {
+    scheduleInput.value = '';
+    schedulePreview.textContent = '';
+  }
+});
+
+scheduleInput.addEventListener('change', () => {
+  if (!scheduleInput.value) { schedulePreview.textContent = ''; return; }
+  const d = new Date(scheduleInput.value);
+  schedulePreview.textContent = '📅 Will post: ' + d.toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}) + ' at ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+});
         
         // Add preview item
         function addPreview(dataUrl, type, index) {
@@ -841,12 +892,16 @@
         }
         
         // Reset modal
-        function resetModal() {
-            newAnnModal.style.display = 'none';
-            annText.value = '';
-            previewContainer.innerHTML = '';
-            selectedFiles = [];
-        }
+       function resetModal() {
+  newAnnModal.style.display = 'none';
+  annText.value = '';
+  previewContainer.innerHTML = '';
+  selectedFiles = [];
+  scheduleToggle.checked = false;
+  schedulePicker.style.display = 'none';
+  scheduleInput.value = '';
+  schedulePreview.textContent = '';
+}
         
        function scrollToTop(force = false) {
     const isNearTop = announcementsDiv.scrollTop < 150;
@@ -1093,13 +1148,28 @@ const actionsHtml = isOwn ? `
             }
         }
         
-       async function sendAnnouncement() {
+      async function sendAnnouncement() {
   const text = annText.value.trim();
   if (!text && selectedFiles.length === 0) return;
 
+  // Validate schedule if toggled
+  let scheduledTime = null;
+  if (scheduleToggle.checked) {
+    if (!scheduleInput.value) {
+      showToast('Please pick a date and time', 'error');
+      return;
+    }
+    const picked = new Date(scheduleInput.value);
+    if (picked <= new Date()) {
+      showToast('Scheduled time must be in the future', 'error');
+      return;
+    }
+    scheduledTime = picked.toISOString();
+  }
+
   // Disable button & show spinner
   sendAnnBtn.disabled = true;
-  sendAnnBtn.innerHTML = '<span class="loading-spinner"></span> Posting...';
+  sendAnnBtn.innerHTML = '<span class="loading-spinner"></span> ' + (scheduledTime ? 'Scheduling...' : 'Posting...');
 
   try {
     const res = await fetch(scriptUrl, {
@@ -1108,15 +1178,21 @@ const actionsHtml = isOwn ? `
         operation: 'postAnnouncement', 
         name: userName, 
         comment: text, 
-        files: selectedFiles 
+        files: selectedFiles,
+        scheduledTime: scheduledTime
       })
     });
     const result = await res.json();
 
     if (result.status === 'success') {
       resetModal();
-      await loadAnnouncements(false);
-      showToast("Announcement posted!", 'success');
+      if (result.scheduled) {
+        const d = new Date(scheduledTime);
+        showToast(`Scheduled for ${d.toLocaleDateString([], {month:'short', day:'numeric'})} at ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`, 'success');
+      } else {
+        await loadAnnouncements(false);
+        showToast("Announcement posted!", 'success');
+      }
     } else {
       showToast(result.message || 'Failed to post', 'error');
     }
@@ -1172,7 +1248,6 @@ annText.addEventListener('keydown', function(e) {
     
     return `${dayPart} • ${timePart}`;
 }
-        
         function startPolling() {
             if (pollingInterval) clearInterval(pollingInterval);
             pollingInterval = setInterval(() => loadAnnouncements(true), 8000);

@@ -782,7 +782,7 @@
     <div class="bottom-bar"></div>
     <div id="announcements"></div>
     <script>
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbzSUT74PDqSO8KaewgjvE2ObNu5YCfM4RZDqC-bibXs6JVvrRiHIhpf4zOdppIlF-s4/exec';
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycby6uyuXL_DqZZ6TxNEuc1fvgSK2mXUnjmaEn7tIZ08TXywYSC8y88VrJZ9ONgEzzNSA/exec';
       let userName = localStorage.getItem('userName');
 
         if (!userName) {
@@ -1186,10 +1186,10 @@ const actionsHtml = isOwn ? `
 
     if (result.status === 'success') {
       resetModal();
-      if (result.scheduled) {
-        const d = new Date(scheduledTime);
-        showToast(`Scheduled for ${d.toLocaleDateString([], {month:'short', day:'numeric'})} at ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`, 'success');
-      } else {
+     if (result.scheduled) {
+  const d = new Date(scheduleInput.value);
+  showToast(`✅ Scheduled for ${d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'})} at ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`, 'success');
+} else {
         await loadAnnouncements(false);
         showToast("Announcement posted!", 'success');
       }

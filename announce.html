@@ -782,7 +782,7 @@
     <div class="bottom-bar"></div>
     <div id="announcements"></div>
     <script>
-        const scriptUrl = 'https://script.google.com/macros/s/AKfycbxBBYuAf0JOESDgzo3s3lWKy8g8CWRj69UVKNPolyzbNN4ryX4zjhySFIB_F_XN6mV-/exec';
+        const scriptUrl = 'https://script.google.com/macros/s/AKfycbyiU_LeE6AnCQFzLmORd6kpkHVh3cllbpXhYOg4H1L8U2MAbjF0X0nR03n8_2yFc0KN/exec';
       let userName = localStorage.getItem('userName');
 
         if (!userName) {
@@ -942,7 +942,7 @@ async function loadAnnouncements(silent = true) {
         const data = await response.json();
         const viewsResponse = await fetch(`${scriptUrl}?operation=getAnnouncementViewCounts`);
         const viewsData = await viewsResponse.json();
-        const viewCounts = (viewsData.viewCounts || []).reverse();
+       const viewCounts = (viewsData.viewCounts || []);
 
         if (silent && data.announcements?.length === lastAnnouncementCount) return;
 
@@ -972,7 +972,7 @@ async function loadAnnouncements(silent = true) {
         // Render announcements (your existing code, unchanged)
         data.announcements?.forEach((c, i) => {
             const isOwn = c.name === userName;
-            const viewCount = viewCounts[i] || 0;
+           const viewCount = viewCounts[i] || 0;
             const fileLinks = c.fileLink ? c.fileLink.split(',') : [];
             const fileTypes = c.fileType ? c.fileType.split(',') : [];
             let mediaHtml = '';
@@ -1159,12 +1159,26 @@ const actionsHtml = isOwn ? `
       showToast('Please pick a date and time', 'error');
       return;
     }
-    const picked = new Date(scheduleInput.value);
-    if (picked <= new Date()) {
-      showToast('Scheduled time must be in the future', 'error');
-      return;
-    }
-    scheduledTime = picked.toISOString();
+    const rawValue = scheduleInput.value;
+if (!rawValue) {
+  showToast('Please pick a date and time', 'error');
+  return;
+}
+// Parse local datetime string safely
+const [datePart, timePart] = rawValue.split('T');
+const [year, month, day] = datePart.split('-').map(Number);
+const [hours, minutes] = timePart.split(':').map(Number);
+const picked = new Date(year, month - 1, day, hours, minutes);
+
+if (isNaN(picked.getTime())) {
+  showToast('Invalid date/time selected', 'error');
+  return;
+}
+if (picked <= new Date()) {
+  showToast('Scheduled time must be in the future', 'error');
+  return;
+}
+scheduledTime = picked.toISOString();
   }
 
   // Disable button & show spinner
@@ -1187,8 +1201,7 @@ const actionsHtml = isOwn ? `
     if (result.status === 'success') {
       resetModal();
      if (result.scheduled) {
-  const d = new Date(scheduleInput.value);
-  showToast(`✅ Scheduled for ${d.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'})} at ${d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`, 'success');
+ showToast(`✅ Scheduled for ${picked.toLocaleDateString([], {weekday:'short', month:'short', day:'numeric'})} at ${picked.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`, 'success');
 } else {
         await loadAnnouncements(false);
         showToast("Announcement posted!", 'success');

@@ -1,45 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Riverside Connect</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
-<link rel="manifest" href="./manifest.json">
+  <link rel="manifest" href="./manifest.json">
 
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Riverside Connect">
+  <link rel="apple-touch-icon" sizes="180x180" href="maskable_icon_x192.png">
 
- <!-- iOS Safari home screen support -->
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Riverside Connect">
+  <meta property="og:title" content="Riverside Connect">
+  <meta property="og:description" content="Join the conversation in Riverside Connect.">
+  <meta property="og:image" content="https://vibe-ultrafiles04.github.io/The-Riverside-Connect/maskable_icon_x192.png">
+  <meta property="og:url" content="https://vibe-ultrafiles04.github.io/The-Riverside-Connect/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
 
-<!-- Reuse your existing 192×192 icon for Apple devices -->
-<link rel="apple-touch-icon" sizes="180x180" href="maskable_icon_x192.png">
-<link rel="apple-touch-icon" sizes="152x152" href="maskable_icon_x192.png">
-<link rel="apple-touch-icon" sizes="167x167" href="maskable_icon_x192.png">
-<!-- Fallback (also uses the same file) -->
-<link rel="apple-touch-icon" href="maskable_icon_x192.png">
-
-<!-- Open Graph / Social sharing preview -->
-<meta property="og:title" content="Riverside Connect ">
-<meta property="og:description" content="Join the conversation in Riverside Connect – a simple, real-time chat experience. Share thoughts, media & more.">
-<meta property="og:image" content="https://vibe-ultrafiles04.github.io/The-Riverside-Connect/maskable_icon_x192.png">
-<meta property="og:url" content="https://vibe-ultrafiles04.github.io/The-Riverside-Connect/">
-<meta property="og:type" content="website">
-
-<!-- Recommended extras (helps Twitter/X, WhatsApp, Discord, etc.) -->
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Riverside Connect ">
-<meta name="twitter:description" content="Join the conversation in Riverside Connect – a simple, real-time chat experience.">
-<meta name="twitter:image" content="https://vibe-ultrafiles04.github.io/The-Riverside-Connect/maskable_icon_x192.png">
-
-<!-- Optional but useful -->
-<meta property="og:site_name" content="Riverside Connect">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Riverside Connect chat preview">
   <style>
     :root {
       --bg-deep:        #080d17;
@@ -1910,7 +1894,7 @@ if ('serviceWorker' in navigator) {
 
 <!-- ══ FCM PUSH ══ -->
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbygp2-CU0rgs4eOq9vTALV7fFTuPRgIOa6wl2xhbSmoxqXZpXPP7mBMg1hT_PfE8uTs/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwgsJvoMeR1dW4QOjuyRZoV6PSHXBUcdd6QEXcmVqEyD4FQhZrUFKKFiilUe1zK0EVU/exec';
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
@@ -1919,15 +1903,14 @@ if ('serviceWorker' in navigator) {
       const { initializeApp }               = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
       const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
 
-   const firebaseConfig = {
-          apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
-          authDomain: "riverside-connect-a8458.firebaseapp.com",
-          projectId: "riverside-connect-a8458",
-          storageBucket: "riverside-connect-a8458.firebasestorage.app",
-          messagingSenderId: "938830806378",
-          appId: "1:938830806378:web:254ed56cba3dc02290f913"
-        };
-
+      const app = initializeApp({
+        apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+        authDomain: "riverside-connect-a8458.firebaseapp.com",
+        projectId: "riverside-connect-a8458",
+        storageBucket: "riverside-connect-a8458.firebasestorage.app",
+        messagingSenderId: "938830806378",
+        appId: "1:938830806378:web:254ed56cba3dc02290f913"
+      });
 
       const messaging = getMessaging(app);
       const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";

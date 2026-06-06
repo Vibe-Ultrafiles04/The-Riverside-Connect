@@ -1,0 +1,2503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Riverside · Lyrics</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="manifest" href="./manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Riverside Lyrics">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   RIVERSIDE LYRICS — lyric.html
+   Dark hymnal experience · swipe-to-navigate songs & stanzas
+═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ink:       #e2e8f0;
+  --paper:     #0f172a;
+  --cream:     #1e293b;
+  --wire:      rgba(96,165,250,0.18);
+  --steel:     #94a3b8;
+  --lead:      #cbd5e1;
+  --accent:    #ef4444;
+  --accent2:   #60a5fa;
+  --gold:      #facc15;
+  --white:     #f8fafc;
+
+  --font-head: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --bar-h:     56px;
+  --cat-h:     36px;
+  --total-top: calc(var(--bar-h) + var(--cat-h));
+  --rail-w:    52px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══ FONT SIZE VARIANTS ═══════════════════════════════════════════ */
+body.font-sm  .stanza-line { font-size: clamp(0.95rem, 2vw, 1.4rem) !important; }
+body.font-md  .stanza-line { font-size: clamp(1.1rem, 2.8vw, 1.8rem) !important; }
+body.font-lg  .stanza-line { font-size: clamp(1.4rem, 3.4vw, 2.2rem) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   MASTHEAD
+═══════════════════════════════════════════════════════════════════════ */
+#masthead {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--bar-h);
+  background: rgba(15,23,42,0.96);
+  border-bottom: 1px solid var(--wire);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  padding-top: env(safe-area-inset-top);
+}
+
+.mh-back {
+  height: 100%;
+  width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--wire);
+  color: var(--accent2);
+  text-decoration: none;
+  font-size: 1rem;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.mh-back:hover { background: var(--cream); }
+
+.mh-title {
+  font-family: var(--font-head);
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  color: var(--accent2);
+  padding: 0 16px;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.mh-tools {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+  border-left: 1px solid var(--wire);
+}
+
+.mh-btn {
+  height: 100%;
+  width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--wire);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.mh-btn:last-child { border-right: none; }
+.mh-btn:hover { background: var(--cream); color: var(--accent2); }
+.mh-btn.active { color: var(--accent2); background: var(--cream); }
+.mh-btn[style*="display:none"] { display: none !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY FILTER TABS
+═══════════════════════════════════════════════════════════════════════ */
+#cat-tabs {
+  position: fixed;
+  top: var(--bar-h);
+  left: 0; right: 0;
+  height: var(--cat-h);
+  background: rgba(15,23,42,0.98);
+  border-bottom: 1px solid rgba(96,165,250,0.15);
+  z-index: 899;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.cat-scroll {
+  flex: 1;
+  overflow-x: auto;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.cat-scroll::-webkit-scrollbar { display: none; }
+
+.cat-tab {
+  height: var(--cat-h);
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  color: rgba(255,255,255,0.5);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  white-space: nowrap;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  border-bottom: 2px solid transparent;
+  user-select: none;
+}
+.cat-tab:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
+.cat-tab.active {
+  color: var(--gold);
+  border-bottom-color: var(--gold);
+  background: rgba(250,204,21,0.07);
+}
+
+/* Manage categories button */
+.cat-manage-btn {
+  height: var(--cat-h);
+  width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.35);
+  cursor: pointer;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+.cat-manage-btn:hover { color: var(--gold); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SONG LIST (vertical snap)
+═══════════════════════════════════════════════════════════════════════ */
+#song-list {
+  position: fixed;
+  top: var(--total-top);
+  left: 0; right: 0;
+  bottom: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+#song-list::-webkit-scrollbar { display: none; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SONG CARD
+═══════════════════════════════════════════════════════════════════════ */
+.song-card {
+  width: 100%;
+  height: calc(100dvh - var(--total-top));
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--paper);
+}
+
+/* Vignette overlay */
+.song-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.18) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@media (min-width: 1200px) {
+  .song-card { display: inline-flex; width: 50vw; }
+  #song-list { scroll-snap-type: none; display: flex; flex-wrap: wrap; overflow-y: auto; }
+}
+
+/* ─── Song header strip ─── */
+.song-header {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px 10px 20px;
+  border-bottom: 1px solid var(--wire);
+  background: rgba(15,23,42,0.85);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  min-height: 52px;
+}
+
+.song-title {
+  font-family: var(--font-head);
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  color: var(--accent2);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+}
+
+.song-artist {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--steel);
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.song-cat-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--paper);
+  background: var(--gold);
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.song-gear-btn {
+  width: 32px; height: 32px;
+  background: none;
+  border: 1px solid var(--wire);
+  color: var(--steel);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.song-gear-btn:hover { background: rgba(96,165,250,0.2); color: var(--accent2); border-color: var(--accent2); }
+
+/* ─── Stanza pager ─── */
+.stanza-pager {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  scroll-snap-stop: always;
+  position: relative;
+  z-index: 2;
+}
+.stanza-pager::-webkit-scrollbar { display: none; }
+
+.stanza-pane {
+  width: 100%;
+  height: 100%;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 20px 14px calc(20px);
+  padding-right: calc(var(--rail-w) + 14px);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Gold left bar */
+.stanza-pane::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  background: var(--gold);
+  border-radius: 0 2px 2px 0;
+}
+
+.stanza-label {
+  font-family: var(--font-head);
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  color: var(--steel);
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.stanza-text {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+}
+
+.stanza-line {
+  font-family: var(--font-body);
+  font-size: clamp(1.1rem, 2.8vw, 1.8rem);
+  line-height: 1.85;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  font-weight: 400;
+  opacity: 0;
+  animation: fadeUp 0.35s ease-out forwards;
+}
+.stanza-line.dim { color: rgba(226,232,240,0.65); }
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(8px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* Desktop stanza nav arrows */
+.stanza-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px; height: 64px;
+  background: rgba(15,23,42,0.8);
+  border: 1px solid var(--wire);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+  opacity: 0.4;
+}
+.stanza-arrow:hover { opacity:1; background: rgba(59,130,246,0.4); }
+.stanza-arrow.prev { left: 0; }
+.stanza-arrow.next { right: var(--rail-w); }
+@media (max-width: 900px) { .stanza-arrow { display: none; } }
+
+/* ─── Dots ─── */
+.stanza-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 5;
+  padding-right: var(--rail-w);
+}
+
+.dot {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--steel);
+  width: 5px;
+  cursor: pointer;
+  transition: width 0.2s ease, background 0.2s ease;
+  flex-shrink: 0;
+}
+.dot.active {
+  background: var(--gold);
+  width: 20px;
+}
+
+/* ─── Action rail (right side) ─── */
+.action-rail {
+  position: absolute;
+  right: 0;
+  top: 52px; /* below header */
+  bottom: 0;
+  width: var(--rail-w);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  z-index: 10;
+  border-left: 1px solid var(--wire);
+  background: rgba(15,23,42,0.5);
+  backdrop-filter: blur(6px);
+}
+
+.rail-btn {
+  width: 100%;
+  height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--wire);
+  color: var(--steel);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.rail-btn:last-child { border-bottom: none; }
+.rail-btn:hover { background: var(--cream); color: var(--accent2); }
+.rail-btn.liked { color: var(--accent); }
+.rail-btn.bookmarked { color: var(--gold); }
+.rail-btn .rail-count {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: var(--steel);
+}
+.rail-btn.liked .rail-count { color: var(--accent); }
+
+@keyframes heartbeat {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.5); }
+  100% { transform: scale(1); }
+}
+.rail-btn.liked i { animation: heartbeat 0.4s ease; }
+
+/* ─── Song progress (right edge thin bar) ─── */
+#song-progress {
+  position: fixed;
+  right: 0;
+  top: var(--total-top);
+  bottom: 0;
+  width: 3px;
+  background: rgba(96,165,250,0.1);
+  z-index: 850;
+  pointer-events: none;
+}
+#song-progress-fill {
+  width: 100%;
+  background: var(--accent2);
+  height: 0%;
+  transition: height 0.3s ease;
+}
+
+/* ─── Song nav info ─── */
+#song-nav-info {
+  position: fixed;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right: calc(var(--rail-w) + 10px);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  z-index: 800;
+  pointer-events: none;
+  background: rgba(15,23,42,0.8);
+  padding: 3px 8px;
+  border: 1px solid var(--wire);
+  text-align: right;
+  line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SEARCH OVERLAY
+═══════════════════════════════════════════════════════════════════════ */
+#search-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: rgba(15,23,42,0.98);
+  z-index: 960;
+  transform: translateY(-105%);
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  border-bottom: 1px solid rgba(96,165,250,0.3);
+  backdrop-filter: blur(14px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+}
+#search-overlay.open { transform: translateY(0); }
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--wire);
+  height: 54px;
+  flex-shrink: 0;
+}
+.search-icon { width: 52px; display:flex; align-items:center; justify-content:center; color: var(--accent2); font-size: 1rem; flex-shrink:0; }
+.search-input {
+  flex:1;
+  height:100%;
+  border:none; background:transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  outline:none;
+}
+.search-input::placeholder { color: var(--steel); }
+.search-clear {
+  width:52px; height:100%; display:flex; align-items:center; justify-content:center;
+  background:none; border:none; color:var(--steel); cursor:pointer; font-size:1rem;
+  transition: color 0.15s; flex-shrink:0;
+}
+.search-clear:hover { color: var(--accent2); }
+
+.search-results {
+  overflow-y: auto;
+  flex:1;
+  -webkit-overflow-scrolling: touch;
+}
+
+.search-result-item {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--wire);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.search-result-item:hover { background: var(--cream); }
+.search-result-title {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+  color: var(--accent2);
+}
+.search-result-title mark {
+  background: none;
+  color: var(--gold);
+}
+.search-result-artist {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--steel);
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+.search-result-snippet {
+  font-size: 0.82rem;
+  color: var(--lead);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+.search-result-snippet mark {
+  background: none;
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.search-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: var(--steel);
+}
+.search-empty-title {
+  font-family: var(--font-head);
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+.search-empty-sub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CREATE / EDIT SONG PANEL (bottom sheet)
+═══════════════════════════════════════════════════════════════════════ */
+#song-panel {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(15,23,42,0.99);
+  border-top: 1px solid rgba(96,165,250,0.3);
+  z-index: 950;
+  transform: translateY(105%);
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  max-height: 88vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  backdrop-filter: blur(14px);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+#song-panel.open { transform: translateY(0); }
+
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--wire);
+  position: sticky; top: 0;
+  background: rgba(15,23,42,0.99);
+  z-index: 2;
+}
+.panel-head-title {
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  color: var(--accent2);
+}
+.panel-close {
+  width: 36px; height: 36px;
+  background: var(--cream);
+  border: 1px solid var(--wire);
+  cursor: pointer; font-size: 1rem;
+  color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; border-radius: 50%;
+}
+.panel-close:hover { background: var(--accent2); color: var(--paper); }
+
+.panel-body { padding: 16px 20px; }
+
+.p-field-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  margin-bottom: 6px;
+  display: block;
+  margin-top: 16px;
+}
+.p-field-label:first-child { margin-top: 0; }
+
+.p-field {
+  width: 100%;
+  padding: 11px 0;
+  border: none;
+  border-bottom: 1px solid rgba(96,165,250,0.4);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.p-field:focus { border-bottom-color: var(--accent2); }
+.p-field::placeholder { color: var(--steel); }
+
+select.p-field {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  padding-right: 20px;
+}
+select.p-field option { background: var(--cream); color: var(--ink); }
+
+/* Stanza builder */
+.stanza-builder { margin-top: 20px; }
+
+.stanza-builder-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.stanza-builder-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+}
+
+.stanza-block {
+  border: 1px solid var(--wire);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: rgba(30,41,59,0.5);
+}
+.stanza-block-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--wire);
+  background: rgba(30,41,59,0.8);
+}
+.stanza-type-select {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--accent2);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.stanza-type-select option { background: var(--cream); color: var(--ink); }
+.stanza-block-arrows { display: flex; gap: 4px; flex-shrink: 0; }
+.stanza-arrow-btn {
+  width: 26px; height: 26px;
+  background: none; border: 1px solid var(--wire);
+  color: var(--steel); cursor: pointer; font-size: 0.7rem;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: all 0.15s;
+}
+.stanza-arrow-btn:hover { background: var(--cream); color: var(--accent2); }
+.stanza-remove-btn {
+  width: 26px; height: 26px;
+  background: none; border: 1px solid rgba(239,68,68,0.3);
+  color: #f87171; cursor: pointer; font-size: 0.7rem;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 4px; transition: all 0.15s;
+}
+.stanza-remove-btn:hover { background: rgba(239,68,68,0.15); }
+
+.stanza-textarea {
+  width: 100%; min-height: 100px;
+  padding: 12px;
+  border: none; background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  resize: vertical;
+  outline: none;
+}
+.stanza-textarea::placeholder { color: var(--steel); font-style: italic; }
+
+.add-stanza-btn {
+  width: 100%; height: 40px;
+  background: none; border: 1px dashed rgba(96,165,250,0.4);
+  color: var(--accent2);
+  font-family: var(--font-mono); font-size: 0.72rem;
+  letter-spacing: 0.1em; cursor: pointer;
+  transition: all 0.15s; border-radius: 8px;
+  margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.add-stanza-btn:hover { background: rgba(96,165,250,0.08); border-color: var(--accent2); }
+
+.panel-actions {
+  display: flex; gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--wire);
+  position: sticky; bottom: 0;
+  background: rgba(15,23,42,0.99);
+}
+.panel-btn-cancel {
+  flex: 1; height: 44px;
+  background: transparent; border: 1px solid var(--wire);
+  color: var(--steel); cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.72rem;
+  letter-spacing: 0.08em; transition: all 0.15s;
+  border-radius: 999px;
+}
+.panel-btn-cancel:hover { background: var(--cream); }
+.panel-btn-delete {
+  flex: 1; height: 44px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.45);
+  color: #f87171; cursor: pointer;
+  font-family: var(--font-mono); font-size: 0.7rem;
+  letter-spacing: 0.08em; transition: all 0.15s;
+  border-radius: 999px;
+}
+.panel-btn-delete:hover { background: rgba(239,68,68,0.2); }
+.panel-btn-publish {
+  flex: 2; height: 44px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  border: none; color: #fff; cursor: pointer;
+  font-family: var(--font-head); font-size: 0.95rem;
+  letter-spacing: 0.12em; transition: opacity 0.15s;
+  border-radius: 999px;
+}
+.panel-btn-publish:hover { opacity: 0.88; }
+.panel-btn-publish:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   COMMENTS SHEET
+═══════════════════════════════════════════════════════════════════════ */
+#comments-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 970;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#comments-overlay.open { display: flex; }
+
+.comments-sheet {
+  background: rgba(15,23,42,0.98);
+  border-top: 1px solid rgba(96,165,250,0.3);
+  width: 100%;
+  max-width: 640px;
+  height: 52vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.comments-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--wire);
+  flex-shrink: 0;
+}
+.comments-head-title {
+  font-family: var(--font-head);
+  font-size: 1.05rem; letter-spacing: 0.06em; color: var(--accent2);
+}
+.comments-close {
+  background: none; border: none; font-size: 1.2rem; cursor: pointer;
+  color: var(--steel); width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center; border-radius: 50%;
+}
+.comments-close:hover { color: var(--accent2); }
+
+.comment-list {
+  flex: 1; overflow-y: auto; padding: 12px 20px;
+  display: flex; flex-direction: column; gap: 10px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96,165,250,0.4) transparent;
+}
+.comment-list::-webkit-scrollbar { width: 3px; }
+.comment-list::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.4); }
+
+.c-msg { display: flex; gap: 10px; animation: fadeUp 0.25s ease-out; }
+.c-msg.own { flex-direction: row-reverse; }
+.c-bubble {
+  max-width: 80%;
+  background: rgba(30,41,59,0.88);
+  border: 1px solid var(--wire);
+  padding: 8px 12px;
+  border-radius: 4px 14px 14px 14px;
+  position: relative;
+}
+.c-msg.own .c-bubble {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white; border-color: transparent;
+  border-radius: 14px 4px 14px 14px;
+}
+.c-name {
+  font-weight: 700; font-size: 0.72rem; letter-spacing: 0.04em;
+  color: var(--accent2); font-family: var(--font-mono); margin-bottom: 3px;
+}
+.c-msg.own .c-name { color: rgba(255,255,255,0.85); }
+.c-text { font-size: 0.88rem; line-height: 1.5; word-break: break-word; }
+.c-time {
+  font-size: 0.62rem; color: var(--steel); margin-top: 4px;
+  font-family: var(--font-mono); display: block;
+}
+.c-msg.own .c-time { color: rgba(255,255,255,0.55); }
+.c-del {
+  position: absolute; top: 6px; right: 6px;
+  background: none; border: none; color: #f87171;
+  font-size: 0.65rem; cursor: pointer; opacity: 0; transition: opacity 0.15s;
+}
+.c-bubble:hover .c-del { opacity: 1; }
+
+.comment-input-bar {
+  display: flex; align-items: center;
+  border-top: 1px solid var(--wire);
+  background: rgba(15,23,42,0.98); flex-shrink: 0;
+}
+.comment-input-bar input {
+  flex: 1; height: 46px; padding: 0 16px;
+  border: none; background: transparent; color: var(--ink);
+  font-family: var(--font-body); font-size: 0.88rem; outline: none;
+}
+.comment-input-bar input::placeholder { color: var(--steel); }
+.comment-send {
+  width: 52px; height: 46px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  border: none; color: #fff; font-size: 0.9rem; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.15s; flex-shrink: 0;
+}
+.comment-send:hover { opacity: 0.85; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   VIEWERS OVERLAY
+═══════════════════════════════════════════════════════════════════════ */
+#viewers-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65); z-index: 980;
+  display: none; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#viewers-overlay.open { display: flex; }
+.viewers-sheet {
+  background: rgba(15,23,42,0.98);
+  border-top: 1px solid rgba(96,165,250,0.3);
+  width: 100%; max-width: 640px; max-height: 60vh;
+  display: flex; flex-direction: column;
+  animation: slideUp 0.3s ease; border-radius: 16px 16px 0 0;
+}
+.viewers-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 1px solid var(--wire); flex-shrink: 0;
+}
+.viewers-head-title {
+  font-family: var(--font-head); font-size: 1.05rem;
+  letter-spacing: 0.06em; color: var(--accent2);
+}
+.viewers-close {
+  background:none; border:none; font-size:1.2rem; cursor:pointer;
+  color:var(--steel); width:36px; height:36px;
+  display:flex; align-items:center; justify-content:center; border-radius:50%;
+}
+.viewers-close:hover { color:var(--accent2); }
+.viewers-list { overflow-y:auto; flex:1; scrollbar-width:thin; scrollbar-color: rgba(96,165,250,0.4) transparent; }
+.viewer-row { display:flex; align-items:center; gap:12px; padding:12px 20px; border-bottom:1px solid var(--wire); }
+.viewer-row-name { font-weight:600; font-size:0.88rem; color:var(--ink); }
+.viewer-row-time { font-size:0.7rem; color:var(--steel); font-family:var(--font-mono); letter-spacing:0.04em; margin-top:2px; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   SHARE MENU
+═══════════════════════════════════════════════════════════════════════ */
+#share-menu {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6); z-index: 975;
+  display: none; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#share-menu.open { display: flex; }
+.share-sheet {
+  background: rgba(15,23,42,0.98);
+  border-top: 1px solid rgba(96,165,250,0.3);
+  width: 100%; max-width: 480px;
+  animation: slideUp 0.3s ease;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.share-title {
+  font-family: var(--font-head); font-size: 0.9rem;
+  letter-spacing: 0.08em; color: var(--steel);
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid var(--wire);
+}
+.share-option {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--wire);
+  cursor: pointer; transition: background 0.15s;
+  font-family: var(--font-mono); font-size: 0.78rem;
+  letter-spacing: 0.07em; color: var(--ink);
+}
+.share-option:last-child { border-bottom: none; }
+.share-option:hover { background: var(--cream); }
+.share-option i { width: 20px; text-align: center; color: var(--accent2); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CATEGORY MANAGER MODAL
+═══════════════════════════════════════════════════════════════════════ */
+#cat-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.65); z-index: 990;
+  display: none; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#cat-modal.open { display: flex; }
+.cat-modal-sheet {
+  background: rgba(15,23,42,0.98);
+  border: 1px solid rgba(96,165,250,0.3);
+  border-radius: 16px;
+  width: 90%; max-width: 420px;
+  max-height: 80vh;
+  display: flex; flex-direction: column;
+  animation: zoomIn 0.25s ease;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+}
+@keyframes zoomIn {
+  from { opacity:0; transform:scale(0.95); }
+  to   { opacity:1; transform:scale(1); }
+}
+.cat-modal-head {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 20px; border-bottom:1px solid var(--wire); flex-shrink:0;
+}
+.cat-modal-head h3 {
+  font-family:var(--font-head); font-size:1.1rem;
+  letter-spacing:0.06em; color:var(--accent2);
+}
+.cat-modal-close {
+  background:none; border:none; font-size:1.3rem; cursor:pointer;
+  color:var(--steel); border-radius:50%; width:32px; height:32px;
+  display:flex; align-items:center; justify-content:center;
+}
+.cat-modal-close:hover { color:var(--accent2); }
+.cat-modal-body { padding:16px 20px; overflow-y:auto; flex:1; }
+.cat-list { display:flex; flex-direction:column; gap:8px; margin-bottom:16px; }
+.cat-list-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px;
+  background: rgba(30,41,59,0.6);
+  border:1px solid var(--wire); border-radius:8px;
+}
+.cat-list-item-name {
+  flex:1; font-family:var(--font-mono); font-size:0.78rem;
+  letter-spacing:0.08em; color:var(--ink);
+}
+.cat-list-item-del {
+  background:none; border:1px solid rgba(239,68,68,0.3);
+  color:#f87171; cursor:pointer; width:28px; height:28px;
+  font-size:0.72rem; display:flex; align-items:center; justify-content:center;
+  border-radius:4px; transition:all 0.15s; flex-shrink:0;
+}
+.cat-list-item-del:hover { background:rgba(239,68,68,0.15); }
+.cat-add-row {
+  display:flex; gap:8px; align-items:center;
+}
+.cat-add-input {
+  flex:1; height:40px; padding:0 12px;
+  border:1px solid rgba(96,165,250,0.4); border-radius:8px;
+  background:transparent; color:var(--ink);
+  font-family:var(--font-body); font-size:0.88rem; outline:none;
+}
+.cat-add-input:focus { border-color:var(--accent2); }
+.cat-add-input::placeholder { color:var(--steel); }
+.cat-add-btn {
+  height:40px; padding:0 16px;
+  background:linear-gradient(135deg, #3b82f6, #60a5fa);
+  border:none; color:#fff; cursor:pointer;
+  font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.08em;
+  border-radius:8px; transition:opacity 0.15s;
+}
+.cat-add-btn:hover { opacity:0.88; }
+.cat-modal-footer {
+  padding:14px 20px; border-top:1px solid var(--wire); flex-shrink:0;
+}
+.cat-save-btn {
+  width:100%; height:44px;
+  background:linear-gradient(135deg, #10b981, #34d399);
+  border:none; color:#fff; cursor:pointer;
+  font-family:var(--font-head); font-size:0.95rem; letter-spacing:0.12em;
+  border-radius:999px; transition:opacity 0.15s;
+}
+.cat-save-btn:hover { opacity:0.88; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOADING & EMPTY STATES
+═══════════════════════════════════════════════════════════════════════ */
+.state-card {
+  width: 100%;
+  height: calc(100dvh - var(--total-top));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--steel);
+}
+.loading-text {
+  font-family: var(--font-head);
+  font-size: 3rem; letter-spacing: 0.12em;
+  color: var(--accent2); opacity: 0.45;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity:0.2; }
+  50%     { opacity:0.6; }
+}
+.empty-label {
+  font-family: var(--font-head);
+  font-size: 1.5rem; letter-spacing: 0.1em; color: var(--steel); opacity: 0.6;
+}
+.empty-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem; letter-spacing: 0.08em; color: var(--steel);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PULL TO REFRESH
+═══════════════════════════════════════════════════════════════════════ */
+#pull-indicator {
+  position: fixed;
+  top: var(--total-top);
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(15,23,42,0.9);
+  border: 1px solid var(--wire);
+  border-radius: 50%;
+  z-index: 900;
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+#pull-indicator.visible { transform: translateX(-50%) translateY(8px); }
+#pull-spin {
+  width: 22px; height: 22px;
+  border: 2px solid rgba(96,165,250,0.2);
+  border-top-color: var(--accent2);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════════════ */
+#toast-area {
+  position: fixed;
+  top: calc(var(--total-top) + 10px);
+  left: 50%; transform: translateX(-50%);
+  z-index: 9999;
+  display: flex; flex-direction: column; gap: 8px;
+  pointer-events: none;
+}
+.toast-msg {
+  pointer-events: auto;
+  background: rgba(15,23,42,0.95);
+  color: var(--ink);
+  padding: 10px 18px;
+  font-family: var(--font-mono); font-size: 0.78rem;
+  letter-spacing: 0.06em; white-space: nowrap;
+  animation: toastIn 0.3s ease;
+  max-width: 90vw; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.toast-msg.err { border-left: 3px solid var(--accent); }
+.toast-msg.ok  { border-left: 3px solid var(--accent2); }
+@keyframes toastIn {
+  from { opacity:0; transform: translateY(-12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.confirm-toast {
+  pointer-events: auto;
+  background: rgba(15,23,42,0.98);
+  color: var(--ink); padding: 14px 18px;
+  font-family: var(--font-mono); font-size: 0.78rem;
+  border-left: 3px solid var(--accent);
+  min-width: min(340px, 88vw); border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+}
+.confirm-toast-title { font-weight:700; margin-bottom:4px; letter-spacing:0.05em; }
+.confirm-toast-sub   { color:var(--steel); font-size:0.7rem; margin-bottom:12px; }
+.confirm-toast-btns  { display:flex; gap:8px; justify-content:flex-end; }
+.conf-btn {
+  height:30px; padding:0 14px;
+  border:1px solid var(--wire); background:transparent;
+  color:var(--steel); cursor:pointer;
+  font-family:var(--font-mono); font-size:0.7rem; letter-spacing:0.06em;
+  transition:all 0.15s; border-radius:999px;
+}
+.conf-btn.danger {
+  background:linear-gradient(135deg,#ef4444,#f87171);
+  border-color:transparent; color:#fff; font-weight:700;
+}
+.conf-btn:hover { opacity:0.85; }
+</style>
+</head>
+<body class="font-md">
+
+<!-- ═══ MASTHEAD ══════════════════════════════════════════════════════ -->
+<header id="masthead">
+  <a href="index.html" class="mh-back" title="Back">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+  <div class="mh-title">LYRICS</div>
+  <div class="mh-tools">
+    <button class="mh-btn" id="btn-font" title="Font size">
+      <i class="fas fa-text-height"></i>
+    </button>
+    <button class="mh-btn" id="btn-search" title="Search songs">
+      <i class="fas fa-search"></i>
+    </button>
+    <button class="mh-btn" id="btn-bookmarks" title="Bookmarks">
+      <i class="fas fa-bookmark"></i>
+    </button>
+    <button class="mh-btn" id="btn-write" title="Add song" style="display:none">
+      <i class="fas fa-pencil-alt"></i>
+    </button>
+    <button class="mh-btn" id="btn-refresh" title="Refresh">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
+</header>
+
+<!-- ═══ CATEGORY TABS ═════════════════════════════════════════════════ -->
+<div id="cat-tabs">
+  <div class="cat-scroll" id="cat-scroll"></div>
+  <div class="cat-manage-btn" id="cat-manage-btn" title="Manage categories" style="display:none">
+    <i class="fas fa-sliders-h"></i>
+  </div>
+</div>
+
+<!-- ═══ SONG LIST ══════════════════════════════════════════════════════ -->
+<div id="song-list"></div>
+
+<!-- Song vertical progress bar -->
+<div id="song-progress"><div id="song-progress-fill"></div></div>
+
+<!-- Song nav info -->
+<div id="song-nav-info"></div>
+
+<!-- Pull to refresh -->
+<div id="pull-indicator"><div id="pull-spin"></div></div>
+
+<!-- ═══ SEARCH OVERLAY ════════════════════════════════════════════════ -->
+<div id="search-overlay">
+  <div class="search-bar">
+    <div class="search-icon"><i class="fas fa-search"></i></div>
+    <input type="text" class="search-input" id="search-input" placeholder="Search songs, artists, lyrics..." autocomplete="off">
+    <button class="search-clear" id="search-clear"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="search-results" id="search-results"></div>
+</div>
+
+<!-- ═══ CREATE/EDIT SONG PANEL ════════════════════════════════════════ -->
+<div id="song-panel">
+  <div class="panel-head">
+    <span class="panel-head-title" id="panel-title">NEW SONG</span>
+    <button class="panel-close" id="panel-close"><i class="fas fa-times"></i></button>
+  </div>
+  <div class="panel-body">
+    <label class="p-field-label">SONG TITLE</label>
+    <input type="text" class="p-field" id="p-title" placeholder="e.g. How Great Thou Art">
+
+    <label class="p-field-label">ARTIST / COMPOSER</label>
+    <input type="text" class="p-field" id="p-artist" placeholder="e.g. Stuart K. Hine">
+
+    <label class="p-field-label">CATEGORY</label>
+    <select class="p-field" id="p-category"></select>
+
+    <div class="stanza-builder">
+      <div class="stanza-builder-head">
+        <span class="stanza-builder-title">STANZAS</span>
+      </div>
+      <div id="stanza-blocks"></div>
+      <button class="add-stanza-btn" id="add-stanza-btn">
+        <i class="fas fa-plus"></i> ADD STANZA
+      </button>
+    </div>
+  </div>
+  <div class="panel-actions">
+    <button class="panel-btn-cancel" id="panel-cancel">CANCEL</button>
+    <button class="panel-btn-delete" id="panel-delete" style="display:none">DELETE</button>
+    <button class="panel-btn-publish" id="panel-publish">PUBLISH</button>
+  </div>
+</div>
+
+<!-- ═══ COMMENTS OVERLAY ══════════════════════════════════════════════ -->
+<div id="comments-overlay">
+  <div class="comments-sheet">
+    <div class="comments-head">
+      <span class="comments-head-title" id="comments-title">COMMENTS</span>
+      <button class="comments-close" id="comments-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="comment-list" id="comment-list"></div>
+    <div class="comment-input-bar">
+      <input type="text" id="comment-input" placeholder="Add a comment..." autocomplete="off">
+      <button class="comment-send" id="comment-send"><i class="fas fa-paper-plane"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ VIEWERS OVERLAY ═══════════════════════════════════════════════ -->
+<div id="viewers-overlay">
+  <div class="viewers-sheet">
+    <div class="viewers-head">
+      <span class="viewers-head-title">SONG VIEWERS</span>
+      <button class="viewers-close" id="viewers-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="viewers-list" id="viewers-list"></div>
+  </div>
+</div>
+
+<!-- ═══ SHARE MENU ════════════════════════════════════════════════════ -->
+<div id="share-menu">
+  <div class="share-sheet">
+    <div class="share-title">SHARE</div>
+    <div class="share-option" id="share-stanza">
+      <i class="fas fa-align-left"></i> COPY CURRENT STANZA
+    </div>
+    <div class="share-option" id="share-link">
+      <i class="fas fa-link"></i> COPY SONG LINK
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CATEGORY MANAGER ══════════════════════════════════════════════ -->
+<div id="cat-modal">
+  <div class="cat-modal-sheet">
+    <div class="cat-modal-head">
+      <h3>MANAGE CATEGORIES</h3>
+      <button class="cat-modal-close" id="cat-modal-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="cat-modal-body">
+      <div class="cat-list" id="cat-list"></div>
+      <div class="cat-add-row">
+        <input type="text" class="cat-add-input" id="cat-add-input" placeholder="New category name...">
+        <button class="cat-add-btn" id="cat-add-btn">ADD</button>
+      </div>
+    </div>
+    <div class="cat-modal-footer">
+      <button class="cat-save-btn" id="cat-save-btn">SAVE CATEGORIES</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-area"></div>
+
+<!-- ════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+════════════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+/* ═══ CONFIG ═══════════════════════════════════════════════════════ */
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby9cO1ua40nr6QPZz_5PiYjxIHq_0ObpH2bJ3aInzKpjy-DKZyp2FsS3Dg9N6EMrHZn/exec';
+
+const DEFAULT_CATEGORIES = ['ALL', 'PRAISE', 'WORSHIP', 'HYMNS', 'CONTEMPORARY', 'CHRISTMAS', 'EASTER'];
+const CAT_STORAGE_KEY    = 'rv_lyric_categories';
+const BOOKMARK_KEY       = 'rv_bookmarks';
+const FONT_SIZE_KEY      = 'rv_lyric_font_size';
+
+/* ═══ AUTH / STATE ══════════════════════════════════════════════════ */
+const currentUser = localStorage.getItem('userName') || '';
+if (!currentUser) { location.href = 'index.html'; }
+
+let allSongs      = [];
+let filteredSongs = [];
+let activeCategory = 'ALL';
+let isAdmin        = false;
+let editingSong    = null;
+let activeSongId   = null;      // for comments / share
+let activeStanzaIdx = 0;        // for share (current stanza)
+let viewedSongs    = new Set();
+let showBookmarksOnly = false;
+let pollingInterval = null;
+
+/* ═══ CATEGORIES ════════════════════════════════════════════════════ */
+function getCategories() {
+  try {
+    const raw = localStorage.getItem(CAT_STORAGE_KEY);
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length) return arr;
+    }
+  } catch {}
+  return [...DEFAULT_CATEGORIES];
+}
+
+function saveCategories(cats) {
+  localStorage.setItem(CAT_STORAGE_KEY, JSON.stringify(cats));
+}
+
+/* ═══ BOOKMARKS ═════════════════════════════════════════════════════ */
+function getBookmarks() {
+  try { return new Set(JSON.parse(localStorage.getItem(BOOKMARK_KEY) || '[]')); } catch { return new Set(); }
+}
+function saveBookmarks(set) {
+  localStorage.setItem(BOOKMARK_KEY, JSON.stringify([...set]));
+}
+function isBookmarked(songId) { return getBookmarks().has(songId); }
+function toggleBookmark(songId) {
+  const bm = getBookmarks();
+  if (bm.has(songId)) bm.delete(songId); else bm.add(songId);
+  saveBookmarks(bm);
+  return bm.has(songId);
+}
+
+/* ═══ FONT SIZE ═════════════════════════════════════════════════════ */
+const fontSizes = ['font-sm', 'font-md', 'font-lg'];
+function applyFontSize(cls) {
+  document.body.classList.remove(...fontSizes);
+  document.body.classList.add(cls);
+  localStorage.setItem(FONT_SIZE_KEY, cls);
+}
+applyFontSize(localStorage.getItem(FONT_SIZE_KEY) || 'font-md');
+
+/* ═══ TOAST ═════════════════════════════════════════════════════════ */
+function toast(msg, type = 'ok', dur = 3400) {
+  const area = document.getElementById('toast-area');
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.textContent = msg;
+  area.appendChild(el);
+  setTimeout(() => el.remove(), dur);
+}
+
+function confirmToast(title, sub, okLabel = 'DELETE', cancelLabel = 'CANCEL') {
+  return new Promise(resolve => {
+    const area = document.getElementById('toast-area');
+    const el = document.createElement('div');
+    el.className = 'toast-msg confirm-toast';
+    el.innerHTML = `
+      <div class="confirm-toast-title">${title}</div>
+      <div class="confirm-toast-sub">${sub}</div>
+      <div class="confirm-toast-btns">
+        <button class="conf-btn" id="ct-cancel">${cancelLabel}</button>
+        <button class="conf-btn danger" id="ct-ok">${okLabel}</button>
+      </div>`;
+    area.appendChild(el);
+    el.querySelector('#ct-ok').onclick     = () => { el.remove(); resolve(true); };
+    el.querySelector('#ct-cancel').onclick = () => { el.remove(); resolve(false); };
+  });
+}
+
+/* ═══ API HELPERS ═══════════════════════════════════════════════════ */
+async function api(params) {
+  const res = await fetch(`${SCRIPT_URL}?${new URLSearchParams(params)}`);
+  return res.json();
+}
+
+async function post(body) {
+  const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
+  return res.json();
+}
+
+function fmtTime(ts) {
+  return new Date(ts).toLocaleString([], { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' });
+}
+
+/* ═══ CATEGORY TABS ══════════════════════════════════════════════════ */
+function renderCatTabs() {
+  const cats = getCategories();
+  const scroll = document.getElementById('cat-scroll');
+  scroll.innerHTML = '';
+
+  // Always ensure ALL is first
+  const all = cats.includes('ALL') ? cats : ['ALL', ...cats];
+  all.forEach(cat => {
+    const el = document.createElement('div');
+    el.className = 'cat-tab' + (cat === activeCategory ? ' active' : '');
+    el.textContent = cat;
+    el.addEventListener('click', () => {
+      activeCategory = cat;
+      showBookmarksOnly = false;
+      document.getElementById('btn-bookmarks').classList.remove('active');
+      renderCatTabs();
+      applyFilter();
+    });
+    scroll.appendChild(el);
+  });
+}
+
+function applyFilter() {
+  const cats = getCategories();
+  const bm = getBookmarks();
+
+  if (showBookmarksOnly) {
+    filteredSongs = allSongs.filter(s => bm.has(s.songId));
+  } else if (activeCategory === 'ALL') {
+    filteredSongs = [...allSongs];
+  } else {
+    filteredSongs = allSongs.filter(s => (s.category || '').toUpperCase() === activeCategory);
+  }
+
+  renderSongList();
+}
+
+/* ═══ LOAD SONGS ════════════════════════════════════════════════════ */
+async function loadSongs(force = false) {
+  showLoading();
+  try {
+    const data = await api({ operation: 'getAllSongs', username: currentUser });
+    allSongs = data.songs || [];
+    applyFilter();
+    startPolling();
+  } catch (e) {
+    console.error(e);
+    showError();
+  }
+}
+
+async function checkAdmin() {
+  try {
+    const d = await api({ operation: 'getUserStatus', name: currentUser });
+    isAdmin = d.userStatus === 'approved' && d.isAdmin === true;
+  } catch { isAdmin = false; }
+  document.getElementById('btn-write').style.display     = isAdmin ? 'flex' : 'none';
+  document.getElementById('cat-manage-btn').style.display = isAdmin ? 'flex' : 'none';
+}
+
+function showLoading() {
+  document.getElementById('song-list').innerHTML = `
+    <div class="state-card">
+      <div class="loading-text">LOADING</div>
+      <div class="empty-sub">FETCHING SONGS...</div>
+    </div>`;
+}
+
+function showError() {
+  document.getElementById('song-list').innerHTML = `
+    <div class="state-card">
+      <div class="empty-label">LOAD FAILED</div>
+      <div class="empty-sub">CHECK CONNECTION AND REFRESH</div>
+    </div>`;
+}
+
+/* ═══ RENDER SONG LIST ═══════════════════════════════════════════════ */
+function renderSongList() {
+  const list = document.getElementById('song-list');
+
+  if (!filteredSongs.length) {
+    const msg = showBookmarksOnly
+      ? 'NO BOOKMARKS YET'
+      : activeCategory !== 'ALL'
+        ? `NO SONGS IN ${activeCategory}`
+        : isAdmin ? 'TAP ✎ TO ADD THE FIRST SONG' : 'NO SONGS AVAILABLE YET';
+    list.innerHTML = `
+      <div class="state-card">
+        <div class="empty-label">${showBookmarksOnly || activeCategory !== 'ALL' ? activeCategory !== 'ALL' ? activeCategory : 'BOOKMARKS' : 'LYRICS'}</div>
+        <div class="empty-sub">${msg}</div>
+      </div>`;
+    updateSongProgress(0, 0);
+    updateSongNavInfo(0, 0, '');
+    return;
+  }
+
+  list.innerHTML = '';
+  filteredSongs.forEach((song, idx) => {
+    list.appendChild(buildSongCard(song, idx));
+  });
+
+  updateSongProgress(0, filteredSongs.length);
+  updateSongNavInfo(1, filteredSongs.length, getStanzaLabel(filteredSongs[0], 0));
+  setupSongScrollTracker();
+  setupViewTracking();
+}
+
+/* ═══ BUILD SONG CARD ════════════════════════════════════════════════ */
+function buildSongCard(song, idx) {
+  const card = document.createElement('div');
+  card.className = 'song-card';
+  card.dataset.songId = song.songId;
+  card.dataset.idx    = idx;
+
+  const stanzas  = song.stanzas || [];
+  const bm       = isBookmarked(song.songId);
+  const catLabel = (song.category || '').toUpperCase();
+
+  /* ─── Header ─── */
+  const header = document.createElement('div');
+  header.className = 'song-header';
+  header.innerHTML = `
+    <div style="flex:1;min-width:0;">
+      <div class="song-title">${escHtml(song.title || 'Untitled')}</div>
+      ${song.artist ? `<div class="song-artist">${escHtml(song.artist)}</div>` : ''}
+    </div>
+    ${catLabel ? `<span class="song-cat-badge">${catLabel}</span>` : ''}
+    ${isAdmin ? `<button class="song-gear-btn" title="Edit song"><i class="fas fa-cog"></i></button>` : ''}
+  `;
+  if (isAdmin) {
+    header.querySelector('.song-gear-btn').addEventListener('click', e => {
+      e.stopPropagation();
+      openSongPanel('edit', song);
+    });
+  }
+
+  /* ─── Stanza pager ─── */
+  const pager = document.createElement('div');
+  pager.className = 'stanza-pager';
+
+  stanzas.forEach((st, si) => {
+    const pane = document.createElement('div');
+    pane.className = 'stanza-pane';
+    pane.dataset.stanzaIdx = si;
+
+    const lines = (st.text || '').split('\n').filter(l => l.trim());
+
+    pane.innerHTML = `
+      <div class="stanza-label">${escHtml(getStanzaLabel(song, si))}</div>
+      <div class="stanza-text" id="st-text-${song.songId}-${si}">
+        ${lines.map((line, li) =>
+          `<div class="stanza-line" style="animation-delay:${li * 0.05}s">${escHtml(line)}</div>`
+        ).join('')}
+      </div>`;
+    pager.appendChild(pane);
+  });
+
+  /* Desktop arrows */
+  const prevArrow = document.createElement('button');
+  prevArrow.className = 'stanza-arrow prev';
+  prevArrow.innerHTML = '<i class="fas fa-chevron-left"></i>';
+  prevArrow.addEventListener('click', () => scrollStanza(pager, -1));
+
+  const nextArrow = document.createElement('button');
+  nextArrow.className = 'stanza-arrow next';
+  nextArrow.innerHTML = '<i class="fas fa-chevron-right"></i>';
+  nextArrow.addEventListener('click', () => scrollStanza(pager, 1));
+
+  /* ─── Dots ─── */
+  const dotsRow = document.createElement('div');
+  dotsRow.className = 'stanza-dots';
+  stanzas.forEach((_, di) => {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (di === 0 ? ' active' : '');
+    dot.dataset.idx = di;
+    dot.addEventListener('click', () => {
+      scrollToDot(pager, di, dotsRow);
+    });
+    dotsRow.appendChild(dot);
+  });
+
+  /* ─── Action rail ─── */
+  const rail = document.createElement('div');
+  rail.className = 'action-rail';
+
+  const likeCount  = song.likes || 0;
+  const viewCount  = song.viewCount || 0;
+  const likedCls   = song.likedByCurrentUser ? 'liked' : '';
+  const bmCls      = bm ? 'bookmarked' : '';
+
+  rail.innerHTML = `
+    <button class="rail-btn ${likedCls}" data-action="like" title="Like">
+      <i class="${song.likedByCurrentUser ? 'fas' : 'far'} fa-heart"></i>
+      <span class="rail-count like-count">${likeCount}</span>
+    </button>
+    <button class="rail-btn" data-action="comment" title="Comments">
+      <i class="far fa-comment"></i>
+      <span class="rail-count comment-count">—</span>
+    </button>
+    <button class="rail-btn ${bmCls}" data-action="bookmark" title="Bookmark">
+      <i class="${bm ? 'fas' : 'far'} fa-bookmark"></i>
+    </button>
+    <button class="rail-btn" data-action="views" title="Viewers">
+      <i class="far fa-eye"></i>
+      <span class="rail-count">${viewCount}</span>
+    </button>
+    <button class="rail-btn" data-action="share" title="Share">
+      <i class="fas fa-share-alt"></i>
+    </button>
+  `;
+
+  /* Rail events */
+  rail.querySelectorAll('.rail-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const action = btn.dataset.action;
+      if (action === 'like')     handleLike(song.songId, btn);
+      if (action === 'comment')  openComments(song.songId);
+      if (action === 'bookmark') handleBookmark(song.songId, btn);
+      if (action === 'views')    openViewers(song.songId);
+      if (action === 'share')    openShareMenu(song.songId, pager, song);
+    });
+  });
+
+  /* Load comment count */
+  loadCommentCount(song.songId, rail.querySelector('.comment-count'));
+
+  /* ─── Assemble ─── */
+  card.appendChild(header);
+  card.appendChild(pager);
+  card.appendChild(prevArrow);
+  card.appendChild(nextArrow);
+  card.appendChild(dotsRow);
+  card.appendChild(rail);
+
+  /* Stanza scroll listener → update dots + nav info */
+  pager.addEventListener('scroll', () => {
+    const idx2 = Math.round(pager.scrollLeft / pager.clientWidth);
+    activeStanzaIdx = idx2;
+    updateDots(dotsRow, idx2);
+    const songIdx = parseInt(card.dataset.idx);
+    updateSongNavInfo(songIdx + 1, filteredSongs.length, getStanzaLabel(song, idx2));
+  }, { passive: true });
+
+  return card;
+}
+
+/* ═══ SCROLL HELPERS ════════════════════════════════════════════════ */
+function scrollStanza(pager, dir) {
+  pager.scrollBy({ left: dir * pager.clientWidth, behavior: 'smooth' });
+}
+function scrollToDot(pager, idx, dotsRow) {
+  pager.scrollTo({ left: idx * pager.clientWidth, behavior: 'smooth' });
+}
+function updateDots(dotsRow, activeIdx) {
+  dotsRow.querySelectorAll('.dot').forEach((d, i) => {
+    d.classList.toggle('active', i === activeIdx);
+  });
+}
+
+/* ═══ SONG SCROLL TRACKER ═══════════════════════════════════════════ */
+function setupSongScrollTracker() {
+  const list = document.getElementById('song-list');
+  list.addEventListener('scroll', onSongListScroll, { passive: true });
+}
+
+function onSongListScroll() {
+  const list = document.getElementById('song-list');
+  const total = filteredSongs.length;
+  if (!total) return;
+  const cardH = list.clientHeight;
+  const idx   = Math.round(list.scrollTop / cardH);
+  updateSongProgress(idx, total);
+  const song = filteredSongs[idx];
+  if (song) {
+    const pager = document.querySelector(`.song-card[data-song-id="${song.songId}"] .stanza-pager`);
+    const stanzaIdx = pager ? Math.round(pager.scrollLeft / pager.clientWidth) : 0;
+    updateSongNavInfo(idx + 1, total, getStanzaLabel(song, stanzaIdx));
+  }
+}
+
+function updateSongProgress(idx, total) {
+  const fill = document.getElementById('song-progress-fill');
+  fill.style.height = total > 1 ? `${(idx / (total - 1)) * 100}%` : '100%';
+}
+
+function updateSongNavInfo(cur, total, stanzaLabel) {
+  const el = document.getElementById('song-nav-info');
+  if (!total) { el.textContent = ''; return; }
+  el.innerHTML = `${cur} / ${total}<br><span style="font-size:0.58rem;color:var(--accent2)">${stanzaLabel}</span>`;
+}
+
+/* ═══ VIEW TRACKING ═════════════════════════════════════════════════ */
+function setupViewTracking() {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const songId = entry.target.dataset.songId;
+      if (!songId || viewedSongs.has(songId)) return;
+      viewedSongs.add(songId);
+      post({ operation: 'recordSongView', songId, username: currentUser }).catch(() => {});
+    });
+  }, { threshold: 0.7 });
+  document.querySelectorAll('.song-card[data-song-id]').forEach(el => observer.observe(el));
+}
+
+/* ═══ KEYBOARD NAV ══════════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (document.activeElement.tagName === 'INPUT' ||
+      document.activeElement.tagName === 'TEXTAREA') return;
+  const list = document.getElementById('song-list');
+  if (e.key === 'ArrowDown') list.scrollBy({ top:  list.clientHeight, behavior: 'smooth' });
+  if (e.key === 'ArrowUp')   list.scrollBy({ top: -list.clientHeight, behavior: 'smooth' });
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    const visibleCard = getVisibleCard();
+    if (visibleCard) {
+      const pager = visibleCard.querySelector('.stanza-pager');
+      if (pager) pager.scrollBy({ left: e.key === 'ArrowRight' ? pager.clientWidth : -pager.clientWidth, behavior: 'smooth' });
+    }
+  }
+});
+
+function getVisibleCard() {
+  const list = document.getElementById('song-list');
+  const idx  = Math.round(list.scrollTop / list.clientHeight);
+  return document.querySelectorAll('.song-card')[idx] || null;
+}
+
+/* ═══ STANZA LABEL ══════════════════════════════════════════════════ */
+function getStanzaLabel(song, idx) {
+  const stanzas = song.stanzas || [];
+  if (!stanzas[idx]) return '';
+  const st = stanzas[idx];
+  const type = (st.type || 'VERSE').toUpperCase();
+  const num  = st.number ? ` ${st.number}` : '';
+  return `${type}${num}`;
+}
+
+/* ═══ LIKE ══════════════════════════════════════════════════════════ */
+async function handleLike(songId, btn) {
+  const liked = btn.classList.contains('liked');
+  const countEl = btn.querySelector('.like-count');
+  const icon    = btn.querySelector('i');
+  let count = parseInt(countEl.textContent) || 0;
+
+  // Optimistic
+  if (liked) {
+    count = Math.max(0, count - 1);
+    btn.classList.remove('liked'); icon.className = 'far fa-heart';
+  } else {
+    count++; btn.classList.add('liked'); icon.className = 'fas fa-heart';
+  }
+  countEl.textContent = count;
+
+  try {
+    await post({ operation: 'toggleSongLike', songId, username: currentUser });
+  } catch {
+    // Revert
+    if (liked) { btn.classList.add('liked'); icon.className = 'fas fa-heart'; countEl.textContent = count + 1; }
+    else        { btn.classList.remove('liked'); icon.className = 'far fa-heart'; countEl.textContent = count - 1; }
+    toast('Like failed', 'err');
+  }
+}
+
+/* ═══ BOOKMARK ══════════════════════════════════════════════════════ */
+function handleBookmark(songId, btn) {
+  const nowBookmarked = toggleBookmark(songId);
+  btn.classList.toggle('bookmarked', nowBookmarked);
+  btn.querySelector('i').className = nowBookmarked ? 'fas fa-bookmark' : 'far fa-bookmark';
+  toast(nowBookmarked ? 'Bookmarked!' : 'Bookmark removed', 'ok');
+}
+
+/* ═══ COMMENTS ══════════════════════════════════════════════════════ */
+let activeCommentSongId = null;
+
+async function loadCommentCount(songId, el) {
+  try {
+    const data = await api({ operation: 'getSongCommentCount', songId });
+    if (data.status === 'success') el.textContent = data.count || 0;
+  } catch { el.textContent = '?'; }
+}
+
+async function openComments(songId) {
+  activeCommentSongId = songId;
+  const song = allSongs.find(s => s.songId === songId);
+  document.getElementById('comments-title').textContent =
+    `COMMENTS — ${(song?.title || '').toUpperCase()}`;
+  document.getElementById('comments-overlay').classList.add('open');
+  const list = document.getElementById('comment-list');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--steel);font-family:var(--font-mono);font-size:0.72rem">LOADING...</div>';
+  try {
+    const data = await api({ operation: 'getSongComments', songId, username: currentUser });
+    const comments = (data.comments || []).reverse();
+    list.innerHTML = '';
+    if (!comments.length) {
+      list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--steel);font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em">NO COMMENTS YET</div>';
+      return;
+    }
+    comments.forEach(c => {
+      const isOwn = c.author === currentUser;
+      const msg = document.createElement('div');
+      msg.className = `c-msg ${isOwn ? 'own' : ''}`;
+      msg.innerHTML = `
+        <div class="c-bubble">
+          <div class="c-name">${escHtml(c.author.toUpperCase())}</div>
+          <div class="c-text">${escHtml(c.content).replace(/\n/g,'<br>')}</div>
+          <span class="c-time">${fmtTime(c.created)}</span>
+          ${isOwn ? `<button class="c-del" data-cid="${c.id}"><i class="far fa-trash-alt"></i></button>` : ''}
+        </div>`;
+      msg.querySelector('.c-del')?.addEventListener('click', () => deleteComment(c.id, songId, msg));
+      list.appendChild(msg);
+    });
+  } catch {
+    list.innerHTML = '<div style="color:#f87171;padding:16px;font-size:0.8rem;">Failed to load</div>';
+  }
+}
+
+async function sendComment() {
+  const input   = document.getElementById('comment-input');
+  const content = input.value.trim();
+  if (!content || !activeCommentSongId) return;
+  input.value = '';
+  try {
+    await post({ operation: 'createSongComment', songId: activeCommentSongId, author: currentUser, content });
+    openComments(activeCommentSongId);
+    // Refresh count badge
+    const countEl = document.querySelector(`.song-card[data-song-id="${activeCommentSongId}"] .comment-count`);
+    if (countEl) loadCommentCount(activeCommentSongId, countEl);
+  } catch { toast('Comment failed', 'err'); input.value = content; }
+}
+
+async function deleteComment(commentId, songId, msgEl) {
+  const ok = await confirmToast('Delete this comment?', 'This cannot be undone.');
+  if (!ok) return;
+  msgEl.style.opacity = '0.4'; msgEl.style.pointerEvents = 'none';
+  try {
+    const data = await post({ operation: 'deleteSongComment', commentId, songId, username: currentUser });
+    if (data.status === 'success') { msgEl.remove(); toast('Deleted', 'ok'); }
+    else { msgEl.style.opacity = ''; msgEl.style.pointerEvents = ''; toast('Failed', 'err'); }
+  } catch {
+    msgEl.style.opacity = ''; msgEl.style.pointerEvents = '';
+    toast('Network error', 'err');
+  }
+}
+
+document.getElementById('comments-close').addEventListener('click', () =>
+  document.getElementById('comments-overlay').classList.remove('open'));
+document.getElementById('comments-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('comments-overlay'))
+    document.getElementById('comments-overlay').classList.remove('open');
+});
+document.getElementById('comment-send').addEventListener('click', sendComment);
+document.getElementById('comment-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(); }
+});
+
+/* ═══ VIEWERS ═══════════════════════════════════════════════════════ */
+async function openViewers(songId) {
+  const overlay = document.getElementById('viewers-overlay');
+  const list    = document.getElementById('viewers-list');
+  overlay.classList.add('open');
+  list.innerHTML = '<div class="viewer-row" style="color:var(--steel);font-size:0.8rem;">Loading...</div>';
+  try {
+    const data = await api({ operation: 'getSongViewers', songId });
+    const viewers = data.viewers || [];
+    list.innerHTML = viewers.length === 0
+      ? '<div class="viewer-row" style="color:var(--steel);font-family:var(--font-mono);font-size:0.72rem;letter-spacing:0.08em;">NO VIEWS YET</div>'
+      : '';
+    viewers.forEach(v => {
+      const row = document.createElement('div');
+      row.className = 'viewer-row';
+      row.innerHTML = `
+        <div>
+          <div class="viewer-row-name">${escHtml(v.username)}</div>
+          <div class="viewer-row-time">${fmtTime(v.viewedAt)}</div>
+        </div>`;
+      list.appendChild(row);
+    });
+  } catch { list.innerHTML = '<div class="viewer-row" style="color:#f87171;font-size:0.8rem;">Failed to load</div>'; }
+}
+document.getElementById('viewers-close').addEventListener('click', () =>
+  document.getElementById('viewers-overlay').classList.remove('open'));
+document.getElementById('viewers-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('viewers-overlay'))
+    document.getElementById('viewers-overlay').classList.remove('open');
+});
+
+/* ═══ SHARE ═════════════════════════════════════════════════════════ */
+let shareSongRef = null;
+let sharePagerRef = null;
+
+function openShareMenu(songId, pager, song) {
+  activeSongId  = songId;
+  shareSongRef  = song;
+  sharePagerRef = pager;
+  document.getElementById('share-menu').classList.add('open');
+}
+
+document.getElementById('share-stanza').addEventListener('click', () => {
+  if (!sharePagerRef || !shareSongRef) return;
+  const idx     = Math.round(sharePagerRef.scrollLeft / sharePagerRef.clientWidth);
+  const stanza  = (shareSongRef.stanzas || [])[idx];
+  const text    = stanza ? stanza.text : '';
+  navigator.clipboard.writeText(text).then(() => toast('Stanza copied!', 'ok')).catch(() => toast('Copy failed', 'err'));
+  document.getElementById('share-menu').classList.remove('open');
+});
+
+document.getElementById('share-link').addEventListener('click', () => {
+  if (!activeSongId) return;
+  const idx  = sharePagerRef ? Math.round(sharePagerRef.scrollLeft / sharePagerRef.clientWidth) : 0;
+  const url  = `${location.origin}${location.pathname}?songId=${activeSongId}&stanza=${idx}`;
+  if (navigator.share) {
+    navigator.share({ url }).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(url).then(() => toast('Link copied!', 'ok')).catch(() => toast('Copy failed', 'err'));
+  }
+  document.getElementById('share-menu').classList.remove('open');
+});
+
+document.getElementById('share-menu').addEventListener('click', e => {
+  if (e.target === document.getElementById('share-menu'))
+    document.getElementById('share-menu').classList.remove('open');
+});
+
+/* ═══ SEARCH ════════════════════════════════════════════════════════ */
+let searchDebounce = null;
+
+document.getElementById('btn-search').addEventListener('click', () => {
+  document.getElementById('search-overlay').classList.add('open');
+  document.getElementById('search-input').focus();
+});
+
+document.getElementById('search-clear').addEventListener('click', () => {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-overlay').classList.remove('open');
+  document.getElementById('search-results').innerHTML = '';
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.getElementById('search-overlay').classList.remove('open');
+    document.getElementById('share-menu').classList.remove('open');
+  }
+});
+
+document.getElementById('search-input').addEventListener('input', e => {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => doSearch(e.target.value.trim()), 280);
+});
+
+function doSearch(query) {
+  const results = document.getElementById('search-results');
+  if (!query) { results.innerHTML = ''; return; }
+
+  const q = query.toLowerCase();
+  const matches = [];
+
+  allSongs.forEach(song => {
+    const titleMatch  = (song.title  || '').toLowerCase().includes(q);
+    const artistMatch = (song.artist || '').toLowerCase().includes(q);
+    let snippetText   = '';
+    let stanzaHint    = -1;
+
+    (song.stanzas || []).forEach((st, si) => {
+      if ((st.text || '').toLowerCase().includes(q) && stanzaHint === -1) {
+        stanzaHint  = si;
+        const raw   = st.text || '';
+        const lower = raw.toLowerCase();
+        const pos   = lower.indexOf(q);
+        const start = Math.max(0, pos - 20);
+        const end   = Math.min(raw.length, pos + q.length + 60);
+        snippetText = (start > 0 ? '…' : '') + raw.slice(start, end) + (end < raw.length ? '…' : '');
+      }
+    });
+
+    if (titleMatch || artistMatch || stanzaHint !== -1) {
+      matches.push({ song, titleMatch, snippetText, stanzaHint });
+    }
+  });
+
+  if (!matches.length) {
+    results.innerHTML = `
+      <div class="search-empty">
+        <div class="search-empty-title">NO SONGS FOUND</div>
+        <div class="search-empty-sub">Try a different word or phrase</div>
+      </div>`;
+    return;
+  }
+
+  // Title/artist matches first
+  matches.sort((a, b) => (b.titleMatch ? 1 : 0) - (a.titleMatch ? 1 : 0));
+
+  results.innerHTML = '';
+  matches.forEach(({ song, snippetText, stanzaHint }) => {
+    const item = document.createElement('div');
+    item.className = 'search-result-item';
+    item.innerHTML = `
+      <div class="search-result-title">${hilite(song.title || 'Untitled', query)}</div>
+      ${song.artist ? `<div class="search-result-artist">${escHtml(song.artist)}</div>` : ''}
+      ${snippetText ? `<div class="search-result-snippet">${hilite(snippetText, query)}</div>` : ''}`;
+    item.addEventListener('click', () => {
+      document.getElementById('search-overlay').classList.remove('open');
+      document.getElementById('search-input').value = '';
+      jumpToSong(song.songId, stanzaHint > 0 ? stanzaHint : 0);
+    });
+    results.appendChild(item);
+  });
+}
+
+function hilite(text, query) {
+  const escaped = escHtml(text);
+  const re = new RegExp(`(${escRegex(query)})`, 'gi');
+  return escaped.replace(re, '<mark>$1</mark>');
+}
+function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+function jumpToSong(songId, stanzaIdx) {
+  // Switch to ALL if song not visible
+  const inFiltered = filteredSongs.find(s => s.songId === songId);
+  if (!inFiltered) {
+    activeCategory = 'ALL';
+    showBookmarksOnly = false;
+    renderCatTabs();
+    applyFilter();
+  }
+  setTimeout(() => {
+    const card = document.querySelector(`.song-card[data-song-id="${songId}"]`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (stanzaIdx > 0) {
+      const pager = card.querySelector('.stanza-pager');
+      if (pager) setTimeout(() => {
+        pager.scrollTo({ left: stanzaIdx * pager.clientWidth, behavior: 'smooth' });
+      }, 400);
+    }
+  }, 200);
+}
+
+/* ═══ FONT SIZE TOGGLE ══════════════════════════════════════════════ */
+document.getElementById('btn-font').addEventListener('click', () => {
+  const current = fontSizes.findIndex(f => document.body.classList.contains(f));
+  const next    = fontSizes[(current + 1) % fontSizes.length];
+  applyFontSize(next);
+  toast(`Font: ${next.replace('font-', '').toUpperCase()}`, 'ok', 1800);
+});
+
+/* ═══ BOOKMARKS TOGGLE ══════════════════════════════════════════════ */
+document.getElementById('btn-bookmarks').addEventListener('click', () => {
+  showBookmarksOnly = !showBookmarksOnly;
+  document.getElementById('btn-bookmarks').classList.toggle('active', showBookmarksOnly);
+  if (showBookmarksOnly) activeCategory = 'ALL';
+  renderCatTabs();
+  applyFilter();
+});
+
+/* ═══ REFRESH ═══════════════════════════════════════════════════════ */
+document.getElementById('btn-refresh').addEventListener('click', async () => {
+  const icon = document.querySelector('#btn-refresh i');
+  icon.style.transition = 'transform 0.6s linear';
+  icon.style.transform  = 'rotate(360deg)';
+  setTimeout(() => { icon.style.transition = ''; icon.style.transform = ''; }, 650);
+  await loadSongs(true);
+});
+
+/* ═══ PULL TO REFRESH ═══════════════════════════════════════════════ */
+let pullStartY = 0, pullActive = false;
+const songList = document.getElementById('song-list');
+const pullEl   = document.getElementById('pull-indicator');
+
+songList.addEventListener('touchstart', e => {
+  if (songList.scrollTop === 0) { pullStartY = e.touches[0].clientY; pullActive = true; }
+}, { passive: true });
+songList.addEventListener('touchmove', e => {
+  if (!pullActive) return;
+  const delta = e.touches[0].clientY - pullStartY;
+  if (delta > 10) pullEl.classList.add('visible');
+}, { passive: true });
+songList.addEventListener('touchend', async e => {
+  if (!pullActive) return;
+  pullActive = false;
+  const delta = e.changedTouches[0].clientY - pullStartY;
+  pullEl.classList.remove('visible');
+  if (delta > 60) await loadSongs(true);
+});
+
+/* ═══ CREATE / EDIT SONG PANEL ══════════════════════════════════════ */
+const STANZA_TYPES = ['Verse', 'Chorus', 'Pre-Chorus', 'Bridge', 'Intro', 'Outro', 'Tag', 'Interlude'];
+let stanzaBlockCount = 0;
+
+function openSongPanel(mode = 'create', song = null) {
+  editingSong = mode === 'edit' ? song : null;
+  stanzaBlockCount = 0;
+
+  document.getElementById('panel-title').textContent  = mode === 'create' ? 'NEW SONG' : 'EDIT SONG';
+  document.getElementById('panel-publish').textContent = mode === 'create' ? 'PUBLISH' : 'SAVE';
+  document.getElementById('panel-delete').style.display = mode === 'edit' ? 'block' : 'none';
+
+  document.getElementById('p-title').value  = song?.title  || '';
+  document.getElementById('p-artist').value = song?.artist || '';
+
+  // Populate category select
+  const catSelect = document.getElementById('p-category');
+  catSelect.innerHTML = '';
+  getCategories()
+    .filter(c => c !== 'ALL')
+    .forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat; opt.textContent = cat;
+      if ((song?.category || '').toUpperCase() === cat.toUpperCase()) opt.selected = true;
+      catSelect.appendChild(opt);
+    });
+
+  // Stanzas
+  const blocks = document.getElementById('stanza-blocks');
+  blocks.innerHTML = '';
+  const stanzas = (song?.stanzas?.length) ? song.stanzas : [{ type: 'Verse', number: 1, text: '' }];
+  stanzas.forEach(st => addStanzaBlock(st.type, st.number, st.text));
+
+  document.getElementById('song-panel').classList.add('open');
+}
+
+function closeSongPanel() {
+  document.getElementById('song-panel').classList.remove('open');
+  editingSong = null;
+}
+
+function addStanzaBlock(type = 'Verse', number = 1, text = '') {
+  const id  = ++stanzaBlockCount;
+  const blocks = document.getElementById('stanza-blocks');
+  const block  = document.createElement('div');
+  block.className = 'stanza-block';
+  block.dataset.bid = id;
+
+  const typeOptions = STANZA_TYPES.map(t =>
+    `<option value="${t}" ${t === type ? 'selected' : ''}>${t.toUpperCase()}</option>`
+  ).join('');
+
+  block.innerHTML = `
+    <div class="stanza-block-head">
+      <select class="stanza-type-select">${typeOptions}</select>
+      <input type="number" min="1" max="20" value="${number}"
+        style="width:38px;background:transparent;border:none;border-bottom:1px solid var(--wire);
+               color:var(--accent2);font-family:var(--font-mono);font-size:0.72rem;
+               outline:none;text-align:center;-moz-appearance:textfield;"
+        class="stanza-num-input" title="Stanza number">
+      <div class="stanza-block-arrows">
+        <button class="stanza-arrow-btn" data-dir="up" title="Move up"><i class="fas fa-chevron-up"></i></button>
+        <button class="stanza-arrow-btn" data-dir="down" title="Move down"><i class="fas fa-chevron-down"></i></button>
+      </div>
+      <button class="stanza-remove-btn" title="Remove"><i class="fas fa-times"></i></button>
+    </div>
+    <textarea class="stanza-textarea" placeholder="Type lyrics here…\nOne line per row">${escHtml(text)}</textarea>`;
+
+  block.querySelector('[data-dir="up"]').addEventListener('click', () => {
+    const prev = block.previousElementSibling;
+    if (prev) blocks.insertBefore(block, prev);
+  });
+  block.querySelector('[data-dir="down"]').addEventListener('click', () => {
+    const next = block.nextElementSibling;
+    if (next) blocks.insertBefore(next, block);
+  });
+  block.querySelector('.stanza-remove-btn').addEventListener('click', () => {
+    if (blocks.children.length > 1) block.remove();
+    else toast('Need at least 1 stanza', 'err');
+  });
+
+  blocks.appendChild(block);
+}
+
+document.getElementById('add-stanza-btn').addEventListener('click', () => {
+  // Auto-increment verse numbers
+  const blocks = document.getElementById('stanza-blocks');
+  const lastBlock = blocks.lastElementChild;
+  let nextType = 'Verse', nextNum = 1;
+  if (lastBlock) {
+    const t = lastBlock.querySelector('.stanza-type-select').value;
+    const n = parseInt(lastBlock.querySelector('.stanza-num-input').value) || 1;
+    nextType = t;
+    nextNum  = t === 'Verse' ? n + 1 : 1;
+  }
+  addStanzaBlock(nextType, nextNum, '');
+});
+
+document.getElementById('btn-write').addEventListener('click', () => openSongPanel('create'));
+document.getElementById('panel-close').addEventListener('click', closeSongPanel);
+document.getElementById('panel-cancel').addEventListener('click', closeSongPanel);
+
+document.getElementById('panel-delete').addEventListener('click', async () => {
+  if (!editingSong) return;
+  const ok = await confirmToast('Delete this song?', 'This cannot be undone.', 'DELETE', 'CANCEL');
+  if (!ok) return;
+  closeSongPanel();
+  try {
+    const data = await post({ operation: 'deleteSong', songId: editingSong.songId, username: currentUser });
+    if (data.status === 'success') {
+      toast('Song deleted', 'ok');
+      allSongs = allSongs.filter(s => s.songId !== editingSong.songId);
+      applyFilter();
+    } else toast(data.message || 'Delete failed', 'err');
+  } catch { toast('Network error', 'err'); }
+});
+
+document.getElementById('panel-publish').addEventListener('click', async () => {
+  const title  = document.getElementById('p-title').value.trim();
+  const artist = document.getElementById('p-artist').value.trim();
+  const cat    = document.getElementById('p-category').value;
+
+  if (!title) { toast('Song title required', 'err'); return; }
+
+  // Gather stanzas
+  const stanzas = [];
+  document.getElementById('stanza-blocks').querySelectorAll('.stanza-block').forEach(block => {
+    const type   = block.querySelector('.stanza-type-select').value;
+    const number = parseInt(block.querySelector('.stanza-num-input').value) || 1;
+    const text   = block.querySelector('.stanza-textarea').value.trim();
+    if (text) stanzas.push({ type, number, text });
+  });
+
+  if (!stanzas.length) { toast('Add at least one stanza with lyrics', 'err'); return; }
+
+  const btn = document.getElementById('panel-publish');
+  btn.disabled = true; btn.textContent = editingSong ? 'SAVING...' : 'PUBLISHING...';
+
+  try {
+    let payload;
+    if (editingSong) {
+      payload = { operation: 'editSong', songId: editingSong.songId, username: currentUser, title, artist, category: cat, stanzas };
+    } else {
+      payload = { operation: 'createSong', creator: currentUser, title, artist, category: cat, stanzas };
+    }
+    const data = await post(payload);
+    if (data.status === 'success') {
+      toast(editingSong ? 'Song updated!' : 'Song published!', 'ok');
+      closeSongPanel();
+      await loadSongs(true);
+    } else toast(data.message || 'Failed', 'err');
+  } catch { toast('Network error', 'err'); }
+  finally { btn.disabled = false; btn.textContent = editingSong ? 'SAVE' : 'PUBLISH'; }
+});
+
+/* ═══ CATEGORY MANAGER ══════════════════════════════════════════════ */
+function openCatModal() {
+  const cats = getCategories().filter(c => c !== 'ALL');
+  const list = document.getElementById('cat-list');
+  list.innerHTML = '';
+  cats.forEach(cat => {
+    const item = document.createElement('div');
+    item.className = 'cat-list-item';
+    item.innerHTML = `
+      <span class="cat-list-item-name">${escHtml(cat)}</span>
+      <button class="cat-list-item-del" data-cat="${escHtml(cat)}"><i class="fas fa-times"></i></button>`;
+    item.querySelector('.cat-list-item-del').addEventListener('click', () => item.remove());
+    list.appendChild(item);
+  });
+  document.getElementById('cat-add-input').value = '';
+  document.getElementById('cat-modal').classList.add('open');
+}
+
+document.getElementById('cat-manage-btn').addEventListener('click', openCatModal);
+document.getElementById('cat-modal-close').addEventListener('click', () =>
+  document.getElementById('cat-modal').classList.remove('open'));
+document.getElementById('cat-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('cat-modal'))
+    document.getElementById('cat-modal').classList.remove('open');
+});
+
+document.getElementById('cat-add-btn').addEventListener('click', () => {
+  const input = document.getElementById('cat-add-input');
+  const val   = input.value.trim().toUpperCase();
+  if (!val) return;
+
+  const existing = document.querySelectorAll('#cat-list .cat-list-item-name');
+  const dup = Array.from(existing).some(el => el.textContent.toUpperCase() === val);
+  if (dup) { toast('Category already exists', 'err'); return; }
+
+  const item = document.createElement('div');
+  item.className = 'cat-list-item';
+  item.innerHTML = `
+    <span class="cat-list-item-name">${escHtml(val)}</span>
+    <button class="cat-list-item-del"><i class="fas fa-times"></i></button>`;
+  item.querySelector('.cat-list-item-del').addEventListener('click', () => item.remove());
+  document.getElementById('cat-list').appendChild(item);
+  input.value = '';
+});
+
+document.getElementById('cat-add-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('cat-add-btn').click();
+});
+
+document.getElementById('cat-save-btn').addEventListener('click', () => {
+  const cats = ['ALL'];
+  document.querySelectorAll('#cat-list .cat-list-item-name').forEach(el => {
+    const val = el.textContent.trim().toUpperCase();
+    if (val && !cats.includes(val)) cats.push(val);
+  });
+  saveCategories(cats);
+  document.getElementById('cat-modal').classList.remove('open');
+  toast('Categories saved!', 'ok');
+  // Reset to ALL
+  activeCategory = 'ALL';
+  renderCatTabs();
+  applyFilter();
+  // Refresh create panel category select
+});
+
+/* ═══ POLLING ═══════════════════════════════════════════════════════ */
+function startPolling() {
+  if (pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = setInterval(async () => {
+    if (document.hidden) return;
+    try {
+      const data = await api({ operation: 'getSongsLight' });
+      const serverIds  = new Set((data.songs || []).map(s => s.songId));
+      const localIds   = new Set(allSongs.map(s => s.songId));
+      const hasNew     = [...serverIds].some(id => !localIds.has(id));
+      if (hasNew) {
+        // Show banner instead of auto-refresh
+        showNewSongsBanner();
+      }
+    } catch {}
+  }, 20000);
+}
+
+let bannerVisible = false;
+function showNewSongsBanner() {
+  if (bannerVisible) return;
+  bannerVisible = true;
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    position:fixed; top:var(--total-top); left:50%; transform:translateX(-50%);
+    background:var(--accent2); color:var(--paper); z-index:880;
+    font-family:var(--font-mono); font-size:0.72rem; letter-spacing:0.08em;
+    padding:8px 18px; border-radius:0 0 8px 8px; cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,0.4); white-space:nowrap;`;
+  banner.textContent = 'NEW SONGS AVAILABLE — TAP TO LOAD';
+  banner.addEventListener('click', async () => {
+    banner.remove(); bannerVisible = false;
+    await loadSongs(true);
+  });
+  document.body.appendChild(banner);
+  setTimeout(() => { banner.remove(); bannerVisible = false; }, 12000);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+  } else {
+    startPolling();
+  }
+});
+
+/* ═══ DEEP LINK ════════════════════════════════════════════════════ */
+function handleDeepLink() {
+  const usp     = new URLSearchParams(location.search);
+  const songId  = usp.get('songId');
+  const stanza  = parseInt(usp.get('stanza')) || 0;
+  if (songId) setTimeout(() => jumpToSong(songId, stanza), 600);
+}
+
+/* ═══ UTILITIES ════════════════════════════════════════════════════ */
+function escHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ═══ INIT ═════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', async () => {
+  renderCatTabs();
+  await checkAdmin();
+  await loadSongs();
+  handleDeepLink();
+});
+
+/* ═══ SERVICE WORKER + FCM (same pattern as channels.html) ════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
+    try {
+      const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+
+      const { initializeApp }  = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
+      const { getMessaging, getToken, deleteToken, onMessage }
+        = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
+
+      const app = initializeApp({
+        apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+        authDomain: "riverside-connect-a8458.firebaseapp.com",
+        projectId: "riverside-connect-a8458",
+        storageBucket: "riverside-connect-a8458.firebasestorage.app",
+        messagingSenderId: "938830806378",
+        appId: "1:938830806378:web:254ed56cba3dc02290f913"
+      });
+
+      const messaging = getMessaging(app);
+      const VAPID = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
+
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+
+      const oldToken = await getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: swReg });
+      if (oldToken) await deleteToken(messaging);
+      const token = await getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: swReg });
+      if (token) await post({ operation: 'saveFcmToken', username: currentUser, fcmToken: token });
+
+      onMessage(messaging, payload => {
+        toast(payload.data?.title || 'New song added — pull to refresh', 'ok', 5000);
+        if (payload.data?.type === 'new_song') loadSongs(true);
+      });
+    } catch (err) { console.warn('FCM setup failed:', err); }
+  });
+}
+</script>
+</body>
+</html>

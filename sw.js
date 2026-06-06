@@ -13,94 +13,177 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background messages
-messaging.onBackgroundMessage((payload) => {
+// ─── GROUP TAG HELPER ────────────────────────────────────────────────────────
+// Each "type" of notification gets a shared tag. When a new notification
+// arrives with the same tag, it REPLACES the old one with a summary instead
+// of stacking a new bubble.
+function getGroupTag(data) {
+  if (data.callId)       return `call-${data.callId}`;      // calls stay individual
+  if (data.songId)       return "group-lyrics";
+  if (data.gameId)       return "group-qna";
+  if (data.channelId)    return `group-channel-${data.channelId}`; // per-channel grouping
+  if (data.announcement) return "group-announcements";
+  return "group-chat";
+}
+
+// ─── IN-MEMORY COUNTER (lives as long as the SW is alive) ───────────────────
+// Maps tag → { count, lastTitle, lastBody, url }
+const groupCounters = {};
+
+messaging.onBackgroundMessage(async (payload) => {
   console.log("Background message received:", payload);
 
-  const title = payload.data?.title || "Riverside Connect";
-  const body  = payload.data?.body  || "New activity";
+  const title        = payload.data?.title        || "Riverside Connect";
+  const body         = payload.data?.body         || "New activity";
+  const channelId    = payload.data?.channelId    || "";
+  const postId       = payload.data?.postId       || "";
+  const gameId       = payload.data?.gameId       || "";
+  const announcement = payload.data?.announcement || "";
+  const callId       = payload.data?.callId       || "";
+  const songId       = payload.data?.songId       || "";
 
-  const channelId = payload.data?.channelId || "";
-  const postId    = payload.data?.postId    || "";
-  const gameId    = payload.data?.gameId    || "";
-  const announcement = payload.data?.announcement || "";   // ← NEW for announcements
-  const callId = payload.data?.callId || "";
-  // ── SMART URL LOGIC ─────────────────────────────────────────────────────
+  // ── URL builder ───────────────────────────────────────────────────────────
   let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   if (callId) {
-  url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/call.html?callId=${encodeURIComponent(callId)}`;
-}
-
-  if (gameId) {
-    // Q&A Game
+    url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/call.html?callId=${encodeURIComponent(callId)}`;
+  } else if (songId) {
+    url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/lyric.html?songId=${encodeURIComponent(songId)}`;
+  } else if (gameId) {
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
-  } 
-  else if (channelId) {
-    // Channel Post
+  } else if (channelId) {
     url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
-    if (postId) {
-      url += `&postId=${encodeURIComponent(postId)}`;
-    }
-  }
-  else if (announcement) {
-    // Announcement → opens announce.html (just like comments open home.html)
+    if (postId) url += `&postId=${encodeURIComponent(postId)}`;
+  } else if (announcement) {
     url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
   }
-  // Default falls back to home.html (for normal comments)
 
-  const icon = payload.data?.icon || "./maskable_icon_x192.png";
-  const badge = "./badge.png";
-
+  const icon   = payload.data?.icon  || "./maskable_icon_x192.png";
+  const badge  = "./badge.png";
   const isCall = !!callId;
+  const tag    = getGroupTag({ callId, songId, gameId, channelId, announcement });
 
-self.registration.showNotification(title, {
-  body: body,
-  icon: icon,
-  badge: badge,
-  image: payload.data?.image || "",
-  vibrate: isCall ? [500, 200, 500, 200, 500] : [200, 100, 200],
-  requireInteraction: isCall, // keeps call notification on screen until tapped
-  tag: isCall ? `call-${callId}` : undefined, // prevents duplicate call notifications
-  data: {
-    url: url,
-    channelId: channelId,
-    postId: postId,
-    gameId: gameId,
-    announcement: announcement,
-    callId: callId
+  // ── Grouping logic ────────────────────────────────────────────────────────
+  // Calls are never grouped — show immediately as-is
+  if (isCall) {
+    await self.registration.showNotification(title, {
+      body,
+      icon,
+      badge,
+      image: payload.data?.image || "",
+      vibrate: [500, 200, 500, 200, 500],
+      requireInteraction: true,
+      tag: tag,
+      data: { url, channelId, postId, gameId, announcement, callId, songId }
+    });
+    return;
   }
-});
+
+  // For everything else: count how many have arrived under this tag
+  if (!groupCounters[tag]) {
+    groupCounters[tag] = { count: 0, url };
+  }
+  groupCounters[tag].count++;
+  groupCounters[tag].url = url; // always point to the latest
+
+  const count = groupCounters[tag].count;
+
+  // ── Build grouped title + body ────────────────────────────────────────────
+  let groupTitle = title;
+  let groupBody  = body;
+
+  if (count > 1) {
+    if (tag === "group-announcements") {
+      groupTitle = "Riverside Announcements";
+      groupBody  = `${count} new announcements`;
+      groupCounters[tag].url =
+        "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
+    } else if (tag === "group-lyrics") {
+      groupTitle = "Riverside Lyrics";
+      groupBody  = `${count} new songs added`;
+      groupCounters[tag].url =
+        "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/lyric.html";
+    } else if (tag === "group-qna") {
+      groupTitle = "Riverside Q&A";
+      groupBody  = `${count} new quizzes or surveys`;
+      groupCounters[tag].url =
+        "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html";
+    } else if (tag.startsWith("group-channel-")) {
+      groupTitle = "Riverside Channel";
+      groupBody  = `${count} new posts`;
+      // Keep pointing to the channel (no specific postId when grouped)
+      groupCounters[tag].url =
+        `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
+    } else if (tag === "group-chat") {
+      groupTitle = "Riverside Chat";
+      groupBody  = `${count} new messages`;
+      groupCounters[tag].url =
+        "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
+    }
+  }
+
+  // showNotification with the same tag REPLACES the previous notification
+  // on the user's device — so they see one bubble, not many
+  await self.registration.showNotification(groupTitle, {
+    body:  groupBody,
+    icon,
+    badge,
+    image: count === 1 ? (payload.data?.image || "") : "", // image only on first
+    vibrate: [200, 100, 200],
+    tag,           // ← same tag = replace, not stack
+    renotify: true, // buzz again even though we're replacing
+    data: {
+      url:          groupCounters[tag].url,
+      channelId,
+      postId:       count > 1 ? "" : postId, // don't deep-link when grouped
+      gameId:       count > 1 ? "" : gameId,
+      announcement,
+      callId,
+      songId:       count > 1 ? "" : songId
+    }
+  });
 });
 
-// Handle notification click
+// ─── NOTIFICATION CLICK ──────────────────────────────────────────────────────
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || 
-                    "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
+  // Reset the counter for this group so next batch starts fresh
+  const tag = event.notification.tag;
+  if (tag && groupCounters[tag]) {
+    delete groupCounters[tag];
+  }
+
+  const urlToOpen = event.notification.data?.url ||
+    "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
 
   event.waitUntil(
-    clients.matchAll({ type: "window" }).then((clientList) => {
-      // Try to focus existing window/tab
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+
+      // If a matching tab is already open, just navigate + focus it
       for (const client of clientList) {
-        if (client.url === urlToOpen || 
-          (event.notification.data?.callId && client.url.includes("call.html")) ||
-            (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
-            (event.notification.data?.channelId && client.url.includes("channel.html")) ||
-            (event.notification.data?.announcement && client.url.includes("announce.html")) ||
-            "focus" in client) {
+        const sameUrl   = client.url === urlToOpen;
+        const sameCall  = event.notification.data?.callId       && client.url.includes("call.html");
+        const sameSong  = event.notification.data?.songId       && client.url.includes("lyric.html");
+        const sameGame  = event.notification.data?.gameId       && client.url.includes("Q&A.html");
+        const sameChan  = event.notification.data?.channelId    && client.url.includes("channel.html");
+        const sameAnn   = event.notification.data?.announcement && client.url.includes("announce.html");
+
+        if (sameUrl || sameCall || sameSong || sameGame || sameChan || sameAnn) {
+          // Navigate the existing tab to the exact URL then focus
+          client.navigate(urlToOpen).catch(() => {});
           return client.focus();
         }
       }
 
-      // Open new window/tab with correct URL
+      // No matching tab — open a new one
       if (clients.openWindow) {
         return clients.openWindow(urlToOpen);
       }
     })
   );
 });
+
 // sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
 
 const CACHE_NAME = 'Riverside-Connect-v7';   // bumped version after removing FCM from main SW

@@ -373,6 +373,7 @@ body.font-lg  .stanza-line { font-size: clamp(1.4rem, 3.4vw, 2.2rem) !important;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;   /* ← ADD */
   gap: 0;
 }
 
@@ -385,6 +386,8 @@ body.font-lg  .stanza-line { font-size: clamp(1.4rem, 3.4vw, 2.2rem) !important;
   font-weight: 400;
   opacity: 0;
   animation: fadeUp 0.35s ease-out forwards;
+  text-align: center;
+  width: 100%;
 }
 .stanza-line.dim { color: rgba(226,232,240,0.65); }
 
@@ -1157,8 +1160,9 @@ select.p-field option { background: var(--cream); color: var(--ink); }
   z-index: 900;
   transition: transform 0.2s;
   pointer-events: none;
+  opacity: 0;  
 }
-#pull-indicator.visible { transform: translateX(-50%) translateY(8px); }
+#pull-indicator.visible { transform: translateX(-50%) translateY(8px);opacity: 1;  }
 #pull-spin {
   width: 22px; height: 22px;
   border: 2px solid rgba(96,165,250,0.2);

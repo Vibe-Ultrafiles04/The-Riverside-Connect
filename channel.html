@@ -374,12 +374,12 @@ html, body {
   white-space: pre-wrap;
 }
 
-/* Video wrapper — preserves 16:9 + room for Drive controls */
 .post-media-wrap {
   width: 100%;
   background: #000;
   overflow: hidden;
   position: relative;
+  min-height: 200px; /* prevent collapse */
 }
 
 .post-media-wrap img {
@@ -389,36 +389,34 @@ html, body {
   display: block;
 }
 
-/* Aspect-ratio shell — clips Drive's top scrubber + bottom controls */
-.post-media-wrap .video-shell {
-  position: relative;
-  width: 100%;
-  /* Visible window = pure 16:9 video area */
-  padding-bottom: 56.25%;
-  height: 0;
+/* Video iframe improvements */
+.post-media-wrap.video-wrap {
+  aspect-ratio: 16 / 9;           /* Better mobile ratio */
+  max-height: 65vh;
   background: #000;
-  overflow: hidden; /* clips the scaled iframe */
 }
 
-.post-media-wrap .video-shell iframe {
-  position: absolute;
-  /* Extend beyond the container top and bottom to hide Drive chrome.
-     Drive top bar ≈ 40px, bottom bar ≈ 60px at 100vw width.
-     We push the iframe up by 40px and make it 100px taller total. */
-  top: -40px;
-  left: 0;
-  width: 100%;
-  height: calc(100% + 100px);
+.post-media-wrap iframe {
+  width: 100% !important;
+  height: 100% !important;
   border: none;
   display: block;
+  min-height: 220px;   /* fallback for mobile */
 }
 
-@media (max-width: 768px) {
-  .post-media-wrap .video-shell iframe {
-    /* Drive chrome is relatively larger on narrow screens */
-    top: -44px;
-    height: calc(100% + 110px);
-  }
+/* Force controls on mobile */
+.post-media-wrap iframe {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Optional: make video tappable to play/pause on mobile */
+.post-media-wrap.video-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
 }
 .post-calendar { border-top: 1px solid var(--wire); }
 
@@ -2141,16 +2139,29 @@ function buildPostView(p, idx, total) {
   const avatarSrc = lh3(p.picLink) || fallbackAvatar(p.author);
   const isOwn = p.author === currentUser;
 
-  let mediaHtml = '';
-  if (p.media?.link) {
-    const isImg = (p.media.type || '').startsWith('image');
-    const src = isImg
-      ? lh3(p.media.link)
-      : `https://drive.google.com/file/d/${(p.media.link.match(/[-\w]{25,}/) || [p.media.link])[0]}/preview`;
-    mediaHtml = isImg
-      ? `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`
-      : `<div class="post-media-wrap"><div class="video-shell"><iframe src="${src}" allowfullscreen></iframe></div></div>`;
+ let mediaHtml = '';
+if (p.media?.link) {
+  const isImg = (p.media.type || '').startsWith('image');
+  
+  if (isImg) {
+    const src = lh3(p.media.link);
+    mediaHtml = `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`;
+  } else {
+    // Better mobile-friendly Google Drive video embed
+    const fileId = (p.media.link.match(/[-\w]{25,}/) || [p.media.link])[0];
+    const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+    
+    mediaHtml = `
+      <div class="post-media-wrap video-wrap">
+        <iframe 
+          src="${embedUrl}" 
+          allowfullscreen 
+          allow="autoplay; encrypted-media"
+          loading="lazy">
+        </iframe>
+      </div>`;
   }
+}
 
   let calHtml = '';
   if (p.events?.length) {
@@ -2183,7 +2194,6 @@ function buildPostView(p, idx, total) {
   .replace(/\/view\b\S*/gi, '')
   .replace(/usp=\S+/gi, '')
   .replace(/\s{2,}/g, ' ').trim();
-  
   wrap.innerHTML = `
     <div class="post-header">
       <img class="post-avatar" src="${avatarSrc}" onerror="this.src='https://picsum.photos/id/64/48/48'" alt="">

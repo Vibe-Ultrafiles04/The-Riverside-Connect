@@ -389,32 +389,37 @@ html, body {
   display: block;
 }
 
-/* Aspect-ratio shell for iframe */
+/* Aspect-ratio shell — clips Drive's top scrubber + bottom controls */
 .post-media-wrap .video-shell {
   position: relative;
   width: 100%;
-  padding-bottom: calc(56.25% + 72px);
+  /* Visible window = pure 16:9 video area */
+  padding-bottom: 56.25%;
   height: 0;
   background: #000;
+  overflow: hidden; /* clips the scaled iframe */
 }
 
 .post-media-wrap .video-shell iframe {
   position: absolute;
-  top: 0; left: 0;
+  /* Extend beyond the container top and bottom to hide Drive chrome.
+     Drive top bar ≈ 40px, bottom bar ≈ 60px at 100vw width.
+     We push the iframe up by 40px and make it 100px taller total. */
+  top: -40px;
+  left: 0;
   width: 100%;
-  height: 100%;
+  height: calc(100% + 100px);
   border: none;
   display: block;
 }
 
-/* Mobile: use fixed height instead of % trick */
 @media (max-width: 768px) {
-  .post-media-wrap .video-shell {
-    padding-bottom: 0;
-    height: calc(56.25vw + 100px);
+  .post-media-wrap .video-shell iframe {
+    /* Drive chrome is relatively larger on narrow screens */
+    top: -44px;
+    height: calc(100% + 110px);
   }
 }
-
 .post-calendar { border-top: 1px solid var(--wire); }
 
 .cal-month-strip {

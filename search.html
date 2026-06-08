@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Riverside · Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="manifest" href="./manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════
+   RIVERSIDE SEARCH — Unified Intelligence Layer
+   Design: Dark premium, matches channels.html exactly
+═══════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ink:      #e2e8f0;
+  --paper:    #0f172a;
+  --cream:    #1e293b;
+  --wire:     rgba(96,165,250,0.18);
+  --steel:    #94a3b8;
+  --lead:     #cbd5e1;
+  --accent:   #ef4444;
+  --accent2:  #60a5fa;
+  --gold:     #facc15;
+  --green:    #10b981;
+  --purple:   #a78bfa;
+  --orange:   #f97316;
+
+  --font-head: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  --bar-h: 60px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ═══ MASTHEAD ════════════════════════════════════════════════════ */
+#masthead {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--bar-h);
+  background: rgba(15,23,42,0.97);
+  border-bottom: 1px solid var(--wire);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  backdrop-filter: blur(18px);
+}
+
+.mh-back {
+  height: 100%;
+  width: 56px;
+  display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid var(--wire);
+  color: var(--accent2);
+  text-decoration: none;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.mh-back:hover { background: var(--cream); }
+
+.mh-wordmark {
+  font-family: var(--font-head);
+  font-size: 1.35rem;
+  letter-spacing: 0.08em;
+  color: var(--accent2);
+  padding: 0 18px;
+  border-right: 1px solid var(--wire);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* ═══ SEARCH INPUT ════════════════════════════════════════════════ */
+.search-input-wrap {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+#search-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 52px 0 20px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  outline: none;
+  letter-spacing: 0.01em;
+}
+#search-input::placeholder {
+  color: var(--steel);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 14px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(148,163,184,0.15);
+  border: none;
+  color: var(--steel);
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: none;
+  align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.search-clear-btn.visible { display: flex; }
+.search-clear-btn:hover { background: rgba(239,68,68,0.2); color: var(--accent); }
+
+/* ═══ MAIN LAYOUT ═════════════════════════════════════════════════ */
+#page-body {
+  padding-top: var(--bar-h);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══ SCOPE FILTERS ═══════════════════════════════════════════════ */
+#scope-bar {
+  position: sticky;
+  top: var(--bar-h);
+  z-index: 800;
+  background: rgba(15,23,42,0.97);
+  border-bottom: 1px solid var(--wire);
+  backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 6px;
+}
+#scope-bar::-webkit-scrollbar { display: none; }
+
+.scope-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 16px;
+  height: 40px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s;
+  flex-shrink: 0;
+}
+.scope-pill:hover { color: var(--ink); }
+.scope-pill.active {
+  color: #fff;
+  border-bottom-color: var(--gold);
+}
+.scope-pill .scope-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.scope-pill .count-badge {
+  background: rgba(96,165,250,0.18);
+  color: var(--accent2);
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  border-radius: 999px;
+  display: none;
+}
+.scope-pill .count-badge.show { display: inline; }
+
+/* ═══ LANDING STATE ═══════════════════════════════════════════════ */
+#landing {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  gap: 48px;
+}
+
+.land-wordmark {
+  text-align: center;
+}
+.land-wordmark h1 {
+  font-family: var(--font-head);
+  font-size: clamp(3.5rem, 12vw, 7rem);
+  letter-spacing: 0.12em;
+  color: var(--accent2);
+  opacity: 0.12;
+  line-height: 1;
+  user-select: none;
+}
+
+.land-search-hint {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  text-align: center;
+}
+
+.scope-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  width: 100%;
+  max-width: 640px;
+}
+
+.scope-card {
+  background: var(--cream);
+  border: 1px solid var(--wire);
+  border-radius: 12px;
+  padding: 18px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+.scope-card:hover {
+  border-color: rgba(96,165,250,0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.scope-card-icon {
+  font-size: 1.4rem;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 10px;
+  background: rgba(96,165,250,0.1);
+}
+.scope-card-name {
+  font-family: var(--font-head);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+}
+.scope-card-desc {
+  font-size: 0.72rem;
+  color: var(--steel);
+  line-height: 1.4;
+}
+
+/* ═══ RESULTS CONTAINER ═══════════════════════════════════════════ */
+#results-container {
+  flex: 1;
+  display: none;
+  flex-direction: column;
+}
+#results-container.active { display: flex; }
+
+/* ═══ STATUS BAR ══════════════════════════════════════════════════ */
+#status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--wire);
+  background: rgba(15,23,42,0.7);
+}
+
+.status-query {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+}
+.status-query span {
+  color: var(--accent2);
+  font-weight: 700;
+}
+
+.status-count {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+}
+
+/* ═══ SECTION HEADERS ═════════════════════════════════════════════ */
+.results-section {
+  border-bottom: 1px solid var(--wire);
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.section-head-icon {
+  font-size: 0.85rem;
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.section-head-title {
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  flex: 1;
+}
+.section-count {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+}
+.section-chevron {
+  color: var(--steel);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+.section-chevron.collapsed { transform: rotate(-90deg); }
+
+.section-body {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.section-body.collapsed { max-height: 0 !important; }
+
+/* ═══ RESULT CARDS — COMMON ═══════════════════════════════════════ */
+.result-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.result-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(96,165,250,0.07);
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+.result-card:last-child { border-bottom: none; }
+.result-card:hover { background: rgba(96,165,250,0.05); }
+.result-card:active { background: rgba(96,165,250,0.1); }
+
+.rc-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--cream);
+  border: 2px solid rgba(96,165,250,0.25);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rc-icon-box {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.rc-body { flex: 1; min-width: 0; }
+
+.rc-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+  flex-wrap: wrap;
+}
+
+.rc-author {
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--accent2);
+}
+
+.rc-time {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  color: var(--steel);
+}
+
+.rc-tag {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  padding: 1px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.rc-text {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--lead);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.rc-highlight {
+  background: rgba(250,204,21,0.22);
+  color: var(--gold);
+  border-radius: 2px;
+  padding: 0 2px;
+  font-weight: 600;
+}
+
+.rc-sub {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  color: var(--steel);
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rc-chevron {
+  color: rgba(96,165,250,0.35);
+  font-size: 0.75rem;
+  align-self: center;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.result-card:hover .rc-chevron { color: var(--accent2); }
+
+/* ═══ MEMBER CARD (grid layout) ══════════════════════════════════ */
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.member-card {
+  background: var(--cream);
+  border: 1px solid var(--wire);
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  cursor: default;
+  transition: all 0.18s;
+}
+.member-card:hover {
+  border-color: rgba(96,165,250,0.4);
+  transform: translateY(-2px);
+}
+
+.mc-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--cream);
+  border: 2.5px solid rgba(96,165,250,0.35);
+}
+
+.mc-name {
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+.mc-badge {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.09em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.mc-role {
+  font-size: 0.68rem;
+  color: var(--steel);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+/* ═══ SONG CARD (horizontal strip) ══════════════════════════════ */
+.song-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ═══ EMPTY / LOADING ════════════════════════════════════════════ */
+.state-msg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  gap: 12px;
+  text-align: center;
+}
+
+.state-icon {
+  font-size: 2.5rem;
+  opacity: 0.25;
+}
+
+.state-title {
+  font-family: var(--font-head);
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  opacity: 0.7;
+}
+
+.state-sub {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  opacity: 0.55;
+}
+
+/* Spinner */
+.spin-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+.spinner {
+  width: 28px; height: 28px;
+  border: 2px solid rgba(96,165,250,0.2);
+  border-top-color: var(--accent2);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══ TOAST ══════════════════════════════════════════════════════ */
+#toast-area {
+  position: fixed;
+  top: calc(var(--bar-h) + 60px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast-msg {
+  background: rgba(15,23,42,0.95);
+  color: var(--ink);
+  padding: 9px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  border-radius: 8px;
+  animation: tIn 0.25s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  pointer-events: auto;
+}
+.toast-msg.ok  { border-left: 3px solid var(--accent2); }
+.toast-msg.err { border-left: 3px solid var(--accent); }
+@keyframes tIn {
+  from { opacity:0; transform: translateY(-8px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ═══ SEARCH HIGHLIGHT ANIMATION ════════════════════════════════ */
+.result-card {
+  animation: cardIn 0.22s ease both;
+}
+@keyframes cardIn {
+  from { opacity:0; transform: translateY(6px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+.result-card:nth-child(1) { animation-delay: 0.02s; }
+.result-card:nth-child(2) { animation-delay: 0.04s; }
+.result-card:nth-child(3) { animation-delay: 0.06s; }
+.result-card:nth-child(4) { animation-delay: 0.08s; }
+.result-card:nth-child(5) { animation-delay: 0.10s; }
+
+/* ═══ INPUT FOCUS GLOW ═══════════════════════════════════════════ */
+#masthead.focused {
+  border-bottom-color: rgba(96,165,250,0.5);
+  box-shadow: 0 1px 24px rgba(96,165,250,0.08);
+}
+
+/* ═══ SHOW MORE ══════════════════════════════════════════════════ */
+.show-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: none;
+  border-top: 1px dashed rgba(96,165,250,0.18);
+  color: var(--accent2);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.09em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.show-more-btn:hover { background: rgba(96,165,250,0.06); }
+
+/* ═══ INLINE SCOPE TOGGLE (top of results on mobile) ═════════ */
+@media (max-width: 600px) {
+  .mh-wordmark { display: none; }
+  .members-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .scope-card { padding: 14px 12px; }
+}
+
+/* ═══ ALL RESULTS ZERO STATE ════════════════════════════════════ */
+#no-results {
+  display: none;
+  flex: 1;
+}
+#no-results.active {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  gap: 16px;
+}
+
+.nr-query {
+  font-family: var(--font-head);
+  font-size: 2rem;
+  letter-spacing: 0.1em;
+  color: var(--accent2);
+  opacity: 0.4;
+  word-break: break-all;
+}
+
+/* ═══ TYPE COLORS ════════════════════════════════════════════════ */
+.c-chat    { background: rgba(96,165,250,0.12); color: var(--accent2); }
+.c-ann     { background: rgba(239,68,68,0.12);  color: var(--accent); }
+.c-member  { background: rgba(16,185,129,0.12); color: var(--green); }
+.c-post    { background: rgba(250,204,21,0.12); color: var(--gold); }
+.c-song    { background: rgba(167,139,250,0.12);color: var(--purple); }
+.c-qna     { background: rgba(249,115,22,0.12); color: var(--orange); }
+.c-contrib { background: rgba(34,197,94,0.12);  color: #4ade80; }
+
+.dot-chat    { background: var(--accent2); }
+.dot-ann     { background: var(--accent); }
+.dot-member  { background: var(--green); }
+.dot-post    { background: var(--gold); }
+.dot-song    { background: var(--purple); }
+.dot-qna     { background: var(--orange); }
+.dot-contrib { background: #4ade80; }
+
+/* ═══ MEDIA THUMB ════════════════════════════════════════════════ */
+.rc-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--cream);
+  flex-shrink: 0;
+  align-self: center;
+  border: 1px solid var(--wire);
+}
+
+/* ═══ QUICK STAT CHIPS ═══════════════════════════════════════════ */
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.62rem;
+  color: var(--steel);
+  font-family: var(--font-mono);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ MASTHEAD ══════════════════════════════════════════════════ -->
+<header id="masthead">
+  <a href="index.html" class="mh-back"><i class="fas fa-arrow-left"></i></a>
+  <div class="mh-wordmark">SEARCH</div>
+  <div class="search-input-wrap">
+    <input type="search" id="search-input" placeholder="Search members, posts, songs, Q&amp;A..." autocomplete="off" autocorrect="off" spellcheck="false">
+    <button class="search-clear-btn" id="clear-btn"><i class="fas fa-times"></i></button>
+  </div>
+</header>
+
+<!-- ═══ SCOPE BAR ═════════════════════════════════════════════════ -->
+<div id="scope-bar">
+  <button class="scope-pill active" data-scope="all">
+    <span class="scope-dot" style="background:var(--accent2)"></span>
+    ALL
+    <span class="count-badge" id="badge-all"></span>
+  </button>
+  <button class="scope-pill" data-scope="chat">
+    <span class="scope-dot dot-chat"></span>
+    CHAT
+    <span class="count-badge" id="badge-chat"></span>
+  </button>
+  <button class="scope-pill" data-scope="announcements">
+    <span class="scope-dot dot-ann"></span>
+    ANNOUNCEMENTS
+    <span class="count-badge" id="badge-ann"></span>
+  </button>
+  <button class="scope-pill" data-scope="members">
+    <span class="scope-dot dot-member"></span>
+    MEMBERS
+    <span class="count-badge" id="badge-member"></span>
+  </button>
+  <button class="scope-pill" data-scope="posts">
+    <span class="scope-dot dot-post"></span>
+    POSTS
+    <span class="count-badge" id="badge-post"></span>
+  </button>
+  <button class="scope-pill" data-scope="songs">
+    <span class="scope-dot dot-song"></span>
+    SONGS
+    <span class="count-badge" id="badge-song"></span>
+  </button>
+  <button class="scope-pill" data-scope="qna">
+    <span class="scope-dot dot-qna"></span>
+    Q&amp;A
+    <span class="count-badge" id="badge-qna"></span>
+  </button>
+  <button class="scope-pill" data-scope="contributions">
+    <span class="scope-dot dot-contrib"></span>
+    CONTRIBUTIONS
+    <span class="count-badge" id="badge-contrib"></span>
+  </button>
+</div>
+
+<!-- ═══ PAGE BODY ═════════════════════════════════════════════════ -->
+<div id="page-body">
+
+  <!-- LANDING (shown before search) -->
+  <div id="landing">
+    <div class="land-wordmark"><h1>RIVERSIDE</h1></div>
+    <div class="scope-grid" id="scope-grid">
+      <!-- dynamically filled -->
+    </div>
+    <div class="land-search-hint">TYPE ANYTHING TO SEARCH ACROSS ALL DATA</div>
+  </div>
+
+  <!-- RESULTS (shown during/after search) -->
+  <div id="results-container">
+    <div id="status-bar">
+      <div class="status-query">Showing results for <span id="status-query-text"></span></div>
+      <div class="status-count" id="status-count-text"></div>
+    </div>
+
+    <div id="results-inner"></div>
+
+    <div id="no-results">
+      <div class="state-icon"><i class="fas fa-search"></i></div>
+      <div class="nr-query" id="nr-query-echo"></div>
+      <div class="state-title">NO RESULTS</div>
+      <div class="state-sub">TRY A DIFFERENT SEARCH TERM</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-area"></div>
+
+<!-- ═══ JAVASCRIPT ════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiU_LeE6AnCQFzLmORd6kpkHVh3cllbpXhYOg4H1L8U2MAbjF0X0nR03n8_2yFc0KN/exec';
+
+const currentUser = localStorage.getItem('userName') || '';
+if (!currentUser) location.href = 'index.html';
+
+/* ═══ SCOPE CONFIG ════════════════════════════════════════════════ */
+const SCOPES = [
+  { id: 'chat',          label: 'Chat',          icon: '💬', colorClass: 'c-chat',    dotClass: 'dot-chat',    desc: 'Main chat messages' },
+  { id: 'announcements', label: 'Announcements', icon: '📢', colorClass: 'c-ann',     dotClass: 'dot-ann',     desc: 'Church announcements' },
+  { id: 'members',       label: 'Members',       icon: '👥', colorClass: 'c-member',  dotClass: 'dot-member',  desc: 'Congregation members' },
+  { id: 'posts',         label: 'Posts',         icon: '📰', colorClass: 'c-post',    dotClass: 'dot-post',    desc: 'Channel posts' },
+  { id: 'songs',         label: 'Songs',         icon: '🎵', colorClass: 'c-song',    dotClass: 'dot-song',    desc: 'Digital hymnal' },
+  { id: 'qna',           label: 'Q&A',           icon: '🧠', colorClass: 'c-qna',     dotClass: 'dot-qna',     desc: 'Quizzes & surveys' },
+  { id: 'contributions', label: 'Contributions', icon: '💰', colorClass: 'c-contrib', dotClass: 'dot-contrib', desc: 'Giving records' },
+];
+
+/* ═══ STATE ═══════════════════════════════════════════════════════ */
+let currentScope = 'all';
+let lastQuery    = '';
+let searchTimer  = null;
+let lastResults  = {};
+let isSearching  = false;
+let allChannels  = [];
+let allQnaChans  = [];
+
+/* ═══ UTILITY ═════════════════════════════════════════════════════ */
+function lh3(url) {
+  if (!url) return '';
+  const m = url.match(/[-\w]{25,}/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[0]}` : url;
+}
+
+function fmtTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d)) return ts;
+  return d.toLocaleString([], { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function fallbackAvatar(name) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || '?')}&background=1e293b&color=60a5fa&size=88`;
+}
+
+function esc(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function highlight(text, query) {
+  if (!query || !text) return esc(text || '');
+  const safe = esc(text);
+  const re = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return safe.replace(re, '<span class="rc-highlight">$1</span>');
+}
+
+function toast(msg, type = 'ok') {
+  const area = document.getElementById('toast-area');
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.textContent = msg;
+  area.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+/* ═══ API ═════════════════════════════════════════════════════════ */
+async function api(params) {
+  const res = await fetch(`${SCRIPT_URL}?${new URLSearchParams(params)}`);
+  return res.json();
+}
+
+/* ═══ SCOPE CARD LANDING ══════════════════════════════════════════ */
+function buildLanding() {
+  const grid = document.getElementById('scope-grid');
+  grid.innerHTML = '';
+  SCOPES.forEach(sc => {
+    const card = document.createElement('div');
+    card.className = 'scope-card';
+    card.innerHTML = `
+      <div class="scope-card-icon ${sc.colorClass}">${sc.icon}</div>
+      <div class="scope-card-name ${sc.colorClass.replace('c-','').length ? '' : ''}">${sc.label}</div>
+      <div class="scope-card-desc">${sc.desc}</div>
+    `;
+    card.addEventListener('click', () => {
+      document.getElementById('search-input').focus();
+      setScope(sc.id);
+    });
+    grid.appendChild(card);
+  });
+}
+
+/* ═══ SCOPE MANAGEMENT ════════════════════════════════════════════ */
+function setScope(scope) {
+  currentScope = scope;
+  document.querySelectorAll('.scope-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.scope === scope);
+  });
+  if (lastQuery) renderResults(lastResults, lastQuery);
+}
+
+document.querySelectorAll('.scope-pill').forEach(p => {
+  p.addEventListener('click', () => setScope(p.dataset.scope));
+});
+
+/* ═══ SEARCH ORCHESTRATOR ════════════════════════════════════════ */
+async function search(query) {
+  query = query.trim();
+  if (!query) { showLanding(); return; }
+  if (query === lastQuery && isSearching) return;
+
+  lastQuery = query;
+  isSearching = true;
+  showResultsContainer(query);
+  showSpinner();
+
+  try {
+    // Parallel fetch all data types
+    const [chatRes, annRes, memberRes, postRes, songRes, qnaRes, contribRes] = await Promise.allSettled([
+      api({ operation: 'searchComments',       query }),
+      api({ operation: 'searchAnnouncements',  query }),
+      api({ operation: 'searchMembers',        query }),
+      searchPosts(query),
+      searchSongs(query),
+      searchQnA(query),
+      searchContributions(query)
+    ]);
+
+    const results = {
+      chat:          chatRes.status === 'fulfilled'   ? (chatRes.value.results   || []) : [],
+      announcements: annRes.status === 'fulfilled'    ? (annRes.value.results    || []) : [],
+      members:       memberRes.status === 'fulfilled' ? (memberRes.value.results || []) : [],
+      posts:         postRes.status === 'fulfilled'   ? postRes.value             : [],
+      songs:         songRes.status === 'fulfilled'   ? songRes.value             : [],
+      qna:           qnaRes.status === 'fulfilled'    ? qnaRes.value              : [],
+      contributions: contribRes.status === 'fulfilled'? contribRes.value          : []
+    };
+
+    lastResults = results;
+    renderResults(results, query);
+    updateBadges(results);
+
+  } catch (err) {
+    console.error(err);
+    toast('Search failed, check connection', 'err');
+    showSpinner(false);
+  }
+
+  isSearching = false;
+}
+
+/* Posts: search across all channels */
+async function searchPosts(query) {
+  try {
+    if (!allChannels.length) {
+      const d = await api({ operation: 'getAllChannels' });
+      allChannels = d.channels || [];
+    }
+    const q = query.toLowerCase();
+    const allPosts = await Promise.allSettled(
+      allChannels.map(ch => api({ operation: 'getChannelPosts', channelId: ch.id, username: currentUser }))
+    );
+    const results = [];
+    allPosts.forEach((res, i) => {
+      if (res.status !== 'fulfilled') return;
+      (res.value.posts || []).forEach(p => {
+        if ((p.content || '').toLowerCase().includes(q) || (p.author || '').toLowerCase().includes(q)) {
+          results.push({ ...p, channelName: allChannels[i]?.name || '' });
+        }
+      });
+    });
+    return results;
+  } catch { return []; }
+}
+
+/* Songs: filter from full list */
+async function searchSongs(query) {
+  try {
+    const d = await api({ operation: 'getAllSongs', username: currentUser });
+    const q = query.toLowerCase();
+    return (d.songs || []).filter(s =>
+      (s.title  || '').toLowerCase().includes(q) ||
+      (s.artist || '').toLowerCase().includes(q) ||
+      (s.category || '').toLowerCase().includes(q) ||
+      (s.creator || '').toLowerCase().includes(q) ||
+      (s.stanzas || []).some(st => (st.text || '').toLowerCase().includes(q))
+    );
+  } catch { return []; }
+}
+
+/* Q&A: search across channels + games */
+async function searchQnA(query) {
+  try {
+    if (!allQnaChans.length) {
+      const d = await api({ operation: 'getAllQnAChannels' });
+      allQnaChans = d.channels || [];
+    }
+    const q = query.toLowerCase();
+    const matchingChans = allQnaChans.filter(c =>
+      (c.name || '').toLowerCase().includes(q) || (c.description || '').toLowerCase().includes(q)
+    );
+    const gamesResults = await Promise.allSettled(
+      allQnaChans.map(ch => api({ operation: 'getQnAGames', channelId: ch.id }))
+    );
+    const matchingGames = [];
+    gamesResults.forEach((res, i) => {
+      if (res.status !== 'fulfilled') return;
+      (res.value.games || []).forEach(g => {
+        if ((g.name || '').toLowerCase().includes(q) || (g.description || '').toLowerCase().includes(q) || (g.creator || '').toLowerCase().includes(q)) {
+          matchingGames.push({ ...g, channelName: allQnaChans[i]?.name || '' });
+        }
+      });
+    });
+    return { channels: matchingChans, games: matchingGames };
+  } catch { return { channels: [], games: [] }; }
+}
+
+/* Contributions */
+async function searchContributions(query) {
+  try {
+    const d = await api({ operation: 'getContributionSets' });
+    const q = query.toLowerCase();
+    return (d.sets || []).filter(s =>
+      (s.name || '').toLowerCase().includes(q) ||
+      (s.description || '').toLowerCase().includes(q) ||
+      (s.creator || '').toLowerCase().includes(q)
+    );
+  } catch { return []; }
+}
+
+/* ═══ BADGE UPDATE ════════════════════════════════════════════════ */
+function updateBadges(results) {
+  const counts = {
+    chat:          results.chat?.length || 0,
+    ann:           results.announcements?.length || 0,
+    member:        results.members?.length || 0,
+    post:          results.posts?.length || 0,
+    song:          results.songs?.length || 0,
+    qna:           (results.qna?.channels?.length || 0) + (results.qna?.games?.length || 0),
+    contrib:       results.contributions?.length || 0
+  };
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  const set = (id, n) => {
+    const el = document.getElementById(`badge-${id}`);
+    if (el) { el.textContent = n; el.classList.toggle('show', n > 0); }
+  };
+  set('all',    total);
+  set('chat',   counts.chat);
+  set('ann',    counts.ann);
+  set('member', counts.member);
+  set('post',   counts.post);
+  set('song',   counts.song);
+  set('qna',    counts.qna);
+  set('contrib',counts.contrib);
+
+  document.getElementById('status-count-text').textContent = `${total} result${total === 1 ? '' : 's'}`;
+}
+
+/* ═══ VIEW MANAGEMENT ═════════════════════════════════════════════ */
+function showLanding() {
+  document.getElementById('landing').style.display = 'flex';
+  document.getElementById('results-container').classList.remove('active');
+  document.getElementById('clear-btn').classList.remove('visible');
+  document.getElementById('masthead').classList.remove('focused');
+  lastQuery = '';
+  lastResults = {};
+  // Reset badges
+  document.querySelectorAll('.count-badge').forEach(b => b.classList.remove('show'));
+}
+
+function showResultsContainer(query) {
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('results-container').classList.add('active');
+  document.getElementById('no-results').classList.remove('active');
+  document.getElementById('status-query-text').textContent = `"${query}"`;
+}
+
+function showSpinner(show = true) {
+  const inner = document.getElementById('results-inner');
+  if (show) {
+    inner.innerHTML = '<div class="spin-wrap"><div class="spinner"></div></div>';
+  }
+}
+
+/* ═══ RENDER ALL RESULTS ══════════════════════════════════════════ */
+function renderResults(results, query) {
+  const inner = document.getElementById('results-inner');
+  inner.innerHTML = '';
+
+  const sections = [];
+  const scope = currentScope;
+
+  const include = (s) => scope === 'all' || scope === s;
+
+  if (include('chat') && results.chat?.length)
+    sections.push(buildChatSection(results.chat, query));
+
+  if (include('announcements') && results.announcements?.length)
+    sections.push(buildAnnSection(results.announcements, query));
+
+  if (include('members') && results.members?.length)
+    sections.push(buildMembersSection(results.members, query));
+
+  if (include('posts') && results.posts?.length)
+    sections.push(buildPostsSection(results.posts, query));
+
+  if (include('songs') && results.songs?.length)
+    sections.push(buildSongsSection(results.songs, query));
+
+  if (include('qna') && ((results.qna?.channels?.length || 0) + (results.qna?.games?.length || 0) > 0))
+    sections.push(buildQnASection(results.qna, query));
+
+  if (include('contributions') && results.contributions?.length)
+    sections.push(buildContribSection(results.contributions, query));
+
+  if (sections.length === 0) {
+    document.getElementById('no-results').classList.add('active');
+    document.getElementById('nr-query-echo').textContent = `"${query}"`;
+    return;
+  }
+
+  document.getElementById('no-results').classList.remove('active');
+  sections.forEach(s => inner.appendChild(s));
+}
+
+/* ═══ SECTION BUILDER HELPER ══════════════════════════════════════ */
+function makeSection(id, label, icon, colorClass, count, bodyContent) {
+  const sec = document.createElement('div');
+  sec.className = 'results-section';
+  sec.dataset.section = id;
+
+  const head = document.createElement('div');
+  head.className = 'section-head';
+  head.innerHTML = `
+    <div class="scope-card-icon ${colorClass}" style="width:28px;height:28px;font-size:0.85rem;border-radius:8px;">${icon}</div>
+    <div class="section-head-title">${label}</div>
+    <span class="section-count">${count} RESULT${count !== 1 ? 'S' : ''}</span>
+    <i class="fas fa-chevron-down section-chevron"></i>
+  `;
+
+  const body = document.createElement('div');
+  body.className = 'section-body';
+  body.style.maxHeight = '99999px';
+  body.appendChild(bodyContent);
+
+  head.addEventListener('click', () => {
+    const chevron = head.querySelector('.section-chevron');
+    const collapsed = body.classList.toggle('collapsed');
+    chevron.classList.toggle('collapsed', collapsed);
+    if (!collapsed) body.style.maxHeight = body.scrollHeight + 'px';
+    else body.style.maxHeight = '0';
+  });
+
+  sec.appendChild(head);
+  sec.appendChild(body);
+  return sec;
+}
+
+/* ═══ CHAT SECTION ════════════════════════════════════════════════ */
+function buildChatSection(items, query) {
+  const LIMIT = 6;
+  const list = document.createElement('div');
+  list.className = 'result-list';
+
+  const show = items.slice(0, LIMIT);
+  show.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.addEventListener('click', () => { window.location.href = 'home.html'; });
+    const av = lh3(c.picLink) || fallbackAvatar(c.name);
+    const fileIcon = c.fileLink ? `<span class="rc-tag c-chat" style="margin-left:4px;"><i class="fas fa-paperclip"></i></span>` : '';
+    card.innerHTML = `
+      <img class="rc-avatar" src="${av}" onerror="this.src='${fallbackAvatar(c.name)}'" alt="">
+      <div class="rc-body">
+        <div class="rc-meta">
+          <span class="rc-author">${esc(c.name)}</span>
+          ${fileIcon}
+          <span class="rc-time">${fmtTime(c.timestamp)}</span>
+        </div>
+        <div class="rc-text">${highlight(c.comment, query)}</div>
+      </div>
+      <i class="fas fa-chevron-right rc-chevron"></i>
+    `;
+    list.appendChild(card);
+  });
+
+  if (items.length > LIMIT) {
+    const btn = document.createElement('button');
+    btn.className = 'show-more-btn';
+    btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - LIMIT} MORE`;
+    let showing = LIMIT;
+    btn.addEventListener('click', () => {
+      items.slice(showing, showing + 10).forEach(c => {
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.addEventListener('click', () => window.location.href = 'home.html');
+        const av = lh3(c.picLink) || fallbackAvatar(c.name);
+        card.innerHTML = `
+          <img class="rc-avatar" src="${av}" onerror="this.src='${fallbackAvatar(c.name)}'" alt="">
+          <div class="rc-body">
+            <div class="rc-meta"><span class="rc-author">${esc(c.name)}</span><span class="rc-time">${fmtTime(c.timestamp)}</span></div>
+            <div class="rc-text">${highlight(c.comment, query)}</div>
+          </div>
+          <i class="fas fa-chevron-right rc-chevron"></i>
+        `;
+        list.insertBefore(card, btn);
+      });
+      showing += 10;
+      if (showing >= items.length) btn.remove();
+      else btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - showing} MORE`;
+    });
+    list.appendChild(btn);
+  }
+
+  return makeSection('chat', 'CHAT MESSAGES', '💬', 'c-chat', items.length, list);
+}
+
+/* ═══ ANNOUNCEMENT SECTION ════════════════════════════════════════ */
+function buildAnnSection(items, query) {
+  const LIMIT = 5;
+  const list = document.createElement('div');
+  list.className = 'result-list';
+
+  const buildCard = (a) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.addEventListener('click', () => window.location.href = 'announce.html');
+    const av = lh3(a.picLink) || fallbackAvatar(a.name);
+    const links = a.fileLink ? a.fileLink.split(',') : [];
+    const hasImg = links.some(l => /\.(jpg|jpeg|png|gif|webp)/i.test(l) || l.includes('drive.google'));
+    let thumbHtml = '';
+    if (hasImg) {
+      const id = links[0].match(/[-\w]{25,}/)?.[0];
+      if (id) thumbHtml = `<img class="rc-thumb" src="https://lh3.googleusercontent.com/d/${id}" onerror="this.style.display='none'" alt="">`;
+    }
+    card.innerHTML = `
+      <img class="rc-avatar" src="${av}" onerror="this.src='${fallbackAvatar(a.name)}'" alt="">
+      <div class="rc-body">
+        <div class="rc-meta">
+          <span class="rc-author">${esc(a.name)}</span>
+          <span class="rc-tag c-ann">ANNOUNCEMENT</span>
+          <span class="rc-time">${fmtTime(a.timestamp)}</span>
+        </div>
+        <div class="rc-text">${highlight(a.comment, query)}</div>
+        ${links.length > 1 ? `<div class="rc-sub"><i class="fas fa-images"></i> ${links.length} ATTACHMENTS</div>` : ''}
+      </div>
+      ${thumbHtml}
+      <i class="fas fa-chevron-right rc-chevron"></i>
+    `;
+    return card;
+  };
+
+  items.slice(0, LIMIT).forEach(a => list.appendChild(buildCard(a)));
+
+  if (items.length > LIMIT) {
+    const btn = document.createElement('button');
+    btn.className = 'show-more-btn';
+    btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - LIMIT} MORE`;
+    let showing = LIMIT;
+    btn.addEventListener('click', () => {
+      items.slice(showing, showing + 5).forEach(a => list.insertBefore(buildCard(a), btn));
+      showing += 5;
+      if (showing >= items.length) btn.remove();
+      else btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - showing} MORE`;
+    });
+    list.appendChild(btn);
+  }
+
+  return makeSection('ann', 'ANNOUNCEMENTS', '📢', 'c-ann', items.length, list);
+}
+
+/* ═══ MEMBERS SECTION ═════════════════════════════════════════════ */
+function buildMembersSection(items, query) {
+  const grid = document.createElement('div');
+  grid.className = 'members-grid';
+
+  items.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'member-card';
+    const av = lh3(m.picLink) || fallbackAvatar(m.name);
+
+    let statusColor = 'var(--steel)';
+    let statusBg = 'rgba(148,163,184,0.12)';
+    if (m.status === 'approved') { statusColor = 'var(--green)'; statusBg = 'rgba(16,185,129,0.12)'; }
+    if (m.status === 'blocked')  { statusColor = 'var(--accent)'; statusBg = 'rgba(239,68,68,0.12)'; }
+
+    card.innerHTML = `
+      <img class="mc-avatar" src="${av}" onerror="this.src='${fallbackAvatar(m.name)}'" alt="">
+      <div class="mc-name">${highlight(m.name, query)}</div>
+      <span class="mc-badge" style="background:${statusBg};color:${statusColor};">${(m.status || 'pending').toUpperCase()}</span>
+      ${m.isAdmin ? `<span class="mc-role" style="color:var(--gold);">⭐ ADMIN</span>` : ''}
+      ${m.role    ? `<span class="mc-role">${m.role.toUpperCase()}</span>` : ''}
+    `;
+    grid.appendChild(card);
+  });
+
+  return makeSection('members', 'MEMBERS', '👥', 'c-member', items.length, grid);
+}
+
+/* ═══ POSTS SECTION ═══════════════════════════════════════════════ */
+function buildPostsSection(items, query) {
+  const LIMIT = 5;
+  const list = document.createElement('div');
+  list.className = 'result-list';
+
+  const buildCard = (p) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    const url = `channel.html?channelId=${encodeURIComponent(p.channelId)}&postId=${encodeURIComponent(p.postId)}`;
+    card.addEventListener('click', () => window.location.href = url);
+    const av = lh3(p.picLink) || fallbackAvatar(p.author);
+
+    let mediaHtml = '';
+    if (p.media?.link) {
+      const id = (p.media.link).match(/[-\w]{25,}/)?.[0];
+      if (id && p.media.type?.startsWith('image')) {
+        mediaHtml = `<img class="rc-thumb" src="https://lh3.googleusercontent.com/d/${id}" onerror="this.style.display='none'" alt="">`;
+      }
+    }
+
+    card.innerHTML = `
+      <img class="rc-avatar" src="${av}" onerror="this.src='${fallbackAvatar(p.author)}'" alt="">
+      <div class="rc-body">
+        <div class="rc-meta">
+          <span class="rc-author">${esc(p.author)}</span>
+          <span class="rc-tag c-post">#${esc(p.channelName || p.channelId)}</span>
+          <span class="rc-time">${fmtTime(p.created)}</span>
+        </div>
+        <div class="rc-text">${highlight(p.content || '(media post)', query)}</div>
+        <div class="rc-sub">
+          <span class="stat-chip"><i class="fas fa-heart"></i> ${p.likes || 0}</span>
+          ${p.events?.length ? `<span class="stat-chip"><i class="fas fa-calendar"></i> ${p.events.length} EVENTS</span>` : ''}
+        </div>
+      </div>
+      ${mediaHtml}
+      <i class="fas fa-chevron-right rc-chevron"></i>
+    `;
+    return card;
+  };
+
+  items.slice(0, LIMIT).forEach(p => list.appendChild(buildCard(p)));
+
+  if (items.length > LIMIT) {
+    const btn = document.createElement('button');
+    btn.className = 'show-more-btn';
+    btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - LIMIT} MORE`;
+    let showing = LIMIT;
+    btn.addEventListener('click', () => {
+      items.slice(showing, showing + 5).forEach(p => list.insertBefore(buildCard(p), btn));
+      showing += 5;
+      if (showing >= items.length) btn.remove();
+      else btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - showing} MORE`;
+    });
+    list.appendChild(btn);
+  }
+
+  return makeSection('posts', 'CHANNEL POSTS', '📰', 'c-post', items.length, list);
+}
+
+/* ═══ SONGS SECTION ═══════════════════════════════════════════════ */
+function buildSongsSection(items, query) {
+  const LIMIT = 6;
+  const list = document.createElement('div');
+  list.className = 'result-list';
+
+  const buildCard = (s) => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.addEventListener('click', () => window.location.href = `lyric.html?songId=${encodeURIComponent(s.songId)}`);
+
+    const matchingStanza = (s.stanzas || []).find(st => (st.text || '').toLowerCase().includes(lastQuery.toLowerCase()));
+    const previewText = matchingStanza
+      ? matchingStanza.text.substring(0, 140)
+      : (s.stanzas?.[0]?.text || '').substring(0, 140);
+
+    card.innerHTML = `
+      <div class="rc-icon-box c-song" style="font-size:1.3rem; width:44px; height:44px;">🎵</div>
+      <div class="rc-body">
+        <div class="rc-meta">
+          <span class="rc-author" style="color:var(--purple);">${highlight(s.title, query)}</span>
+          ${s.category ? `<span class="rc-tag c-song">${esc(s.category)}</span>` : ''}
+        </div>
+        ${s.artist ? `<div style="font-size:0.78rem;color:var(--steel);margin-bottom:4px;font-family:var(--font-mono);">BY ${esc(s.artist)}</div>` : ''}
+        ${previewText ? `<div class="rc-text" style="color:var(--steel);font-style:italic;">${highlight(previewText, query)}${previewText.length >= 140 ? '…' : ''}</div>` : ''}
+        <div class="rc-sub">
+          <span class="stat-chip"><i class="fas fa-heart"></i> ${s.likes || 0}</span>
+          <span class="stat-chip"><i class="fas fa-eye"></i> ${s.viewCount || 0}</span>
+          <span class="stat-chip"><i class="fas fa-list"></i> ${(s.stanzas || []).length} STANZAS</span>
+        </div>
+      </div>
+      <i class="fas fa-chevron-right rc-chevron"></i>
+    `;
+    return card;
+  };
+
+  items.slice(0, LIMIT).forEach(s => list.appendChild(buildCard(s)));
+
+  if (items.length > LIMIT) {
+    const btn = document.createElement('button');
+    btn.className = 'show-more-btn';
+    btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - LIMIT} MORE`;
+    let showing = LIMIT;
+    btn.addEventListener('click', () => {
+      items.slice(showing, showing + 6).forEach(s => list.insertBefore(buildCard(s), btn));
+      showing += 6;
+      if (showing >= items.length) btn.remove();
+      else btn.innerHTML = `<i class="fas fa-plus-circle"></i> SHOW ${items.length - showing} MORE`;
+    });
+    list.appendChild(btn);
+  }
+
+  return makeSection('songs', 'HYMNAL / SONGS', '🎵', 'c-song', items.length, list);
+}
+
+/* ═══ Q&A SECTION ═════════════════════════════════════════════════ */
+function buildQnASection(qna, query) {
+  const list = document.createElement('div');
+  list.className = 'result-list';
+  const total = (qna.channels?.length || 0) + (qna.games?.length || 0);
+
+  (qna.channels || []).forEach(ch => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.addEventListener('click', () => window.location.href = 'Q&A.html');
+    card.innerHTML = `
+      <div class="rc-icon-box c-qna" style="width:44px;height:44px;font-size:1.2rem;">🧠</div>
+      <div class="rc-body">
+        <div class="rc-meta">
+          <span class="rc-author" style="color:var(--orange);">${highlight(ch.name, query)}</span>
+          <span class="rc-tag c-qna">CHANNEL</span>
+          <span class="rc-time">${fmtDate(ch.created)}</span>
+        </div>
+        ${ch.description ? `<div class="rc-text">${highlight(ch.description, query)}</div>` : ''}
+        <div class="rc-sub">BY ${esc(ch.creator || '').toUpperCase()}</div>
+      </div>
+      <i class="fas fa-chevron-right rc-chevron"></i>
+    `;
+    list.appendChild(card);
+  });
+
+  (qna.games || []).forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.addEventListener('click', () => window.location.href = `Q&A.html?gameId=${encodeURIComponent(g.id)}`);
+    const modeIcon = g.mode === 'survey' ? '📋' : '🏆';
+    card.innerHTML = `
+      <div class="rc-icon-box c-qna" style="width:44px;height:44px;font-size:1.2rem;">${modeIcon}</div>
+      <div class="rc-body">
+        <div class="rc-meta">
+          <span class="rc-author" style="color:var(--orange);">${highlight(g.name, query)}</span>
+          <span class="rc-tag c-qna">${(g.mode || 'quiz').toUpperCase()}</span>
+        </div>
+        ${g.description ? `<div class="rc-text">${highlight(g.description, query)}</div>` : ''}
+        <div class="rc-sub">
+          IN ${esc(g.channelName || '').toUpperCase()} · BY ${esc(g.creator || '').toUpperCase()}
+          ${g.timer ? `<span class="stat-chip"><i class="fas fa-clock"></i> ${g.timer}S</span>` : ''}
+        </div>
+      </div>
+      <i class="fas fa-chevron-right rc-chevron"></i>
+    `;
+    list.appendChild(card);
+  });
+
+  return makeSection('qna', 'Q&A / QUIZZES', '🧠', 'c-qna', total, list);
+}
+
+/* ═══ CONTRIBUTIONS SECTION ═══════════════════════════════════════ */
+function buildContribSection(items, query) {
+  const list = document.createElement('div');
+  list.className = 'result-list';
+
+  items.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'result-card';
+    card.addEventListener('click', () => window.location.href = 'treasurer.html');
+    const av = lh3(s.picLink) || fallbackAvatar(s.name);
+    card.innerHTML = `
+      <div class="rc-icon-box c-contrib" style="width:44px;height:44px;font-size:1.2rem;">💰</div>
+      <div class="rc-body">
+        <div class="rc-meta">
+          <span class="rc-author" style="color:#4ade80;">${highlight(s.name, query)}</span>
+          <span class="rc-tag c-contrib">FUND</span>
+          <span class="rc-time">${fmtDate(s.created)}</span>
+        </div>
+        ${s.description ? `<div class="rc-text">${highlight(s.description, query)}</div>` : ''}
+        <div class="rc-sub">BY ${esc(s.creator || '').toUpperCase()}</div>
+      </div>
+      <i class="fas fa-chevron-right rc-chevron"></i>
+    `;
+    list.appendChild(card);
+  });
+
+  return makeSection('contributions', 'CONTRIBUTIONS', '💰', 'c-contrib', items.length, list);
+}
+
+/* ═══ INPUT WIRING ════════════════════════════════════════════════ */
+const searchInput = document.getElementById('search-input');
+const clearBtn    = document.getElementById('clear-btn');
+const masthead    = document.getElementById('masthead');
+
+searchInput.addEventListener('focus', () => masthead.classList.add('focused'));
+searchInput.addEventListener('blur',  () => masthead.classList.remove('focused'));
+
+searchInput.addEventListener('input', () => {
+  const val = searchInput.value;
+  clearBtn.classList.toggle('visible', val.length > 0);
+
+  clearTimeout(searchTimer);
+  if (!val.trim()) { showLanding(); return; }
+
+  // Debounce: 420ms feels snappy but avoids spam
+  searchTimer = setTimeout(() => search(val), 420);
+});
+
+clearBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  clearBtn.classList.remove('visible');
+  showLanding();
+  searchInput.focus();
+});
+
+// Allow Enter to trigger immediately
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    clearTimeout(searchTimer);
+    const val = searchInput.value.trim();
+    if (val) search(val);
+  }
+  if (e.key === 'Escape') {
+    searchInput.value = '';
+    clearBtn.classList.remove('visible');
+    showLanding();
+  }
+});
+
+/* ═══ DEEP LINK SUPPORT ═══════════════════════════════════════════ */
+const usp = new URLSearchParams(location.search);
+const preQuery = usp.get('q');
+const preScope = usp.get('scope');
+if (preScope) setScope(preScope);
+if (preQuery) {
+  searchInput.value = preQuery;
+  clearBtn.classList.add('visible');
+  search(preQuery);
+}
+
+/* ═══ AUTO-FOCUS ON DESKTOP ═══════════════════════════════════════ */
+if (window.innerWidth > 768) searchInput.focus();
+
+/* ═══ INIT ════════════════════════════════════════════════════════ */
+buildLanding();
+</script>
+</body>
+</html>

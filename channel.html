@@ -386,10 +386,17 @@ html, body {
   object-fit: contain;
   display: block;
 }
-.post-media-wrap iframe {
+.post-media-wrap.video-wrap {
+  position: relative;
   width: 100%;
-  height: 56vw;
-  max-height: 420px;
+  padding-top: 56.25%; /* 16:9 */
+  background: #000;
+}
+.post-media-wrap.video-wrap iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
   border: none;
   display: block;
 }
@@ -2123,7 +2130,7 @@ function buildPostView(p, idx, total) {
       : `https://drive.google.com/file/d/${(p.media.link.match(/[-\w]{25,}/) || [p.media.link])[0]}/preview`;
     mediaHtml = isImg
       ? `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`
-      : `<div class="post-media-wrap"><iframe src="${src}" allowfullscreen></iframe></div>`;
+      :  `<div class="post-media-wrap video-wrap"><iframe src="${src}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
   }
 
   let calHtml = '';
@@ -2153,8 +2160,10 @@ function buildPostView(p, idx, total) {
   }
 
   const cleanText = (p.content || '')
-    .replace(/https?:\/\/drive\.google\.com\/[^\s<>"']*/gi, '')
-    .replace(/\s{2,}/g, ' ').trim();
+  .replace(/https?:\/\/drive\.google\.com\/[^\s<>"']*/gi, '')
+  .replace(/\/view\b\S*/gi, '')
+  .replace(/usp=\S+/gi, '')
+  .replace(/\s{2,}/g, ' ').trim();
 
   wrap.innerHTML = `
     <div class="post-header">

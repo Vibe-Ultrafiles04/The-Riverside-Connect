@@ -379,44 +379,22 @@ html, body {
   background: #000;
   overflow: hidden;
   position: relative;
-  min-height: 200px; /* prevent collapse */
+  aspect-ratio: 16 / 9;  /* ADD THIS LINE ONLY */
 }
-
 .post-media-wrap img {
   width: 100%;
   max-height: 58vh;
   object-fit: contain;
   display: block;
 }
-
-/* Video iframe improvements */
-.post-media-wrap.video-wrap {
-  aspect-ratio: 16 / 9;           /* Better mobile ratio */
-  max-height: 65vh;
-  background: #000;
-}
-
 .post-media-wrap iframe {
-  width: 100% !important;
-  height: 100% !important;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  max-height: 420px;
   border: none;
   display: block;
-  min-height: 220px;   /* fallback for mobile */
-}
-
-/* Force controls on mobile */
-.post-media-wrap iframe {
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-/* Optional: make video tappable to play/pause on mobile */
-.post-media-wrap.video-wrap::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none;
+  overflow: hidden;
 }
 .post-calendar { border-top: 1px solid var(--wire); }
 
@@ -2139,29 +2117,16 @@ function buildPostView(p, idx, total) {
   const avatarSrc = lh3(p.picLink) || fallbackAvatar(p.author);
   const isOwn = p.author === currentUser;
 
- let mediaHtml = '';
-if (p.media?.link) {
-  const isImg = (p.media.type || '').startsWith('image');
-  
-  if (isImg) {
-    const src = lh3(p.media.link);
-    mediaHtml = `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`;
-  } else {
-    // Better mobile-friendly Google Drive video embed
-    const fileId = (p.media.link.match(/[-\w]{25,}/) || [p.media.link])[0];
-    const embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-    
-    mediaHtml = `
-      <div class="post-media-wrap video-wrap">
-        <iframe 
-          src="${embedUrl}" 
-          allowfullscreen 
-          allow="autoplay; encrypted-media"
-          loading="lazy">
-        </iframe>
-      </div>`;
+  let mediaHtml = '';
+  if (p.media?.link) {
+    const isImg = (p.media.type || '').startsWith('image');
+    const src = isImg
+      ? lh3(p.media.link)
+      : `https://drive.google.com/file/d/${(p.media.link.match(/[-\w]{25,}/) || [p.media.link])[0]}/preview`;
+    mediaHtml = isImg
+      ? `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`
+      : `<div class="post-media-wrap"><iframe src="${src}" allowfullscreen></iframe></div>`;
   }
-}
 
   let calHtml = '';
   if (p.events?.length) {
@@ -2194,6 +2159,7 @@ if (p.media?.link) {
   .replace(/\/view\b\S*/gi, '')
   .replace(/usp=\S+/gi, '')
   .replace(/\s{2,}/g, ' ').trim();
+
   wrap.innerHTML = `
     <div class="post-header">
       <img class="post-avatar" src="${avatarSrc}" onerror="this.src='https://picsum.photos/id/64/48/48'" alt="">

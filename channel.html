@@ -2115,14 +2115,23 @@ function buildPostView(p, idx, total) {
   const isOwn = p.author === currentUser;
 
   let mediaHtml = '';
-  if (p.media?.link) {
+ if (p.media?.link) {
     const isImg = (p.media.type || '').startsWith('image');
-    const src = isImg
-      ? lh3(p.media.link)
-      : `https://drive.google.com/file/d/${(p.media.link.match(/[-\w]{25,}/) || [p.media.link])[0]}/preview`;
-    mediaHtml = isImg
-      ? `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`
-      : `<div class="post-media-wrap"><iframe src="${src}" allowfullscreen></iframe></div>`;
+    if (isImg) {
+      const src = lh3(p.media.link);
+      mediaHtml = `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`;
+    }  else {
+      const idMatch = p.media.link.match(/[-\w]{25,}/);
+      const fileId = idMatch ? idMatch[0] : p.media.link;
+      const src = `https://drive.google.com/file/d/${fileId}/preview`;
+      mediaHtml = `<div class="post-media-wrap" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;">
+        <iframe src="${src}"
+          style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;"
+          allow="autoplay"
+          allowfullscreen>
+        </iframe>
+      </div>`;
+    }
   }
 
   let calHtml = '';

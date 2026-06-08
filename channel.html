@@ -377,9 +377,7 @@ html, body {
 .post-media-wrap {
   width: 100%;
   background: #000;
-  overflow: hidden;
   position: relative;
-  aspect-ratio: 16 / 9;  /* ADD THIS LINE ONLY */
 }
 .post-media-wrap img {
   width: 100%;
@@ -389,12 +387,10 @@ html, body {
 }
 .post-media-wrap iframe {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  height: auto;
-  max-height: 420px;
+  height: 56.25vw;
+  max-height: 70vh;
   border: none;
   display: block;
-  overflow: hidden;
 }
 .post-calendar { border-top: 1px solid var(--wire); }
 

@@ -374,25 +374,31 @@ html, body {
   white-space: pre-wrap;
 }
 
+/* Video wrapper — preserves 16:9 + room for Drive controls */
 .post-media-wrap {
   width: 100%;
   background: #000;
   overflow: hidden;
   position: relative;
 }
+
 .post-media-wrap img {
   width: 100%;
   max-height: 58vh;
   object-fit: contain;
   display: block;
 }
-.post-media-wrap.video-wrap {
+
+/* Aspect-ratio shell for iframe */
+.post-media-wrap .video-shell {
   position: relative;
   width: 100%;
-  padding-top: 56.25%; /* 16:9 */
+  padding-bottom: calc(56.25% + 60px); /* 16:9 + 60px for Drive controls */
+  height: 0;
   background: #000;
 }
-.post-media-wrap.video-wrap iframe {
+
+.post-media-wrap .video-shell iframe {
   position: absolute;
   top: 0; left: 0;
   width: 100%;
@@ -2130,7 +2136,7 @@ function buildPostView(p, idx, total) {
       : `https://drive.google.com/file/d/${(p.media.link.match(/[-\w]{25,}/) || [p.media.link])[0]}/preview`;
     mediaHtml = isImg
       ? `<div class="post-media-wrap"><img src="${src}" loading="lazy" onerror="this.style.display='none'" alt=""></div>`
-      :  `<div class="post-media-wrap video-wrap"><iframe src="${src}" allowfullscreen allow="autoplay; encrypted-media"></iframe></div>`;
+      : `<div class="post-media-wrap"><div class="video-shell"><iframe src="${src}" allowfullscreen></iframe></div></div>`;
   }
 
   let calHtml = '';
@@ -2159,12 +2165,12 @@ function buildPostView(p, idx, total) {
     calHtml = `<div class="post-calendar"><div class="cal-month-strip">${monthsHtml}</div></div>`;
   }
 
-  const cleanText = (p.content || '')
+ const cleanText = (p.content || '')
   .replace(/https?:\/\/drive\.google\.com\/[^\s<>"']*/gi, '')
   .replace(/\/view\b\S*/gi, '')
   .replace(/usp=\S+/gi, '')
   .replace(/\s{2,}/g, ' ').trim();
-
+  
   wrap.innerHTML = `
     <div class="post-header">
       <img class="post-avatar" src="${avatarSrc}" onerror="this.src='https://picsum.photos/id/64/48/48'" alt="">

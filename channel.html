@@ -393,7 +393,7 @@ html, body {
 .post-media-wrap .video-shell {
   position: relative;
   width: 100%;
-  padding-bottom: calc(56.25% + 60px); /* 16:9 + 60px for Drive controls */
+  padding-bottom: calc(56.25% + 72px);
   height: 0;
   background: #000;
 }
@@ -405,6 +405,14 @@ html, body {
   height: 100%;
   border: none;
   display: block;
+}
+
+/* Mobile: use fixed height instead of % trick */
+@media (max-width: 768px) {
+  .post-media-wrap .video-shell {
+    padding-bottom: 0;
+    height: calc(56.25vw + 100px);
+  }
 }
 
 .post-calendar { border-top: 1px solid var(--wire); }

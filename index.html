@@ -35,6 +35,8 @@
       --gold:      #facc15;
       --danger:    #ef4444;
       --green:     #10b981;
+      --ann-gold:  #d4af37;
+      --ann-gold-dim: rgba(212,175,55,0.15);
 
       --font-head: 'Bebas Neue', sans-serif;
       --font-body: 'DM Sans', sans-serif;
@@ -86,7 +88,147 @@
     }
     .tb-logo-text span { color: var(--ink); opacity: 0.55; font-size: 0.85em; }
 
-    .tb-spacer { flex: 1; }
+    /* ══ SEARCH BAR in topbar ══════════════════════════════════ */
+    .tb-search-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      height: 100%;
+      padding: 0 12px;
+      position: relative;
+      min-width: 0;
+    }
+    .tb-search-wrap i {
+      position: absolute;
+      left: 24px;
+      color: var(--steel);
+      font-size: 0.78rem;
+      pointer-events: none;
+      transition: color 0.2s;
+    }
+    #search-input {
+      width: 100%;
+      height: 32px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--wire);
+      border-radius: 6px;
+      padding: 0 32px 0 30px;
+      color: var(--ink);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    #search-input::placeholder { color: var(--steel); letter-spacing: 0.06em; }
+    #search-input:focus {
+      border-color: rgba(96,165,250,0.45);
+      background: rgba(96,165,250,0.05);
+    }
+    #search-input:focus + i, .tb-search-wrap:focus-within i { color: var(--accent2); }
+    .tb-search-clear {
+      position: absolute;
+      right: 20px;
+      width: 20px; height: 20px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: var(--steel);
+      cursor: pointer;
+      font-size: 0.7rem;
+      border-radius: 50%;
+      transition: color 0.15s, background 0.15s;
+    }
+    .tb-search-clear:hover { color: var(--ink); background: rgba(255,255,255,0.08); }
+    .tb-search-clear.visible { display: flex; }
+
+    /* Search results dropdown */
+    #search-results {
+      display: none;
+      position: fixed;
+      top: var(--bar-h);
+      left: 0; right: 0;
+      background: rgba(10,15,30,0.98);
+      border-bottom: 1px solid var(--wire);
+      z-index: 860;
+      max-height: calc(100dvh - var(--bar-h));
+      overflow-y: auto;
+      backdrop-filter: blur(16px);
+    }
+    #search-results.open { display: block; }
+    .sr-inner {
+      padding: 12px 16px 20px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .sr-label {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      color: var(--steel);
+      padding: 4px 0 10px;
+    }
+    .sr-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.12s;
+      border-bottom: 1px solid rgba(96,165,250,0.07);
+    }
+    .sr-item:last-child { border-bottom: none; }
+    .sr-item:hover { background: var(--lift); }
+    .sr-item-type {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .sr-item-type.post { background: rgba(96,165,250,0.12); color: var(--accent2); }
+    .sr-item-type.ann  { background: rgba(212,175,55,0.12); color: var(--ann-gold); }
+    .sr-item-info { flex: 1; min-width: 0; }
+    .sr-item-author {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .sr-item-channel {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      color: var(--accent2);
+      margin-top: 1px;
+    }
+    .sr-item-preview {
+      font-size: 0.78rem;
+      color: var(--steel);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sr-item-time {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--steel);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .sr-empty {
+      text-align: center;
+      padding: 32px 0;
+      color: var(--steel);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+    }
 
     .tb-btn {
       height: 100%;
@@ -149,7 +291,7 @@
     .tb-more-btn .chevron { transition: transform 0.25s ease; font-size: 0.7rem; }
     .tb-more-btn.active .chevron { transform: rotate(180deg); }
 
-    /* ══ MORE PANEL (slides down) ═════════════════════════════ */
+    /* ══ MORE PANEL ═════════════════════════════════════════════ */
     #more-panel {
       position: fixed;
       top: var(--bar-h);
@@ -170,7 +312,6 @@
       margin: 0 auto;
     }
 
-    /* Channels circles row */
     .more-section-label {
       font-family: var(--font-mono);
       font-size: 0.65rem;
@@ -190,10 +331,7 @@
     }
     .circles-scroll::-webkit-scrollbar { display: none; }
 
-    .circles-row {
-      display: inline-flex;
-      gap: 16px;
-    }
+    .circles-row { display: inline-flex; gap: 16px; }
 
     .circle-item {
       display: flex;
@@ -218,19 +356,6 @@
     }
     .circle-item:hover .circle-ring { border-color: var(--accent2); }
 
-    .circle-avatar {
-      width: 100%; height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      background: var(--lift);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-head);
-      font-size: 1.4rem;
-      color: var(--accent2);
-    }
-
     .circle-label {
       font-size: 0.7rem;
       color: var(--lead);
@@ -243,7 +368,6 @@
       letter-spacing: 0.03em;
     }
 
-    /* Nav grid */
     .nav-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -279,17 +403,8 @@
       color: var(--accent2);
       flex-shrink: 0;
     }
-    .nav-tile-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--ink);
-    }
-    .nav-tile-sub {
-      font-size: 0.68rem;
-      color: var(--steel);
-      font-family: var(--font-mono);
-      letter-spacing: 0.04em;
-    }
+    .nav-tile-label { font-size: 0.8rem; font-weight: 600; color: var(--ink); }
+    .nav-tile-sub { font-size: 0.68rem; color: var(--steel); font-family: var(--font-mono); letter-spacing: 0.04em; }
 
     .nav-tile-badge {
       position: absolute;
@@ -307,7 +422,6 @@
     }
     .nav-tile-badge.visible { display: flex; }
 
-    /* Notif tile */
     .notif-tile {
       background: none;
       border: 1px solid var(--wire);
@@ -326,18 +440,11 @@
       letter-spacing: 0.05em;
       margin-left: auto;
     }
-    .notif-pill.off {
-      background: rgba(100,116,139,0.18);
-      color: var(--steel);
-    }
+    .notif-pill.off { background: rgba(100,116,139,0.18); color: var(--steel); }
 
-    .more-divider {
-      height: 1px;
-      background: var(--wire);
-      margin: 4px 0 16px;
-    }
+    .more-divider { height: 1px; background: var(--wire); margin: 4px 0 16px; }
 
-    /* ══ FEED ════════════════════════════════════════════════ */
+    /* ══ FEED ════════════════════════════════════════════════════ */
     #feed {
       position: fixed;
       top: var(--bar-h);
@@ -352,7 +459,7 @@
     }
     #feed::-webkit-scrollbar { display: none; }
 
-    /* ══ FEED CARD ═══════════════════════════════════════════ */
+    /* ══ FEED CARD ═══════════════════════════════════════════════ */
     .feed-card {
       width: 100%;
       height: calc(100dvh - var(--bar-h));
@@ -365,7 +472,47 @@
       border-bottom: 1px solid var(--wire);
     }
 
-    /* Channel label strip */
+    /* ══ ANNOUNCEMENT CARD variant ═══════════════════════════════ */
+    .feed-card.ann-card {
+      border-left: 3px solid var(--ann-gold);
+    }
+    .ann-strip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 6px;
+      background: linear-gradient(90deg, rgba(212,175,55,0.12) 0%, transparent 100%);
+      border-bottom: 1px solid rgba(212,175,55,0.2);
+      flex-shrink: 0;
+    }
+    .ann-strip-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--ann-gold);
+      animation: ann-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes ann-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+    .ann-strip-label {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      color: var(--ann-gold);
+      font-weight: 700;
+    }
+    .ann-strip-link {
+      margin-left: auto;
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      color: rgba(212,175,55,0.6);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s;
+    }
+    .ann-strip-link:hover { color: var(--ann-gold); }
+
     .card-channel-strip {
       display: flex;
       align-items: center;
@@ -402,7 +549,6 @@
     }
     .card-channel-link:hover { color: var(--accent2); }
 
-    /* Post header */
     .card-post-header {
       display: flex;
       align-items: center;
@@ -418,20 +564,9 @@
       border: 2px solid rgba(96,165,250,0.3);
       flex-shrink: 0;
     }
-    .card-author-name {
-      font-weight: 700;
-      font-size: 0.88rem;
-      color: var(--ink);
-    }
-    .card-post-time {
-      font-family: var(--font-mono);
-      font-size: 0.65rem;
-      color: var(--steel);
-      letter-spacing: 0.05em;
-      margin-top: 1px;
-    }
+    .card-author-name { font-weight: 700; font-size: 0.88rem; color: var(--ink); }
+    .card-post-time { font-family: var(--font-mono); font-size: 0.65rem; color: var(--steel); letter-spacing: 0.05em; margin-top: 1px; }
 
-    /* Scrollable body */
     .card-body {
       flex: 1;
       overflow-y: auto;
@@ -443,35 +578,12 @@
     .card-body::-webkit-scrollbar { width: 2px; }
     .card-body::-webkit-scrollbar-thumb { background: rgba(96,165,250,0.35); }
 
-    .card-media {
-      width: 100%;
-      background: #000;
-      position: relative;
-    }
-    .card-media img {
-      width: 100%;
-      max-height: 52vh;
-      object-fit: contain;
-      display: block;
-    }
-    .card-media iframe {
-      width: 100%;
-      height: 56.25vw;
-      min-height: 220px;
-      max-height: 50vh;
-      border: none;
-      display: block;
-    }
+    .card-media { width: 100%; background: #000; position: relative; }
+    .card-media img { width: 100%; max-height: 52vh; object-fit: contain; display: block; }
+    .card-media iframe { width: 100%; height: 56.25vw; min-height: 220px; max-height: 50vh; border: none; display: block; }
 
-    .card-text {
-      padding: 14px 16px 10px;
-      font-size: 1rem;
-      line-height: 1.7;
-      color: var(--ink);
-      white-space: pre-wrap;
-    }
+    .card-text { padding: 14px 16px 10px; font-size: 1rem; line-height: 1.7; color: var(--ink); white-space: pre-wrap; }
 
-    /* Post footer actions */
     .card-foot {
       display: flex;
       align-items: center;
@@ -496,16 +608,13 @@
       background: none;
       border-right: 1px solid var(--wire);
       transition: all 0.15s;
+      text-decoration: none;
     }
     .card-action:last-child { border-right: none; }
     .card-action:hover { color: var(--ink); background: var(--lift); }
     .card-action.liked { color: var(--danger); }
     .card-action.liked i { animation: heartpop 0.35s ease; }
-    @keyframes heartpop {
-      0%  { transform: scale(1); }
-      40% { transform: scale(1.5); }
-      100%{ transform: scale(1); }
-    }
+    @keyframes heartpop { 0%{transform:scale(1)} 40%{transform:scale(1.5)} 100%{transform:scale(1)} }
 
     /* Comment panel */
     .card-comments {
@@ -534,7 +643,6 @@
 
     .c-msg { display: flex; gap: 9px; }
     .c-msg.own { flex-direction: row-reverse; }
-
     .c-av {
       width: 26px; height: 26px;
       border-radius: 50%;
@@ -544,7 +652,6 @@
       flex-shrink: 0;
       margin-top: 1px;
     }
-
     .c-bub {
       max-width: 78%;
       background: var(--lift);
@@ -557,26 +664,10 @@
       border-color: transparent;
       border-radius: 12px 4px 12px 12px;
     }
-
-    .c-name {
-      font-family: var(--font-mono);
-      font-size: 0.66rem;
-      letter-spacing: 0.04em;
-      color: var(--accent2);
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
+    .c-name { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.04em; color: var(--accent2); font-weight: 700; margin-bottom: 2px; }
     .c-msg.own .c-name { color: rgba(255,255,255,0.75); }
-
     .c-text { font-size: 0.85rem; line-height: 1.45; word-break: break-word; }
-
-    .c-time {
-      font-size: 0.6rem;
-      color: var(--steel);
-      margin-top: 3px;
-      font-family: var(--font-mono);
-      display: block;
-    }
+    .c-time { font-size: 0.6rem; color: var(--steel); margin-top: 3px; font-family: var(--font-mono); display: block; }
     .c-msg.own .c-time { color: rgba(255,255,255,0.5); }
 
     .comment-input-bar {
@@ -611,7 +702,7 @@
     }
     .comment-send:hover { opacity: 0.85; }
 
-    /* ══ LOADING / EMPTY / ERROR STATES ══════════════════════ */
+    /* ══ LOADING / EMPTY / ERROR ══════════════════════════════════ */
     .feed-state {
       width: 100%;
       height: calc(100dvh - var(--bar-h));
@@ -622,54 +713,23 @@
       justify-content: center;
       gap: 14px;
     }
-
     .feed-state-icon {
       font-size: 2.4rem;
       color: var(--accent2);
       opacity: 0.35;
       animation: pulse 1.5s ease-in-out infinite;
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.2; }
-      50%       { opacity: 0.55; }
-    }
-    .feed-state-title {
-      font-family: var(--font-head);
-      font-size: 1.6rem;
-      letter-spacing: 0.1em;
-      color: var(--lead);
-      opacity: 0.5;
-    }
-    .feed-state-sub {
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      color: var(--steel);
-    }
+    @keyframes pulse { 0%,100%{opacity:0.2} 50%{opacity:0.55} }
+    .feed-state-title { font-family: var(--font-head); font-size: 1.6rem; letter-spacing: 0.1em; color: var(--lead); opacity: 0.5; }
+    .feed-state-sub { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--steel); }
 
-    /* Progress bar */
-    #feed-progress {
-      position: fixed;
-      right: 0;
-      top: var(--bar-h);
-      bottom: 0;
-      width: 3px;
-      background: rgba(96,165,250,0.08);
-      z-index: 800;
-      pointer-events: none;
-    }
-    #feed-progress-fill {
-      background: var(--accent2);
-      width: 100%;
-      height: 0%;
-      transition: height 0.3s ease;
-    }
+    /* Progress */
+    #feed-progress { position: fixed; right: 0; top: var(--bar-h); bottom: 0; width: 3px; background: rgba(96,165,250,0.08); z-index: 800; pointer-events: none; }
+    #feed-progress-fill { background: var(--accent2); width: 100%; height: 0%; transition: height 0.3s ease; }
 
-    /* Post counter */
     #feed-counter {
       position: fixed;
-      bottom: 12px;
-      right: 14px;
+      bottom: 12px; right: 14px;
       font-family: var(--font-mono);
       font-size: 0.65rem;
       letter-spacing: 0.1em;
@@ -682,11 +742,9 @@
       border-radius: 4px;
     }
 
-    /* Swipe hint */
     #swipe-hint {
       position: fixed;
-      bottom: 32px;
-      left: 50%;
+      bottom: 32px; left: 50%;
       transform: translateX(-50%);
       font-family: var(--font-mono);
       font-size: 0.65rem;
@@ -701,13 +759,12 @@
       opacity: 0;
     }
     @keyframes swipeHint {
-      0%   { opacity: 0; }
-      15%  { opacity: 0.65; transform: translateX(-50%) translateY(0); }
-      80%  { opacity: 0.65; transform: translateX(-50%) translateY(-18px); }
-      100% { opacity: 0; transform: translateX(-50%) translateY(-30px); }
+      0%{opacity:0} 15%{opacity:0.65;transform:translateX(-50%) translateY(0)}
+      80%{opacity:0.65;transform:translateX(-50%) translateY(-18px)}
+      100%{opacity:0;transform:translateX(-50%) translateY(-30px)}
     }
 
-    /* ══ TOAST ════════════════════════════════════════════════ */
+    /* ══ TOAST ═══════════════════════════════════════════════════ */
     #toast-area {
       position: fixed;
       top: calc(var(--bar-h) + 10px);
@@ -736,74 +793,70 @@
     .toast-msg.ok  { background: rgba(16,185,129,0.92); }
     .toast-msg.err { background: rgba(239,68,68,0.92); }
     .toast-msg.inf { background: rgba(59,130,246,0.92); }
-    @keyframes toastIn {
-      from { opacity:0; transform: translateY(-8px) scale(0.95); }
-      to   { opacity:1; transform: translateY(0) scale(1); }
-    }
+    @keyframes toastIn { from{opacity:0;transform:translateY(-8px) scale(0.95)} to{opacity:1;transform:translateY(0) scale(1)} }
 
-    /* ══ INSTALL BAR ═════════════════════════════════════════ */
-    #install-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      padding: 10px 16px;
-      background: rgba(10,15,30,0.96);
-      border-top: 1px solid var(--wire);
-      z-index: 700;
-      display: none;
-    }
+    /* ══ INSTALL BAR ══════════════════════════════════════════════ */
+    #install-bar { position: fixed; bottom: 0; left: 0; right: 0; padding: 10px 16px; background: rgba(10,15,30,0.96); border-top: 1px solid var(--wire); z-index: 700; display: none; }
     #install-bar.show { display: block; }
-    .install-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      max-width: 400px;
-      margin: 0 auto;
-      padding: 11px 20px;
-      background: rgba(59,130,246,0.12);
-      color: var(--accent2);
-      border: 1px solid rgba(96,165,250,0.3);
-      border-radius: 8px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-family: var(--font-body);
-    }
+    .install-btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; max-width: 400px; margin: 0 auto; padding: 11px 20px; background: rgba(59,130,246,0.12); color: var(--accent2); border: 1px solid rgba(96,165,250,0.3); border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: var(--font-body); }
     .install-btn:hover { background: rgba(59,130,246,0.2); }
 
-    /* ══ PENDING STATE ═══════════════════════════════════════ */
-    #pending-screen {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: var(--paper);
-      z-index: 500;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 32px;
-      text-align: center;
-    }
+    /* ══ PENDING ═══════════════════════════════════════════════════ */
+    #pending-screen { display: none; position: fixed; inset: 0; background: var(--paper); z-index: 500; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 32px; text-align: center; }
     #pending-screen.show { display: flex; }
     .pending-icon { font-size: 2.8rem; color: var(--accent2); opacity: 0.5; }
     .pending-title { font-family: var(--font-head); font-size: 1.8rem; letter-spacing: 0.08em; color: var(--lead); }
     .pending-sub { font-size: 0.88rem; line-height: 1.6; color: var(--steel); max-width: 320px; }
-    .pending-badge {
-      padding: 4px 14px;
-      background: rgba(245,158,11,0.15);
-      color: #fbbf24;
-      font-family: var(--font-mono);
-      font-size: 0.72rem;
-      letter-spacing: 0.1em;
-      border-radius: 100px;
-    }
+    .pending-badge { padding: 4px 14px; background: rgba(245,158,11,0.15); color: #fbbf24; font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; border-radius: 100px; }
 
-    @media (prefers-reduced-motion: reduce) {
-      .feed-state-icon, #swipe-hint { animation: none; opacity: 0.4; }
+    @media (prefers-reduced-motion: reduce) { .feed-state-icon, #swipe-hint, .ann-strip-dot { animation: none; opacity: 0.4; } }
+
+    /* ══ FILTER TABS ═══════════════════════════════════════════════ */
+    #filter-bar {
+      position: fixed;
+      top: var(--bar-h);
+      left: 0; right: 0;
+      height: 36px;
+      background: rgba(10,15,30,0.95);
+      border-bottom: 1px solid var(--wire);
+      z-index: 880;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      backdrop-filter: blur(12px);
+      overflow-x: auto;
+      scrollbar-width: none;
     }
+    #filter-bar::-webkit-scrollbar { display: none; }
+    #filter-bar.hidden { display: none; }
+
+    .filter-tab {
+      height: 100%;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      border: none;
+      border-right: 1px solid var(--wire);
+      color: var(--steel);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      transition: all 0.15s;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .filter-tab:hover { color: var(--ink); background: var(--lift); }
+    .filter-tab.active { color: var(--accent2); background: rgba(96,165,250,0.08); border-bottom: 2px solid var(--accent2); }
+    .filter-tab.ann-tab.active { color: var(--ann-gold); background: rgba(212,175,55,0.08); border-bottom-color: var(--ann-gold); }
+    .filter-tab i { font-size: 0.7rem; }
+
+    /* When filter bar is visible, push feed down */
+    #feed.has-filter { top: calc(var(--bar-h) + 36px); }
+    #feed-progress.has-filter { top: calc(var(--bar-h) + 36px); }
+
   </style>
 </head>
 <body>
@@ -814,7 +867,12 @@
     <div class="tb-logo-text">RIVERSIDE <span>·</span> CONNECT</div>
   </div>
 
-  <div class="tb-spacer"></div>
+  <!-- Search -->
+  <div class="tb-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="search" id="search-input" placeholder="SEARCH POSTS…" autocomplete="off" spellcheck="false">
+    <button class="tb-search-clear" id="search-clear" title="Clear"><i class="fas fa-times"></i></button>
+  </div>
 
   <a href="announce.html" class="tb-btn" id="tb-ann" title="Announcements">
     <i class="fas fa-bullhorn"></i>
@@ -831,11 +889,27 @@
   </div>
 </header>
 
+<!-- ══ SEARCH RESULTS ════════════════════════════════════════════════ -->
+<div id="search-results">
+  <div class="sr-inner" id="search-results-inner"></div>
+</div>
+
+<!-- ══ FILTER BAR ═══════════════════════════════════════════════════ -->
+<div id="filter-bar" class="hidden">
+  <button class="filter-tab active" data-filter="all">
+    <i class="fas fa-layer-group"></i> ALL
+  </button>
+  <button class="filter-tab" data-filter="posts">
+    <i class="fas fa-rss"></i> POSTS
+  </button>
+  <button class="filter-tab ann-tab" data-filter="announcements">
+    <i class="fas fa-bullhorn"></i> ANNOUNCEMENTS
+  </button>
+</div>
+
 <!-- ══ MORE PANEL ═══════════════════════════════════════════════════ -->
 <div id="more-panel">
   <div class="more-inner">
-
-    <!-- Quick nav tiles -->
     <div class="more-section-label">QUICK ACCESS</div>
     <div class="nav-grid" id="nav-grid">
 
@@ -845,13 +919,13 @@
         <div class="nav-tile-sub">Feed</div>
       </a>
 
-      <a href="lyric.html" class="nav-tile" style="--card-icon-color:#facc15;">
+      <a href="lyric.html" class="nav-tile">
         <div class="nav-tile-icon" style="background:rgba(250,204,21,0.1);color:#facc15;"><i class="fas fa-music"></i></div>
         <div class="nav-tile-label">Lyrics</div>
         <div class="nav-tile-sub">Songs</div>
       </a>
 
-      <a href="announce.html" class="nav-tile" id="ann-tile" style="">
+      <a href="announce.html" class="nav-tile" id="ann-tile">
         <div class="nav-tile-icon" style="background:rgba(245,158,11,0.1);color:#f59e0b;"><i class="fas fa-bullhorn"></i></div>
         <div class="nav-tile-badge" id="ann-badge-grid">0</div>
         <div class="nav-tile-label">Announce</div>
@@ -896,12 +970,9 @@
         <div class="nav-tile-label">Notifs</div>
         <div class="nav-tile-sub">Alerts</div>
       </button>
-
     </div>
 
     <div class="more-divider"></div>
-
-    <!-- Channels -->
     <div class="more-section-label">CHANNELS</div>
     <div id="channels-circles" class="circles-scroll">
       <div class="circles-row" id="channels-row">
@@ -910,19 +981,16 @@
     </div>
 
     <div class="more-divider"></div>
-
-    <!-- Q&A -->
     <div class="more-section-label">Q&amp;A SPACES</div>
     <div id="qna-circles" class="circles-scroll">
       <div class="circles-row" id="qna-row">
         <div style="color:var(--steel);font-family:var(--font-mono);font-size:0.7rem;letter-spacing:0.08em;padding:8px 0;">Loading…</div>
       </div>
     </div>
-
   </div>
 </div>
 
-<!-- ══ MAIN FEED ═════════════════════════════════════════════════════ -->
+<!-- ══ MAIN FEED ════════════════════════════════════════════════════ -->
 <div id="feed">
   <div class="feed-state" id="feed-loading">
     <div class="feed-state-icon"><i class="fas fa-church"></i></div>
@@ -939,7 +1007,7 @@
   SWIPE UP
 </div>
 
-<!-- ══ PENDING SCREEN ════════════════════════════════════════════════ -->
+<!-- ══ PENDING ══════════════════════════════════════════════════════ -->
 <div id="pending-screen">
   <div class="pending-badge" id="pending-badge">PENDING APPROVAL</div>
   <div class="pending-icon"><i class="fas fa-church"></i></div>
@@ -956,22 +1024,59 @@
 
 <div id="toast-area"></div>
 
-<!-- ══════════════════════════════════════════════════════════════════
+<!-- ════════════════════════════════════════════════════════════════════
      JAVASCRIPT
-═══════════════════════════════════════════════════════════════════ -->
+════════════════════════════════════════════════════════════════════ -->
 <script>
 'use strict';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiU_LeE6AnCQFzLmORd6kpkHVh3cllbpXhYOg4H1L8U2MAbjF0X0nR03n8_2yFc0KN/exec';
-const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbygp2-CU0rgs4eOq9vTALV7fFTuPRgIOa6wl2xhbSmoxqXZpXPP7mBMg1hT_PfE8uTs/exec';
+const SCRIPT_URL    = 'https://script.google.com/macros/s/AKfycbwgsJvoMeR1dW4QOjuyRZoV6PSHXBUcdd6QEXcmVqEyD4FQhZrUFKKFiilUe1zK0EVU/exec';
+const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbwgsJvoMeR1dW4QOjuyRZoV6PSHXBUcdd6QEXcmVqEyD4FQhZrUFKKFiilUe1zK0EVU/exec';
 
 const userName = localStorage.getItem('userName') || '';
-if (!userName) { window.location.href = 'login.html'; }
+if (!userName) window.location.href = 'login.html';
 
-let allPosts = [];
+/* ── State ─────────────────────────────────────────────────────── */
+let allItems     = [];   // merged posts + announcements, sorted newest first
+let filteredItems= [];   // what's currently rendered
+let currentFilter= 'all';
 let isNotificationEnabled = localStorage.getItem('notificationsEnabled') !== 'false';
 
-/* ── HELPERS ──────────────────────────────────────────────────── */
+/* ── Scroll position memory ─────────────────────────────────────── */
+const SCROLL_KEY = 'rv_feed_scroll_idx';
+
+function saveScrollPos() {
+  const feed  = document.getElementById('feed');
+  const cardH = feed.clientHeight;
+  if (!cardH) return;
+  const idx = Math.round(feed.scrollTop / cardH);
+  sessionStorage.setItem(SCROLL_KEY, idx);
+}
+
+function restoreScrollPos() {
+  const feed = document.getElementById('feed');
+  const idx  = parseInt(sessionStorage.getItem(SCROLL_KEY) || '0', 10);
+  if (!idx) return;
+  const cardH = feed.clientHeight;
+  // After render, snap to saved card
+  requestAnimationFrame(() => {
+    feed.scrollTo({ top: idx * cardH, behavior: 'instant' });
+    sessionStorage.removeItem(SCROLL_KEY);
+  });
+}
+
+/* Save before any navigation away */
+document.addEventListener('click', e => {
+  const link = e.target.closest('a[href]');
+  if (link && !link.href.startsWith('#') && !link.getAttribute('href').startsWith('#')) {
+    const href = link.getAttribute('href') || '';
+    if (href && !href.startsWith('javascript')) {
+      saveScrollPos();
+    }
+  }
+}, true);
+
+/* ── Helpers ───────────────────────────────────────────────────── */
 function lh3(url) {
   if (!url) return '';
   const m = url.match(/[-\w]{25,}/);
@@ -983,20 +1088,28 @@ function fallback(name) {
 function fmtTime(ts) {
   return new Date(ts).toLocaleString([], { hour:'2-digit', minute:'2-digit', day:'numeric', month:'short' });
 }
+function stripDriveLinks(txt) {
+  return (txt || '')
+    .replace(/https?:\/\/drive\.google\.com\/[^\s<>"']*/gi, '')
+    .replace(/\/view\b\S*/gi, '')
+    .replace(/usp=\S+/gi, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
 
-/* ── TOAST ─────────────────────────────────────────────────────── */
+/* ── Toast ─────────────────────────────────────────────────────── */
 function toast(msg, type = 'inf', dur = 3200) {
   const area = document.getElementById('toast-area');
-  const el = document.createElement('div');
+  const el   = document.createElement('div');
   el.className = `toast-msg ${type}`;
   el.textContent = msg;
   area.appendChild(el);
   setTimeout(() => el.remove(), dur);
 }
 
-/* ── AVATAR ─────────────────────────────────────────────────────── */
+/* ── Avatar ─────────────────────────────────────────────────────── */
 (function() {
-  const av = document.getElementById('user-avatar');
+  const av  = document.getElementById('user-avatar');
   const pic = localStorage.getItem('userPicLink');
   if (pic) {
     const id = pic.match(/[-\w]{25,}/)?.[0];
@@ -1006,7 +1119,7 @@ function toast(msg, type = 'inf', dur = 3200) {
   }
 })();
 
-/* ── MORE PANEL ─────────────────────────────────────────────────── */
+/* ── More panel ─────────────────────────────────────────────────── */
 const moreToggle = document.getElementById('more-toggle');
 const morePanel  = document.getElementById('more-panel');
 
@@ -1014,8 +1127,6 @@ moreToggle.addEventListener('click', () => {
   const open = morePanel.classList.toggle('open');
   moreToggle.classList.toggle('active', open);
 });
-
-// Close more panel when clicking outside
 document.addEventListener('click', e => {
   if (!morePanel.contains(e.target) && !moreToggle.contains(e.target)) {
     morePanel.classList.remove('open');
@@ -1023,7 +1134,125 @@ document.addEventListener('click', e => {
   }
 });
 
-/* ── NOTIFICATION TOGGLE ────────────────────────────────────────── */
+/* ── Filter bar ─────────────────────────────────────────────────── */
+document.querySelectorAll('.filter-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    applyFilter(currentFilter);
+  });
+});
+
+function applyFilter(f) {
+  if (f === 'all')           filteredItems = [...allItems];
+  else if (f === 'posts')    filteredItems = allItems.filter(i => i._type === 'post');
+  else if (f === 'announcements') filteredItems = allItems.filter(i => i._type === 'ann');
+  renderFeed(filteredItems);
+}
+
+/* ── Search ─────────────────────────────────────────────────────── */
+const searchInput   = document.getElementById('search-input');
+const searchResults = document.getElementById('search-results');
+const searchClear   = document.getElementById('search-clear');
+let searchTimer     = null;
+
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  searchClear.classList.toggle('visible', q.length > 0);
+  clearTimeout(searchTimer);
+  if (!q) { closeSearch(); return; }
+  searchTimer = setTimeout(() => doSearch(q), 220);
+});
+
+searchInput.addEventListener('focus', () => {
+  if (searchInput.value.trim()) doSearch(searchInput.value.trim());
+});
+
+searchClear.addEventListener('click', () => {
+  searchInput.value = '';
+  searchClear.classList.remove('visible');
+  closeSearch();
+  searchInput.focus();
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeSearch(); searchInput.blur(); }
+});
+
+function closeSearch() {
+  searchResults.classList.remove('open');
+}
+
+function doSearch(q) {
+  const ql = q.toLowerCase();
+  const hits = allItems.filter(item => {
+    const text    = (item._text   || '').toLowerCase();
+    const author  = (item._author || '').toLowerCase();
+    const channel = (item._chName || '').toLowerCase();
+    return text.includes(ql) || author.includes(ql) || channel.includes(ql);
+  });
+
+  const inner = document.getElementById('search-results-inner');
+  if (!hits.length) {
+    inner.innerHTML = `<div class="sr-label">RESULTS FOR "${q.toUpperCase()}"</div><div class="sr-empty"><i class="fas fa-search" style="opacity:0.3;display:block;font-size:1.4rem;margin-bottom:8px;"></i>NO MATCHES FOUND</div>`;
+    searchResults.classList.add('open');
+    return;
+  }
+
+  inner.innerHTML = `<div class="sr-label">${hits.length} RESULT${hits.length!==1?'S':''} FOR "${q.toUpperCase()}"</div>`;
+  hits.slice(0, 30).forEach((item, i) => {
+    const isAnn   = item._type === 'ann';
+    const preview = (item._text || '').replace(/<[^>]+>/g,'').substring(0, 72) + (item._text?.length > 72 ? '…' : '');
+    const el = document.createElement('div');
+    el.className = 'sr-item';
+    el.innerHTML = `
+      <span class="sr-item-type ${isAnn ? 'ann' : 'post'}">${isAnn ? 'ANN' : 'POST'}</span>
+      <div class="sr-item-info">
+        <div class="sr-item-author">${item._author}</div>
+        ${item._chName ? `<div class="sr-item-channel">${item._chName.toUpperCase()}</div>` : ''}
+        <div class="sr-item-preview">${preview || '—'}</div>
+      </div>
+      <div class="sr-item-time">${fmtTime(item._ts)}</div>`;
+    el.addEventListener('click', () => {
+      closeSearch();
+      searchInput.value = '';
+      searchClear.classList.remove('visible');
+      // Jump to card in feed
+      scrollToItem(item);
+    });
+    inner.appendChild(el);
+  });
+
+  searchResults.classList.add('open');
+}
+
+function scrollToItem(item) {
+  // Switch filter if needed
+  const targetFilter = item._type === 'ann' ? 'announcements' : 'all';
+  if (currentFilter !== 'all' && currentFilter !== (item._type === 'ann' ? 'announcements' : 'posts')) {
+    currentFilter = 'all';
+    document.querySelectorAll('.filter-tab').forEach(b => {
+      b.classList.toggle('active', b.dataset.filter === 'all');
+    });
+    applyFilter('all');
+  }
+
+  const feed  = document.getElementById('feed');
+  const idx   = filteredItems.findIndex(i => i === item);
+  if (idx < 0) return;
+  const cardH = feed.clientHeight;
+  setTimeout(() => {
+    feed.scrollTo({ top: idx * cardH, behavior: 'smooth' });
+  }, 80);
+}
+
+/* Close search on feed tap */
+document.getElementById('feed').addEventListener('touchstart', () => {
+  if (searchResults.classList.contains('open')) closeSearch();
+}, { passive: true });
+
+/* ── Notification toggle ─────────────────────────────────────────── */
 function updateNotifUI() {
   const icon = document.getElementById('notif-icon');
   const pill = document.getElementById('notif-pill');
@@ -1085,7 +1314,7 @@ async function toggleNotifications() {
   }
 }
 
-/* ── INSTALL ─────────────────────────────────────────────────────── */
+/* ── Install ─────────────────────────────────────────────────────── */
 let deferredPrompt = null;
 const installBar = document.getElementById('install-bar');
 const installBtn = document.getElementById('install-btn');
@@ -1107,7 +1336,7 @@ installBtn.addEventListener('click', async () => {
 });
 window.addEventListener('appinstalled', () => installBar.classList.remove('show'));
 
-/* ── CIRCLES ─────────────────────────────────────────────────────── */
+/* ── Circles ─────────────────────────────────────────────────────── */
 function renderCircles(channels, rowId, baseUrl) {
   const row = document.getElementById(rowId);
   if (!channels.length) {
@@ -1130,7 +1359,7 @@ function renderCircles(channels, rowId, baseUrl) {
   }).join('');
 }
 
-/* ── ANNOUNCEMENT BADGE ─────────────────────────────────────────── */
+/* ── Ann badge ───────────────────────────────────────────────────── */
 async function loadAnnBadge() {
   try {
     const res  = await fetch(`${DASHBOARD_URL}?operation=getUnseenAnnCount&name=${encodeURIComponent(userName)}`);
@@ -1150,7 +1379,7 @@ async function loadAnnBadge() {
   } catch {}
 }
 
-/* ── LOAD CHANNELS & Q&A FOR MORE PANEL ─────────────────────────── */
+/* ── More panel data ─────────────────────────────────────────────── */
 async function loadMorePanelData() {
   try {
     const [chRes, qnaRes] = await Promise.all([
@@ -1167,16 +1396,15 @@ async function loadMorePanelData() {
   }
 }
 
-/* ── FEED: BUILD CARD ────────────────────────────────────────────── */
-function buildCard(post, chName, chAvatar, chId, idx, total) {
+/* ══ BUILD CHANNEL POST CARD ═════════════════════════════════════ */
+function buildPostCard(post, ch) {
   const wrap = document.createElement('div');
   wrap.className = 'feed-card';
   wrap.dataset.postId = post.postId;
 
   const authorAv = lh3(post.picLink) || fallback(post.author);
-  const chAv     = chAvatar || fallback(chName);
+  const chAv     = ch.picLink ? lh3(ch.picLink) : fallback(ch.name);
 
-  // Media
   let mediaHtml = '';
   if (post.media?.link) {
     const isImg = (post.media.type || '').startsWith('image');
@@ -1185,28 +1413,20 @@ function buildCard(post, chName, chAvatar, chId, idx, total) {
     } else {
       const idM = post.media.link.match(/[-\w]{25,}/);
       const fid = idM ? idM[0] : post.media.link;
-      mediaHtml = `<div class="card-media">
-        <iframe src="https://drive.google.com/file/d/${fid}/preview"
-          allow="autoplay" allowfullscreen></iframe>
-      </div>`;
+      mediaHtml = `<div class="card-media"><iframe src="https://drive.google.com/file/d/${fid}/preview" allow="autoplay" allowfullscreen></iframe></div>`;
     }
   }
 
-  const cleanText = (post.content || '')
-    .replace(/https?:\/\/drive\.google\.com\/[^\s<>"']*/gi, '')
-    .replace(/\/view\b\S*/gi, '')
-    .replace(/usp=\S+/gi, '')
-    .replace(/\s{2,}/g, ' ').trim();
+  const cleanText = stripDriveLinks(post.content);
 
   wrap.innerHTML = `
     <div class="card-channel-strip">
-      <img class="card-channel-avatar" src="${chAv}" onerror="this.src='${fallback(chName)}'" alt="">
-      <span class="card-channel-name">${chName.toUpperCase()}</span>
-      <a class="card-channel-link" href="channel.html?channelId=${encodeURIComponent(chId)}">
+      <img class="card-channel-avatar" src="${chAv}" onerror="this.src='${fallback(ch.name)}'" alt="">
+      <span class="card-channel-name">${ch.name.toUpperCase()}</span>
+      <a class="card-channel-link" href="channel.html?channelId=${encodeURIComponent(ch.id)}">
         VIEW CHANNEL <i class="fas fa-arrow-right" style="font-size:0.55rem;"></i>
       </a>
     </div>
-
     <div class="card-post-header">
       <img class="card-author-avatar" src="${authorAv}" onerror="this.src='${fallback(post.author)}'" alt="">
       <div>
@@ -1214,12 +1434,10 @@ function buildCard(post, chName, chAvatar, chId, idx, total) {
         <div class="card-post-time">${fmtTime(post.created)}</div>
       </div>
     </div>
-
     <div class="card-body">
       ${mediaHtml}
       ${cleanText ? `<div class="card-text">${cleanText.replace(/\n/g,'<br>')}</div>` : ''}
     </div>
-
     <div class="card-foot">
       <button class="card-action like-btn ${post.likedByCurrentUser ? 'liked' : ''}"
               data-pid="${post.postId}" data-liked="${post.likedByCurrentUser ? '1' : '0'}">
@@ -1230,65 +1448,151 @@ function buildCard(post, chName, chAvatar, chId, idx, total) {
         <i class="far fa-comment"></i>
         <span class="ccount">—</span>
       </button>
-      <a class="card-action" href="channel.html?channelId=${encodeURIComponent(chId)}&postId=${encodeURIComponent(post.postId)}" style="text-decoration:none;">
+      <a class="card-action"
+         href="channel.html?channelId=${encodeURIComponent(ch.id)}&postId=${encodeURIComponent(post.postId)}"
+         style="text-decoration:none;">
         <i class="fas fa-external-link-alt"></i>
         <span>OPEN</span>
       </a>
     </div>
-
     <div class="card-comments" id="cc-${post.postId}">
       <div class="comment-list" id="cl-${post.postId}"></div>
       <div class="comment-input-bar">
         <input type="text" id="ci-${post.postId}" placeholder="Comment…" autocomplete="off">
         <button class="comment-send" data-pid="${post.postId}"><i class="fas fa-paper-plane"></i></button>
       </div>
-    </div>
-  `;
+    </div>`;
 
-  // Like
   wrap.querySelector('.like-btn').addEventListener('click', e => toggleLike(post.postId, e.currentTarget));
-
-  // Comments toggle
   wrap.querySelector('.comment-toggle').addEventListener('click', () => {
     const panel = document.getElementById(`cc-${post.postId}`);
     panel.classList.toggle('open');
     if (panel.classList.contains('open')) loadComments(post.postId);
   });
-
-  // Send comment
-  wrap.querySelector('.comment-send').addEventListener('click', () => sendComment(post.postId, chId));
+  wrap.querySelector('.comment-send').addEventListener('click', () => sendComment(post.postId, ch.id));
   wrap.querySelector(`#ci-${post.postId}`).addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(post.postId, chId); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(post.postId, ch.id); }
   });
-
-  // Load comment count
   loadCommentCount(post.postId, wrap.querySelector('.ccount'));
 
   return wrap;
 }
 
-/* ── LIKES ───────────────────────────────────────────────────────── */
+/* ══ BUILD ANNOUNCEMENT CARD ════════════════════════════════════════ */
+function buildAnnCard(ann) {
+  const wrap = document.createElement('div');
+  wrap.className = 'feed-card ann-card';
+  wrap.dataset.annId = ann.timestamp;
+
+  const authorAv = lh3(ann.picLink) || fallback(ann.name);
+  const cleanText = (ann.comment || '').replace(/\n/g, '<br>');
+
+  // Build media
+  let mediaHtml = '';
+  if (ann.fileLink) {
+    const links = ann.fileLink.split(',');
+    const types = ann.fileType ? ann.fileType.split(',') : [];
+    if (links.length) {
+      mediaHtml = '<div class="card-media">';
+      links.forEach((lk, fi) => {
+        const t = types[fi] || '';
+        const isVid = t.includes('video') || lk.match(/\.(mp4|mov|webm)$/i);
+        if (isVid) {
+          const idM = lk.match(/[-\w]{25,}/);
+          const fid = idM ? idM[0] : lk;
+          mediaHtml += `<iframe src="https://drive.google.com/file/d/${fid}/preview" style="width:100%;height:56.25vw;min-height:200px;max-height:50vh;border:none;display:block;" allow="autoplay" allowfullscreen></iframe>`;
+        } else {
+          mediaHtml += `<img src="${lh3(lk)}" loading="lazy" style="width:100%;max-height:52vh;object-fit:contain;display:block;" onerror="this.style.display='none'" alt="">`;
+        }
+      });
+      mediaHtml += '</div>';
+    }
+  }
+
+  wrap.innerHTML = `
+    <div class="ann-strip">
+      <div class="ann-strip-dot"></div>
+      <span class="ann-strip-label">ANNOUNCEMENT</span>
+      <a class="ann-strip-link" href="announce.html">
+        VIEW ALL <i class="fas fa-arrow-right" style="font-size:0.55rem;"></i>
+      </a>
+    </div>
+    <div class="card-post-header">
+      <img class="card-author-avatar" src="${authorAv}"
+           onerror="this.src='${fallback(ann.name)}'" alt=""
+           style="border-color:rgba(212,175,55,0.4);">
+      <div>
+        <div class="card-author-name" style="color:var(--ann-gold);">${ann.name}</div>
+        <div class="card-post-time">${fmtTime(ann.timestamp)}</div>
+      </div>
+      <div style="margin-left:auto;font-family:var(--font-mono);font-size:0.58rem;letter-spacing:0.1em;padding:2px 8px;border-radius:100px;background:rgba(212,175,55,0.1);color:var(--ann-gold);border:1px solid rgba(212,175,55,0.25);">OFFICIAL</div>
+    </div>
+    <div class="card-body">
+      ${mediaHtml}
+      ${cleanText ? `<div class="card-text">${cleanText}</div>` : ''}
+    </div>
+    <div class="card-foot">
+      <a class="card-action" href="announce.html" style="text-decoration:none;flex:2;color:rgba(212,175,55,0.7);">
+        <i class="fas fa-bullhorn"></i>
+        <span>VIEW ON BOARD</span>
+      </a>
+    </div>`;
+
+  return wrap;
+}
+
+/* ══ RENDER FEED ════════════════════════════════════════════════════ */
+function renderFeed(items) {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '';
+
+  if (!items.length) {
+    feed.innerHTML = `
+      <div class="feed-state">
+        <div class="feed-state-title">NOTHING HERE</div>
+        <div class="feed-state-sub">NO ITEMS FOR THIS FILTER</div>
+      </div>`;
+    document.getElementById('feed-counter').textContent = '';
+    return;
+  }
+
+  items.forEach(item => {
+    let card;
+    if (item._type === 'ann') {
+      card = buildAnnCard(item);
+    } else {
+      card = buildPostCard(item, item._channel);
+    }
+    feed.appendChild(card);
+  });
+
+  document.getElementById('feed-counter').textContent = `1 / ${items.length}`;
+  setupScrollProgress();
+  setupViewTracking();
+  restoreScrollPos();
+}
+
+/* ── Likes ───────────────────────────────────────────────────────── */
 async function toggleLike(postId, btn) {
   const liked = btn.dataset.liked === '1';
   const cnt   = btn.querySelector('.like-count');
   const icon  = btn.querySelector('i');
   let n = parseInt(cnt.textContent) || 0;
 
-  if (liked) { n = Math.max(0, n-1); btn.dataset.liked='0'; btn.classList.remove('liked'); icon.className='far fa-heart'; }
+  if (liked) { n=Math.max(0,n-1); btn.dataset.liked='0'; btn.classList.remove('liked'); icon.className='far fa-heart'; }
   else       { n++; btn.dataset.liked='1'; btn.classList.add('liked'); icon.className='fas fa-heart'; }
   cnt.textContent = n;
 
   try {
     await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'toggleChannelPostLike', postId, username: userName }) });
   } catch {
-    // revert
     if (liked) { btn.dataset.liked='1'; btn.classList.add('liked'); icon.className='fas fa-heart'; cnt.textContent=n+1; }
     else       { btn.dataset.liked='0'; btn.classList.remove('liked'); icon.className='far fa-heart'; cnt.textContent=n-1; }
     toast('Like failed', 'err');
   }
 }
 
-/* ── COMMENTS ────────────────────────────────────────────────────── */
+/* ── Comments ────────────────────────────────────────────────────── */
 async function loadCommentCount(postId, el) {
   try {
     const res  = await fetch(`${SCRIPT_URL}?operation=getChannelCommentCount&postId=${encodeURIComponent(postId)}`);
@@ -1343,46 +1647,51 @@ async function sendComment(postId, channelId) {
   } catch { toast('Comment failed', 'err'); }
 }
 
-/* ── SCROLL TRACKING ─────────────────────────────────────────────── */
+/* ── Scroll tracking ─────────────────────────────────────────────── */
 const viewedPosts = new Set();
 
 function setupViewTracking() {
   const obs = new IntersectionObserver(entries => {
     entries.forEach(entry => {
       if (!entry.isIntersecting) return;
-      const pid = entry.target.dataset.postId;
-      if (!pid || viewedPosts.has(pid)) return;
-      viewedPosts.add(pid);
-      const chId = entry.target.querySelector('.card-channel-link')?.href?.match(/channelId=([^&]+)/)?.[1];
-      if (chId) fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'recordChannelPostView', postId:pid, username:userName, channelId: decodeURIComponent(chId) }) }).catch(()=>{});
+      const pid  = entry.target.dataset.postId;
+      const annId= entry.target.dataset.annId;
+
+      if (pid && !viewedPosts.has(pid)) {
+        viewedPosts.add(pid);
+        const chLink = entry.target.querySelector('.card-channel-link');
+        const chId   = chLink?.href?.match(/channelId=([^&]+)/)?.[1];
+        if (chId) fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'recordChannelPostView', postId:pid, username:userName, channelId: decodeURIComponent(chId) }) }).catch(()=>{});
+      }
     });
   }, { threshold: 0.55 });
 
-  document.querySelectorAll('.feed-card[data-post-id]').forEach(el => obs.observe(el));
+  document.querySelectorAll('.feed-card').forEach(el => obs.observe(el));
 }
 
 function setupScrollProgress() {
-  const feed = document.getElementById('feed');
-  const fill = document.getElementById('feed-progress-fill');
+  const feed    = document.getElementById('feed');
+  const fill    = document.getElementById('feed-progress-fill');
   const counter = document.getElementById('feed-counter');
+  const total   = filteredItems.length;
 
-  feed.addEventListener('scroll', () => {
-    const total = allPosts.length;
+  // Remove old listener by cloning (simpler approach: use a flag)
+  feed.onscroll = () => {
     if (!total) return;
     const cardH = feed.clientHeight;
     const idx   = Math.round(feed.scrollTop / cardH);
     const pct   = total > 1 ? (idx / (total - 1)) * 100 : 100;
     fill.style.height = pct + '%';
-    counter.textContent = total ? `${idx + 1} / ${total}` : '';
-  }, { passive: true });
+    counter.textContent = `${idx + 1} / ${total}`;
+  };
 }
 
-/* ── LOAD ALL CHANNEL POSTS ──────────────────────────────────────── */
+/* ══ LOAD FEED ══════════════════════════════════════════════════════ */
 async function loadFeed() {
   const feed = document.getElementById('feed');
 
   try {
-    // 1. Check user status
+    /* 1. User status */
     const statusRes  = await fetch(`${DASHBOARD_URL}?operation=getUserStatus&name=${encodeURIComponent(userName)}`);
     const statusData = await statusRes.json();
     const isApproved = (statusData.userStatus || '').toLowerCase() === 'approved';
@@ -1395,55 +1704,64 @@ async function loadFeed() {
       return;
     }
 
-    // 2. Fetch all channels
-    const chRes  = await fetch(`${DASHBOARD_URL}?operation=getAllChannels`);
-    const chData = await chRes.json();
+    /* 2. Fetch channels + announcements in parallel */
+    const [chRes, annRes] = await Promise.all([
+      fetch(`${DASHBOARD_URL}?operation=getAllChannels`),
+      fetch(`${SCRIPT_URL}?operation=getData`)
+    ]);
+    const chData  = await chRes.json();
+    const annData = await annRes.json();
     const channels = chData.channels || [];
 
-    if (!channels.length) {
-      feed.innerHTML = `
-        <div class="feed-state">
-          <div class="feed-state-title">NO CHANNELS</div>
-          <div class="feed-state-sub">NO CHANNELS AVAILABLE YET</div>
-        </div>`;
-      return;
-    }
-
-    // 3. Fetch posts for all channels in parallel
+    /* 3. Fetch posts for all channels */
     const postFetches = channels.map(ch =>
       fetch(`${SCRIPT_URL}?operation=getChannelPosts&channelId=${encodeURIComponent(ch.id)}&username=${encodeURIComponent(userName)}`)
         .then(r => r.json())
-        .then(d => (d.posts || []).map(p => ({ ...p, _channel: ch })))
+        .then(d => (d.posts || []).map(p => ({
+          ...p,
+          _type:   'post',
+          _ts:     new Date(p.created).getTime(),
+          _text:   stripDriveLinks(p.content),
+          _author: p.author,
+          _chName: ch.name,
+          _channel: ch
+        })))
         .catch(() => [])
     );
+    const postResults = await Promise.all(postFetches);
+    const posts = postResults.flat();
 
-    const results = await Promise.all(postFetches);
+    /* 4. Normalise announcements */
+    const announcements = (annData.announcements || []).map(a => ({
+      ...a,
+      _type:   'ann',
+      _ts:     new Date(a.timestamp).getTime(),
+      _text:   a.comment || '',
+      _author: a.name,
+      _chName: 'Announcements'
+    }));
 
-    // 4. Merge, sort newest first
-    allPosts = results.flat().sort((a, b) => new Date(b.created) - new Date(a.created));
+    /* 5. Merge & sort newest first */
+    allItems = [...posts, ...announcements].sort((a, b) => b._ts - a._ts);
 
-    if (!allPosts.length) {
+    if (!allItems.length) {
       feed.innerHTML = `
         <div class="feed-state">
           <div class="feed-state-title">ALL QUIET</div>
-          <div class="feed-state-sub">NO POSTS ACROSS ANY CHANNEL YET</div>
+          <div class="feed-state-sub">NO POSTS YET</div>
         </div>`;
       return;
     }
 
-    // 5. Build cards
-    feed.innerHTML = '';
-    allPosts.forEach((p, i) => {
-      const ch = p._channel;
-      const chAv = ch.picLink ? lh3(ch.picLink) : '';
-      feed.appendChild(buildCard(p, ch.name, chAv, ch.id, i, allPosts.length));
-    });
+    /* 6. Show filter bar + render */
+    document.getElementById('filter-bar').classList.remove('hidden');
+    document.getElementById('feed').classList.add('has-filter');
+    document.getElementById('feed-progress').classList.add('has-filter');
 
-    document.getElementById('feed-counter').textContent = `1 / ${allPosts.length}`;
-    setupScrollProgress();
-    setupViewTracking();
+    filteredItems = [...allItems];
+    renderFeed(filteredItems);
 
-    // Show swipe hint once
+    /* Swipe hint once */
     if (!localStorage.getItem('rv_swipe_seen')) {
       document.getElementById('swipe-hint').style.opacity = '1';
       localStorage.setItem('rv_swipe_seen', '1');
@@ -1460,7 +1778,7 @@ async function loadFeed() {
   }
 }
 
-/* ── INIT ─────────────────────────────────────────────────────────── */
+/* ── Init ─────────────────────────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded', () => {
   loadFeed();
   loadMorePanelData();

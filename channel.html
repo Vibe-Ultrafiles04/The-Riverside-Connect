@@ -1933,12 +1933,22 @@ async function loadChannels(force = false) {
   const usp = new URLSearchParams(location.search);
   const urlChId   = usp.get('channelId');
   const urlPostId = usp.get('postId');
-
-  let target = urlChId
+let target = urlChId
     ? allChannels.find(c => c.id === urlChId)
     : allChannels.find(c => c.id === localStorage.getItem('rv_last_ch')) || allChannels[0];
 
-  if (target) openChannel(target, urlPostId || null);
+  if (target) {
+    openChannel(target, urlPostId || null);
+  } else {
+    // No channels exist — show empty state immediately
+    document.getElementById('post-rail').innerHTML = `
+      <div class="state-view">
+        <div class="empty-label">NO CHANNELS YET</div>
+        <div class="empty-sub">AN ADMIN CAN CREATE THE FIRST ONE</div>
+      </div>`;
+    // Still run auth check so the create button appears for admins
+    await checkAuth(null);
+  }
 }
 
 async function fetchChannelsFresh() {
@@ -2046,7 +2056,9 @@ async function openChannel(ch, scrollToPostId = null) {
 /* ── CHECK AUTH ──────────────────────────────────────────────────── */
 async function checkAuth(channelId) {
   try {
-    const data = await api({ operation: 'isAuthorised', username: currentUser, channelId });
+   const data = channelId
+    ? await api({ operation: 'isAuthorised', username: currentUser, channelId })
+    : { status: 'success', isAuthorised: false };
     isAuthorised = data.status === 'success' && data.isAuthorised;
   } catch { isAuthorised = false; }
 

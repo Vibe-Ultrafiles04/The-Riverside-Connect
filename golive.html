@@ -937,77 +937,47 @@ function appendChatMsg(author, content, picLink) {
   Host stores its SDP offer globally → viewers fetch and answer →
   host receives answers and connects ICE.
 */
-async function startHostSignalLoop() {
-  // First: push the host's offer to the sheet
-  await pushHostOffer();
+let processedJoinRequests = new Set();
 
-  // Then poll for viewer answers
+async function startHostSignalLoop() {
   hostSignalInt = setInterval(async () => {
     if (!isLive || !activeLiveId) return;
-    try {
-      const data = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'answer' });
-      for (const sig of (data.signals || [])) {
-        const viewerId = sig.viewerId;
-        if (!viewerId || peerConnections[viewerId]) continue;
-        await connectToViewer(viewerId, sig.payload);
-      }
-    } catch {}
-  }, 5000);
+    await pollJoinRequests();
+    await pollViewerAnswers();
+  }, 3000);
 }
 
-async function pushHostOffer() {
-  if (!activeLiveId || !localStream) return;
+async function pollJoinRequests() {
   try {
-    // Create a "template" peer connection to generate a global offer
-    const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] });
-    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
-
-    const iceCandidates = [];
-    pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate); };
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-
-    // Wait for ICE gathering
-    await new Promise(resolve => {
-      if (pc.iceGatheringState === 'complete') { resolve(); return; }
-      pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') resolve(); };
-      setTimeout(resolve, 5000); // fallback timeout
-    });
-
-    // Store offer on sheet
-    await post({ operation:'sendChannelLiveOffer', liveId:activeLiveId, sdpOffer:JSON.stringify(pc.localDescription) });
-    pc.close(); // close template, real connections made per-viewer below
-
-  } catch(err) { console.error('pushHostOffer error', err); }
+    const data = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'join-request' });
+    for (const sig of (data.signals || [])) {
+      const viewerId = sig.viewerId;
+      if (!viewerId || peerConnections[viewerId] || processedJoinRequests.has(viewerId)) continue;
+      processedJoinRequests.add(viewerId);
+      createOfferForViewer(viewerId);
+    }
+  } catch {}
 }
 
-async function connectToViewer(viewerId, answerPayload) {
-  if (peerConnections[viewerId]) return;
-
+async function createOfferForViewer(viewerId) {
   try {
     const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] });
     peerConnections[viewerId] = pc;
 
     localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
 
-    const iceCandidates = [];
-    pc.onicecandidate = async e => {
+    pc.onicecandidate = e => {
       if (e.candidate) {
-        await post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'ice-host', viewerId, payload:JSON.stringify(e.candidate) });
+        post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'ice-host', viewerId, payload:JSON.stringify(e.candidate) }).catch(()=>{});
       }
     };
 
-    // Create offer for this specific viewer
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
-    // Set their answer
-    const parsed = JSON.parse(answerPayload);
-    const sdpAnswer = parsed.sdpAnswer || answerPayload;
-    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdpAnswer)));
+    // Send this viewer's dedicated offer (trickle ICE — don't wait for gathering)
+    await post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'offer', viewerId, payload:JSON.stringify(pc.localDescription) });
 
-    // Poll for viewer ICE
     const iceInt = setInterval(async () => {
       if (!peerConnections[viewerId]) { clearInterval(iceInt); return; }
       try {
@@ -1023,12 +993,32 @@ async function connectToViewer(viewerId, answerPayload) {
         clearInterval(iceInt);
         pc.close();
         delete peerConnections[viewerId];
+        processedJoinRequests.delete(viewerId);
       }
     };
 
-  } catch(err) { console.error('connectToViewer error', err); delete peerConnections[viewerId]; }
+  } catch(err) {
+    console.error('createOfferForViewer error', err);
+    delete peerConnections[viewerId];
+    processedJoinRequests.delete(viewerId);
+  }
 }
 
+async function pollViewerAnswers() {
+  try {
+    const data = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'answer' });
+    for (const sig of (data.signals || [])) {
+      const viewerId = sig.viewerId;
+      const pc = peerConnections[viewerId];
+      if (!pc || pc.currentRemoteDescription) continue; // no pc yet, or already answered
+      try {
+        const parsed = JSON.parse(sig.payload);
+        const sdpAnswer = parsed.sdpAnswer || sig.payload;
+        await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdpAnswer)));
+      } catch(e) { console.error('setRemoteDescription(answer) failed', e); }
+    }
+  } catch {}
+}
 /* ── CAMERA FLIP ────────────────────────────────────────────────── */
 async function flipCamera() {
   facingMode = facingMode === 'user' ? 'environment' : 'user';

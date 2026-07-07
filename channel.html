@@ -3230,9 +3230,6 @@ async function joinLiveAsViewer(postId) {
 
     activeLiveId = live.liveId;
 
-    const offerData = await api({ operation: 'getChannelLiveOffer', liveId: live.liveId });
-    if (!offerData.sdpOffer) { toast('Waiting for host...', 'err'); if (joinBtn) { joinBtn.disabled=false; joinBtn.innerHTML='<i class="fas fa-circle-dot"></i> JOIN LIVE'; } return; }
-
     const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] });
     activeLivePc = pc;
 
@@ -3242,27 +3239,34 @@ async function joinLiveAsViewer(postId) {
       if (joinBtn) joinBtn.style.display = 'none';
     };
 
-    const iceCandidates = [];
     pc.onicecandidate = e => {
-      if (e.candidate) iceCandidates.push(JSON.stringify(e.candidate));
-    };
-
-    pc.onicegatheringstatechange = async () => {
-      if (pc.iceGatheringState === 'complete') {
-        for (const c of iceCandidates) {
-          await post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'ice-viewer', viewerId:currentUser, payload:c });
-        }
+      if (e.candidate) {
+        post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'ice-viewer', viewerId:currentUser, payload:JSON.stringify(e.candidate) }).catch(()=>{});
       }
     };
 
-    const offer = JSON.parse(offerData.sdpOffer);
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+    // Ask the host to create a dedicated offer for us
+    await post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'join-request', viewerId:currentUser, payload:'1' });
+
+    // Poll for our personal offer
+    let offerSdp = null;
+    for (let i = 0; i < 15 && !offerSdp; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const sig = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'offer', viewerId:currentUser });
+      if (sig.signals?.length) offerSdp = sig.signals[sig.signals.length - 1].payload;
+    }
+    if (!offerSdp) {
+      toast('Host did not respond, try again', 'err');
+      if (joinBtn) { joinBtn.disabled=false; joinBtn.innerHTML='<i class="fas fa-circle-dot"></i> JOIN LIVE'; }
+      return;
+    }
+
+    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(offerSdp)));
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
     await post({ operation:'sendChannelLiveAnswer', liveId:activeLiveId, viewerId:currentUser, sdpAnswer:JSON.stringify(answer) });
 
-    // Poll for host ICE
     liveViewerPollInterval = setInterval(async () => {
       try {
         const sig = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'ice-host', viewerId:currentUser });
@@ -3272,7 +3276,6 @@ async function joinLiveAsViewer(postId) {
       } catch {}
     }, 3000);
 
-    // Ping as viewer
     liveViewerPingInterval = setInterval(() => {
       post({ operation:'pingChannelLiveViewer', liveId:activeLiveId, username:currentUser }).catch(()=>{});
     }, 10000);
@@ -3291,7 +3294,6 @@ async function joinLiveAsViewer(postId) {
     if (joinBtn) { joinBtn.disabled=false; joinBtn.innerHTML='<i class="fas fa-circle-dot"></i> JOIN LIVE'; }
   }
 }
-
 function startLiveViewerCountPoll(postId) {
   const pollFn = async () => {
     try {

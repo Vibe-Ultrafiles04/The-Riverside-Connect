@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Riverside · Go Live</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="manifest" href="./manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<style>
+:root {
+  --ink:       #e2e8f0;
+  --paper:     #0f172a;
+  --cream:     #1e293b;
+  --wire:      rgba(96,165,250,0.18);
+  --steel:     #94a3b8;
+  --lead:      #cbd5e1;
+  --accent:    #ef4444;
+  --accent2:   #60a5fa;
+  --gold:      #facc15;
+  --green:     #10b981;
+
+  --font-head: 'Bebas Neue', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── CAMERA PREVIEW ─────────────────────────────────────────────── */
+#camera-preview {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #000;
+  z-index: 1;
+  transform: scaleX(-1); /* mirror for selfie feel */
+}
+
+#camera-preview.rear { transform: scaleX(1); }
+
+/* ── PERMISSION SCREEN ──────────────────────────────────────────── */
+#perm-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--paper);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 32px 24px;
+  text-align: center;
+}
+#perm-screen.hidden { display: none; }
+
+.perm-icon {
+  width: 72px; height: 72px;
+  background: rgba(96,165,250,0.1);
+  border: 2px solid rgba(96,165,250,0.3);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.8rem;
+  color: var(--accent2);
+}
+
+.perm-title {
+  font-family: var(--font-head);
+  font-size: 1.8rem;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.perm-sub {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--steel);
+  max-width: 300px;
+}
+
+.perm-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.perm-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--cream);
+  border: 1px solid var(--wire);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  color: var(--lead);
+}
+
+.perm-item i {
+  color: var(--accent2);
+  font-size: 1rem;
+  width: 20px;
+  flex-shrink: 0;
+}
+
+.perm-btn {
+  width: 100%;
+  max-width: 300px;
+  height: 52px;
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: #fff;
+  border: none;
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: opacity 0.2s;
+}
+.perm-btn:hover { opacity: 0.88; }
+
+.perm-denied {
+  display: none;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.82rem;
+  color: #f87171;
+  line-height: 1.55;
+  max-width: 300px;
+}
+
+/* ── SETUP SCREEN ───────────────────────────────────────────────── */
+#setup-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+}
+#setup-screen.hidden { display: none; }
+
+.setup-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 60%, transparent 100%);
+  padding: 24px 20px 40px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setup-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: var(--steel);
+  text-transform: uppercase;
+}
+
+.setup-title-input {
+  width: 100%;
+  padding: 14px 0;
+  border: none;
+  border-bottom: 2px solid rgba(96,165,250,0.5);
+  background: transparent;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.setup-title-input:focus { border-bottom-color: var(--accent2); }
+.setup-title-input::placeholder { color: rgba(255,255,255,0.35); }
+
+.setup-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.setup-cam-toggle {
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.setup-cam-toggle:hover { background: rgba(255,255,255,0.2); }
+
+.go-live-btn {
+  flex: 1;
+  height: 52px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: var(--font-head);
+  font-size: 1.2rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: opacity 0.2s;
+}
+.go-live-btn:hover { opacity: 0.88; }
+.go-live-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.back-btn {
+  position: absolute;
+  top: max(20px, env(safe-area-inset-top, 20px));
+  left: 16px;
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 20;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.back-btn:hover { background: rgba(0,0,0,0.75); }
+
+/* ── LIVE SCREEN ────────────────────────────────────────────────── */
+#live-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+}
+#live-screen.hidden { display: none; }
+
+/* Top bar overlay */
+.live-top-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: max(20px, env(safe-area-inset-top, 20px)) 16px 16px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 20;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-head);
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  padding: 5px 12px;
+  border-radius: 4px;
+}
+.live-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  animation: livepulse 1s ease infinite;
+}
+@keyframes livepulse {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:0.4; transform:scale(0.7); }
+}
+
+.live-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.live-stat-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+.live-stat-pill i { font-size: 0.65rem; }
+
+.live-timer-pill { color: var(--gold); }
+
+/* Camera controls */
+.live-controls {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  padding: 16px 20px max(32px, calc(env(safe-area-inset-bottom, 0px) + 20px));
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  z-index: 20;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ctrl-btn {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.25); }
+.ctrl-btn.active { background: rgba(96,165,250,0.35); border-color: var(--accent2); color: var(--accent2); }
+.ctrl-btn.danger { background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.5); color: #f87171; }
+.ctrl-btn.danger:hover { background: rgba(239,68,68,0.4); }
+
+.end-live-btn {
+  flex: 1;
+  height: 50px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  font-family: var(--font-head);
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: opacity 0.2s;
+}
+.end-live-btn:hover { opacity: 0.85; }
+
+/* Live chat overlay */
+.live-chat-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.live-chat-msgs {
+  max-height: 180px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+  mask-image: linear-gradient(to bottom, transparent 0%, black 30%);
+  scrollbar-width: none;
+}
+.live-chat-msgs::-webkit-scrollbar { display: none; }
+
+.live-chat-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  animation: fadeUp 0.2s ease;
+}
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(5px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.live-chat-av {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-top: 1px;
+  background: var(--cream);
+}
+
+.live-chat-bubble {
+  background: rgba(0,0,0,0.55);
+  border-radius: 4px 12px 12px 12px;
+  padding: 4px 8px;
+  max-width: 85%;
+}
+.live-chat-name {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  color: var(--accent2);
+  font-weight: 700;
+}
+.live-chat-text {
+  font-size: 0.82rem;
+  color: rgba(255,255,255,0.9);
+  word-break: break-word;
+}
+
+.live-chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 25px;
+  padding: 6px 6px 6px 14px;
+}
+
+.live-chat-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  outline: none;
+  min-width: 0;
+}
+.live-chat-input::placeholder { color: rgba(255,255,255,0.35); }
+
+.live-chat-send {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--accent2);
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.live-chat-send:hover { opacity: 0.85; }
+
+/* ── TOAST ──────────────────────────────────────────────────────── */
+#toast-area {
+  position: fixed;
+  top: max(80px, calc(env(safe-area-inset-top, 0px) + 70px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  align-items: center;
+}
+.toast-msg {
+  padding: 9px 16px;
+  border-radius: 100px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: white;
+  white-space: nowrap;
+  animation: toastIn 0.25s ease;
+  pointer-events: auto;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast-msg.ok  { background: rgba(16,185,129,0.92); }
+.toast-msg.err { background: rgba(239,68,68,0.92); }
+.toast-msg.inf { background: rgba(59,130,246,0.92); }
+@keyframes toastIn {
+  from { opacity:0; transform: translateY(-8px) scale(0.95); }
+  to   { opacity:1; transform: translateY(0) scale(1); }
+}
+
+/* ── CONFIRM OVERLAY ────────────────────────────────────────────── */
+#confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#confirm-overlay.open { display: flex; }
+
+.confirm-sheet {
+  background: rgba(15,23,42,0.98);
+  border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 16px;
+  padding: 28px 24px;
+  width: 90%;
+  max-width: 340px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.confirm-title {
+  font-family: var(--font-head);
+  font-size: 1.4rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.confirm-sub {
+  font-size: 0.88rem;
+  color: var(--steel);
+  line-height: 1.55;
+}
+.confirm-btns {
+  display: flex;
+  gap: 10px;
+}
+.conf-cancel {
+  flex: 1; height: 44px;
+  background: transparent;
+  border: 1px solid var(--wire);
+  color: var(--steel);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  border-radius: 999px;
+  transition: background 0.15s;
+}
+.conf-cancel:hover { background: var(--cream); }
+.conf-end {
+  flex: 1; height: 44px;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  font-family: var(--font-head);
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+  border-radius: 999px;
+  transition: opacity 0.15s;
+}
+.conf-end:hover { opacity: 0.88; }
+</style>
+</head>
+<body>
+
+<video id="camera-preview" autoplay playsinline muted></video>
+
+<!-- ═══ PERMISSION SCREEN ═══════════════════════════════════════════ -->
+<div id="perm-screen">
+  <div class="perm-icon"><i class="fas fa-video"></i></div>
+  <div class="perm-title">GO LIVE</div>
+  <p class="perm-sub">To broadcast to your channel, Riverside needs access to your camera and microphone.</p>
+
+  <div class="perm-list">
+    <div class="perm-item">
+      <i class="fas fa-camera"></i>
+      <span>Camera — so viewers can see you</span>
+    </div>
+    <div class="perm-item">
+      <i class="fas fa-microphone"></i>
+      <span>Microphone — so viewers can hear you</span>
+    </div>
+  </div>
+
+  <button class="perm-btn" id="perm-allow-btn">
+    <i class="fas fa-shield-check" style="margin-right:8px;"></i>
+    ALLOW CAMERA & MIC
+  </button>
+
+  <div class="perm-denied" id="perm-denied-msg">
+    Camera or microphone access was denied. Please open your browser settings, allow access for this site, and reload the page.
+  </div>
+
+  <a href="javascript:history.back()" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--steel);letter-spacing:0.08em;text-decoration:none;margin-top:4px;">
+    CANCEL
+  </a>
+</div>
+
+<!-- ═══ SETUP SCREEN ════════════════════════════════════════════════ -->
+<div id="setup-screen" class="hidden">
+  <a href="javascript:history.back()" class="back-btn"><i class="fas fa-arrow-left"></i></a>
+
+  <div class="setup-overlay">
+    <div class="setup-label">BROADCAST TITLE</div>
+    <input
+      type="text"
+      class="setup-title-input"
+      id="live-title-input"
+      placeholder="What's happening today..."
+      maxlength="80"
+      autocomplete="off"
+    >
+
+    <div class="setup-actions">
+      <button class="setup-cam-toggle" id="setup-cam-flip" title="Flip camera">
+        <i class="fas fa-camera-rotate"></i>
+      </button>
+      <button class="go-live-btn" id="go-live-btn" disabled>
+        <i class="fas fa-circle-dot"></i>
+        GO LIVE
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LIVE SCREEN ═════════════════════════════════════════════════ -->
+<div id="live-screen" class="hidden">
+
+  <div class="live-top-bar">
+    <div class="live-badge">
+      <span class="live-dot"></span>
+      LIVE
+    </div>
+    <div class="live-stats">
+      <div class="live-stat-pill live-timer-pill" id="live-timer">
+        <i class="fas fa-clock"></i>
+        <span id="live-timer-text">00:00</span>
+      </div>
+      <div class="live-stat-pill" id="live-viewer-pill">
+        <i class="fas fa-eye"></i>
+        <span id="live-viewer-count">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="live-controls">
+    <div class="live-chat-wrap">
+      <div class="live-chat-msgs" id="live-chat-msgs"></div>
+      <div class="live-chat-input-row">
+        <input
+          type="text"
+          class="live-chat-input"
+          id="live-chat-input"
+          placeholder="Say something..."
+          autocomplete="off"
+          maxlength="200"
+        >
+        <button class="live-chat-send" id="live-chat-send">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="ctrl-btn" id="live-cam-flip" title="Flip camera">
+        <i class="fas fa-camera-rotate"></i>
+      </button>
+      <button class="ctrl-btn" id="live-mic-toggle" title="Mute mic">
+        <i class="fas fa-microphone"></i>
+      </button>
+      <button class="end-live-btn" id="end-live-btn">
+        END LIVE
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ CONFIRM END OVERLAY ═════════════════════════════════════════ -->
+<div id="confirm-overlay">
+  <div class="confirm-sheet">
+    <div class="confirm-title">END LIVE?</div>
+    <p class="confirm-sub">Your stream will stop for everyone watching. This cannot be undone — there is no playback.</p>
+    <div class="confirm-btns">
+      <button class="conf-cancel" id="conf-cancel-btn">KEEP GOING</button>
+      <button class="conf-end" id="conf-end-btn">END LIVE</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-area"></div>
+
+<script>
+'use strict';
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbGUXzDDf5UTx8zCnpFXkLLBUX8yiOadNbw9aLLFzXwDJVGZVQ1lqF8bBV6PTOAK6G/exec';
+
+const currentUser = localStorage.getItem('userName') || '';
+if (!currentUser) { location.href = 'index.html'; }
+
+const usp = new URLSearchParams(location.search);
+const channelId = usp.get('channelId') || '';
+if (!channelId) { location.href = 'channel.html'; }
+
+/* ── STATE ──────────────────────────────────────────────────────── */
+let localStream      = null;
+let facingMode       = 'user';      // 'user' = front, 'environment' = rear
+let isMicOn          = true;
+let isLive           = false;
+let activeLiveId     = null;
+let activePostId     = null;
+let liveStartTime    = null;
+let timerInterval    = null;
+let viewerPollInt    = null;
+let chatPollInt      = null;
+let hostSignalInt    = null;
+let peerConnections  = {};         // viewerId → RTCPeerConnection
+let lastChatMsgCount = 0;
+let permissionGranted = false;
+
+/* ── API ────────────────────────────────────────────────────────── */
+async function api(params) {
+  const res = await fetch(`${SCRIPT_URL}?${new URLSearchParams(params)}`);
+  return res.json();
+}
+async function post(body) {
+  const res = await fetch(SCRIPT_URL, { method:'POST', body:JSON.stringify(body) });
+  return res.json();
+}
+
+/* ── TOAST ──────────────────────────────────────────────────────── */
+function toast(msg, type='inf', dur=3200) {
+  const area = document.getElementById('toast-area');
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.textContent = msg;
+  area.appendChild(el);
+  setTimeout(() => el.remove(), dur);
+}
+
+/* ── UTIL ───────────────────────────────────────────────────────── */
+function lh3(url) {
+  if (!url) return '';
+  const m = url.match(/[-\w]{25,}/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[0]}` : url;
+}
+function fallbackAvatar(name) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1e293b&color=60a5fa&size=60`;
+}
+function fmtDuration(secs) {
+  const m = Math.floor(secs / 60).toString().padStart(2,'0');
+  const s = (secs % 60).toString().padStart(2,'0');
+  return `${m}:${s}`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STEP 1 — PERMISSION SCREEN
+════════════════════════════════════════════════════════════════ */
+document.getElementById('perm-allow-btn').addEventListener('click', requestPermissions);
+
+async function requestPermissions() {
+  const btn = document.getElementById('perm-allow-btn');
+  btn.textContent = 'REQUESTING ACCESS...';
+  btn.disabled = true;
+
+  try {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facingMode }, width:{ ideal:1280 }, height:{ ideal:720 } },
+      audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 44100 }
+    });
+
+    permissionGranted = true;
+    showCameraPreview();
+    showSetupScreen();
+
+  } catch (err) {
+    console.error('Permission error:', err);
+    btn.textContent = 'TRY AGAIN';
+    btn.disabled = false;
+    document.getElementById('perm-denied-msg').style.display = 'block';
+
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      toast('Camera/mic access denied. Check browser settings.', 'err', 6000);
+    } else if (err.name === 'NotFoundError') {
+      toast('No camera or microphone found.', 'err', 5000);
+    } else {
+      toast('Could not access camera: ' + err.message, 'err', 5000);
+    }
+  }
+}
+
+function showCameraPreview() {
+  const vid = document.getElementById('camera-preview');
+  vid.srcObject = localStream;
+  vid.classList.toggle('rear', facingMode === 'environment');
+}
+
+/* ════════════════════════════════════════════════════════════════
+   STEP 2 — SETUP SCREEN
+════════════════════════════════════════════════════════════════ */
+function showSetupScreen() {
+  document.getElementById('perm-screen').classList.add('hidden');
+  document.getElementById('setup-screen').classList.remove('hidden');
+}
+
+// Enable go-live button only when title has text
+document.getElementById('live-title-input').addEventListener('input', function() {
+  document.getElementById('go-live-btn').disabled = !this.value.trim();
+});
+
+// Flip camera from setup
+document.getElementById('setup-cam-flip').addEventListener('click', () => flipCamera());
+
+// Go live
+document.getElementById('go-live-btn').addEventListener('click', startLive);
+
+/* ════════════════════════════════════════════════════════════════
+   STEP 3 — GO LIVE
+════════════════════════════════════════════════════════════════ */
+async function startLive() {
+  const title = document.getElementById('live-title-input').value.trim();
+  if (!title) { toast('Enter a title first', 'err'); return; }
+
+  const btn = document.getElementById('go-live-btn');
+  btn.disabled = true;
+  btn.textContent = 'STARTING...';
+
+  try {
+    // Create the live session on the backend
+    const data = await post({ operation:'startChannelLive', channelId, creator:currentUser, title });
+    if (data.status !== 'success') { toast(data.message || 'Failed to start live', 'err'); btn.disabled=false; btn.innerHTML='<i class="fas fa-circle-dot"></i> GO LIVE'; return; }
+
+    activeLiveId = data.liveId;
+    activePostId = data.postId;
+    isLive = true;
+    liveStartTime = Date.now();
+
+    // Show live screen
+    document.getElementById('setup-screen').classList.add('hidden');
+    document.getElementById('live-screen').classList.remove('hidden');
+
+    // Start all loops
+    startLiveTimer();
+    startViewerPoll();
+    startChatPoll();
+    startHostSignalLoop();
+
+    toast('You are LIVE!', 'ok', 4000);
+
+  } catch(err) {
+    console.error(err);
+    toast('Network error. Try again.', 'err');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-circle-dot"></i> GO LIVE';
+  }
+}
+
+/* ── TIMER ──────────────────────────────────────────────────────── */
+function startLiveTimer() {
+  const el = document.getElementById('live-timer-text');
+  timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - liveStartTime) / 1000);
+    el.textContent = fmtDuration(elapsed);
+  }, 1000);
+}
+
+/* ── VIEWER COUNT POLL ──────────────────────────────────────────── */
+function startViewerPoll() {
+  const pollFn = async () => {
+    if (!activeLiveId) return;
+    try {
+      const data = await api({ operation:'getChannelLiveViewerCount', liveId:activeLiveId });
+      document.getElementById('live-viewer-count').textContent = data.count || 0;
+    } catch {}
+  };
+  pollFn();
+  viewerPollInt = setInterval(pollFn, 8000);
+}
+
+/* ── CHAT POLL ──────────────────────────────────────────────────── */
+function startChatPoll() {
+  const pollFn = async () => {
+    if (!activeLiveId) return;
+    try {
+      const data = await api({ operation:'getChannelLiveChat', liveId:activeLiveId });
+      const msgs = data.messages || [];
+      if (msgs.length > lastChatMsgCount) {
+        const newMsgs = msgs.slice(lastChatMsgCount);
+        newMsgs.forEach(m => appendChatMsg(m.author, m.content, m.picLink));
+        lastChatMsgCount = msgs.length;
+      }
+    } catch {}
+  };
+  pollFn();
+  chatPollInt = setInterval(pollFn, 4000);
+}
+
+function appendChatMsg(author, content, picLink) {
+  const container = document.getElementById('live-chat-msgs');
+  const av = lh3(picLink) || fallbackAvatar(author);
+  const el = document.createElement('div');
+  el.className = 'live-chat-msg';
+  el.innerHTML = `
+    <img class="live-chat-av" src="${av}" onerror="this.src='${fallbackAvatar(author)}'" alt="">
+    <div class="live-chat-bubble">
+      <div class="live-chat-name">${author.toUpperCase()}</div>
+      <div class="live-chat-text">${content.replace(/</g,'&lt;')}</div>
+    </div>`;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  // Keep max 60 messages in DOM
+  while (container.children.length > 60) container.removeChild(container.firstChild);
+}
+
+/* ── HOST SIGNAL LOOP (answer viewers) ─────────────────────────── */
+/*
+  Flow:
+  1. A viewer sends their SDP answer via sendChannelLiveAnswer
+  2. Host polls for new answers
+  3. Host creates RTCPeerConnection per viewer, sets remote desc,
+     creates offer, sends back ice candidates, and they connect.
+
+  Because Google Sheets is the signalling server and we can only
+  do SDP‑offer‑from‑host → answer‑from‑viewer (not the other way)
+  we use the host as the offerer for each viewer connection.
+  
+  Simplified approach that works with Apps Script latency:
+  Host stores its SDP offer globally → viewers fetch and answer →
+  host receives answers and connects ICE.
+*/
+async function startHostSignalLoop() {
+  // First: push the host's offer to the sheet
+  await pushHostOffer();
+
+  // Then poll for viewer answers
+  hostSignalInt = setInterval(async () => {
+    if (!isLive || !activeLiveId) return;
+    try {
+      const data = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'answer' });
+      for (const sig of (data.signals || [])) {
+        const viewerId = sig.viewerId;
+        if (!viewerId || peerConnections[viewerId]) continue;
+        await connectToViewer(viewerId, sig.payload);
+      }
+    } catch {}
+  }, 5000);
+}
+
+async function pushHostOffer() {
+  if (!activeLiveId || !localStream) return;
+  try {
+    // Create a "template" peer connection to generate a global offer
+    const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] });
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    const iceCandidates = [];
+    pc.onicecandidate = e => { if (e.candidate) iceCandidates.push(e.candidate); };
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // Wait for ICE gathering
+    await new Promise(resolve => {
+      if (pc.iceGatheringState === 'complete') { resolve(); return; }
+      pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') resolve(); };
+      setTimeout(resolve, 5000); // fallback timeout
+    });
+
+    // Store offer on sheet
+    await post({ operation:'sendChannelLiveOffer', liveId:activeLiveId, sdpOffer:JSON.stringify(pc.localDescription) });
+    pc.close(); // close template, real connections made per-viewer below
+
+  } catch(err) { console.error('pushHostOffer error', err); }
+}
+
+async function connectToViewer(viewerId, answerPayload) {
+  if (peerConnections[viewerId]) return;
+
+  try {
+    const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] });
+    peerConnections[viewerId] = pc;
+
+    localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+
+    const iceCandidates = [];
+    pc.onicecandidate = async e => {
+      if (e.candidate) {
+        await post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'ice-host', viewerId, payload:JSON.stringify(e.candidate) });
+      }
+    };
+
+    // Create offer for this specific viewer
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // Set their answer
+    const parsed = JSON.parse(answerPayload);
+    const sdpAnswer = parsed.sdpAnswer || answerPayload;
+    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(sdpAnswer)));
+
+    // Poll for viewer ICE
+    const iceInt = setInterval(async () => {
+      if (!peerConnections[viewerId]) { clearInterval(iceInt); return; }
+      try {
+        const sig = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'ice-viewer', viewerId });
+        for (const s of (sig.signals||[])) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(s.payload))); } catch {}
+        }
+      } catch {}
+    }, 4000);
+
+    pc.onconnectionstatechange = () => {
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        clearInterval(iceInt);
+        pc.close();
+        delete peerConnections[viewerId];
+      }
+    };
+
+  } catch(err) { console.error('connectToViewer error', err); delete peerConnections[viewerId]; }
+}
+
+/* ── CAMERA FLIP ────────────────────────────────────────────────── */
+async function flipCamera() {
+  facingMode = facingMode === 'user' ? 'environment' : 'user';
+
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facingMode }, width:{ideal:1280}, height:{ideal:720} },
+      audio: { echoCancellation:true, noiseSuppression:true }
+    });
+
+    // Replace video track in all peer connections
+    const newVideoTrack = newStream.getVideoTracks()[0];
+    Object.values(peerConnections).forEach(pc => {
+      const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+      if (sender) sender.replaceTrack(newVideoTrack);
+    });
+
+    // Update preview
+    const oldVideoTrack = localStream.getVideoTracks()[0];
+    if (oldVideoTrack) oldVideoTrack.stop();
+    localStream.removeTrack(oldVideoTrack);
+    localStream.addTrack(newVideoTrack);
+
+    const vid = document.getElementById('camera-preview');
+    vid.srcObject = localStream;
+    vid.classList.toggle('rear', facingMode === 'environment');
+
+  } catch(err) {
+    console.error('Flip error:', err);
+    toast('Could not flip camera', 'err');
+    facingMode = facingMode === 'user' ? 'environment' : 'user'; // revert
+  }
+}
+
+document.getElementById('setup-cam-flip').addEventListener('click', flipCamera);
+document.getElementById('live-cam-flip').addEventListener('click', flipCamera);
+
+/* ── MIC TOGGLE ─────────────────────────────────────────────────── */
+document.getElementById('live-mic-toggle').addEventListener('click', function() {
+  isMicOn = !isMicOn;
+  localStream.getAudioTracks().forEach(t => t.enabled = isMicOn);
+  this.classList.toggle('active', !isMicOn);
+  this.querySelector('i').className = isMicOn ? 'fas fa-microphone' : 'fas fa-microphone-slash';
+  toast(isMicOn ? 'Mic on' : 'Mic muted', 'inf', 2000);
+});
+
+/* ── LIVE CHAT SEND ─────────────────────────────────────────────── */
+document.getElementById('live-chat-send').addEventListener('click', sendLiveChat);
+document.getElementById('live-chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendLiveChat(); }
+});
+
+async function sendLiveChat() {
+  const input = document.getElementById('live-chat-input');
+  const content = input.value.trim();
+  if (!content || !activeLiveId) return;
+  input.value = '';
+
+  // Optimistically append own message
+  const picLink = localStorage.getItem('userPicLink') || '';
+  appendChatMsg(currentUser, content, picLink);
+  lastChatMsgCount++;
+
+  try {
+    await post({ operation:'sendChannelLiveChat', liveId:activeLiveId, author:currentUser, content, picLink });
+  } catch { toast('Chat send failed', 'err'); }
+}
+
+/* ── END LIVE ───────────────────────────────────────────────────── */
+document.getElementById('end-live-btn').addEventListener('click', () => {
+  document.getElementById('confirm-overlay').classList.add('open');
+});
+document.getElementById('conf-cancel-btn').addEventListener('click', () => {
+  document.getElementById('confirm-overlay').classList.remove('open');
+});
+document.getElementById('conf-end-btn').addEventListener('click', endLive);
+
+async function endLive() {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  if (!isLive || !activeLiveId) return;
+
+  isLive = false;
+
+  // Stop all intervals
+  clearInterval(timerInterval);
+  clearInterval(viewerPollInt);
+  clearInterval(chatPollInt);
+  clearInterval(hostSignalInt);
+
+  // Close all peer connections
+  Object.values(peerConnections).forEach(pc => pc.close());
+  peerConnections = {};
+
+  // Stop camera/mic
+  if (localStream) localStream.getTracks().forEach(t => t.stop());
+
+  // Tell backend
+  try {
+    await post({ operation:'endChannelLive', liveId:activeLiveId, creator:currentUser, channelId, postId:activePostId });
+    toast('Live ended. Post saved in channel.', 'ok', 5000);
+  } catch { toast('Live ended (offline)', 'inf'); }
+
+  setTimeout(() => {
+    location.href = `channel.html?channelId=${encodeURIComponent(channelId)}`;
+  }, 2500);
+}
+
+/* ── PAGE UNLOAD SAFETY ─────────────────────────────────────────── */
+window.addEventListener('beforeunload', () => {
+  if (isLive && activeLiveId) {
+    // Best-effort end
+    navigator.sendBeacon(SCRIPT_URL, JSON.stringify({ operation:'endChannelLive', liveId:activeLiveId, creator:currentUser, channelId, postId:activePostId }));
+    if (localStream) localStream.getTracks().forEach(t => t.stop());
+  }
+});
+
+/* ── CHECK AUTH BEFORE SHOWING ──────────────────────────────────── */
+async function checkLiveAuth() {
+  try {
+    const data = await api({ operation:'isAuthorised', username:currentUser, channelId });
+    if (!(data.status === 'success' && data.isAuthorised)) {
+      // Also check admin
+      const d2 = await api({ operation:'getUserStatus', name:currentUser });
+      const isAdmin = d2.userStatus === 'approved' && (d2.isAdmin === true || d2.isAdmin === 'true');
+      if (!isAdmin) {
+        toast('You are not authorised to go live in this channel', 'err', 5000);
+        setTimeout(() => { location.href = `channel.html?channelId=${encodeURIComponent(channelId)}`; }, 3000);
+        return false;
+      }
+    }
+    return true;
+  } catch { return true; } // fail open
+}
+
+/* ── INIT ───────────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', async () => {
+  const ok = await checkLiveAuth();
+  if (!ok) return;
+
+  // Check if browser supports getUserMedia
+  if (!navigator.mediaDevices?.getUserMedia) {
+    document.getElementById('perm-denied-msg').textContent = 'Your browser does not support camera access. Try Chrome or Safari.';
+    document.getElementById('perm-denied-msg').style.display = 'block';
+    document.getElementById('perm-allow-btn').style.display = 'none';
+    return;
+  }
+
+  // Check if permission was already granted (no need to show permission screen)
+  try {
+    const perm = await navigator.permissions.query({ name:'camera' });
+    if (perm.state === 'granted') {
+      // Auto-start without showing permission screen
+      await requestPermissions();
+      return;
+    }
+  } catch {} // permissions API not available on all browsers — just show the screen
+
+  // Show permission screen
+  document.getElementById('perm-screen').classList.remove('hidden');
+});
+</script>
+</body>
+</html>

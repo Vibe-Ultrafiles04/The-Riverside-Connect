@@ -1638,98 +1638,6 @@ html, body {
   from { transform: translateX(-100%); }
   to   { transform: translateX(100%); }
 }
-
-
-/* ── LIVE POST ─────────────────────────────────────────────────── */
-.live-post-wrap {
-  width: 100%;
-  background: #000;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-}
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #ef4444;
-  color: #fff;
-  font-family: var(--font-head);
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
-  padding: 4px 12px;
-  border-radius: 4px;
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 5;
-}
-.live-badge-dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  background: #fff;
-  animation: livepulse 1s ease infinite;
-}
-@keyframes livepulse {
-  0%,100% { opacity:1; transform:scale(1); }
-  50%      { opacity:0.4; transform:scale(0.7); }
-}
-.live-video-el {
-  width: 100%;
-  max-height: 60vh;
-  object-fit: contain;
-  display: block;
-  background: #000;
-}
-.live-viewer-count {
-  position: absolute;
-  top: 12px; right: 12px;
-  background: rgba(0,0,0,0.7);
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  padding: 3px 10px;
-  border-radius: 4px;
-  z-index: 5;
-}
-.live-join-btn {
-  margin: 24px auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #ef4444;
-  color: #fff;
-  border: none;
-  padding: 12px 28px;
-  font-family: var(--font-head);
-  font-size: 1rem;
-  letter-spacing: 0.1em;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: opacity 0.15s;
-}
-.live-join-btn:hover { opacity: 0.85; }
-.live-ended-wrap {
-  width: 100%;
-  min-height: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  gap: 8px;
-  background: rgba(30,41,59,0.6);
-  border-top: 1px solid var(--wire);
-}
-.live-ended-label {
-  font-family: var(--font-head);
-  font-size: 1.1rem;
-  letter-spacing: 0.1em;
-  color: var(--steel);
-}
 </style>
 </head>
 <body>
@@ -1752,12 +1660,9 @@ html, body {
     <button class="mh-btn" id="btn-channels" title="Switch channel">
       <i class="fas fa-layer-group"></i>
     </button>
-   <button class="mh-btn" id="btn-write" title="New post" style="display:none;">
-  <i class="fas fa-edit"></i>
-</button>
-<button class="mh-btn" id="btn-golive" title="Go Live" style="display:none;">
-  <i class="fas fa-circle-dot" style="color:#ef4444;"></i>
-</button>
+    <button class="mh-btn" id="btn-write" title="New post" style="display:none;">
+      <i class="fas fa-edit"></i>
+    </button>
     <button class="mh-btn" id="btn-refresh" title="Refresh channel">
       <i class="fas fa-sync-alt"></i>
     </button>
@@ -1917,7 +1822,7 @@ html, body {
 <script>
 'use strict';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxbGUXzDDf5UTx8zCnpFXkLLBUX8yiOadNbw9aLLFzXwDJVGZVQ1lqF8bBV6PTOAK6G/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzZ9VVt9A2LlehC6jMMwNMVSkWCBFnN86W7m3gQgAIqbRVPgDUhE1IzHmLtFzV6zbQE/exec';
 
 const currentUser = localStorage.getItem('userName') || '';
 if (!currentUser) { location.href = 'index.html'; }
@@ -2028,7 +1933,8 @@ async function loadChannels(force = false) {
   const usp = new URLSearchParams(location.search);
   const urlChId   = usp.get('channelId');
   const urlPostId = usp.get('postId');
-let target = urlChId
+
+  let target = urlChId
     ? allChannels.find(c => c.id === urlChId)
     : allChannels.find(c => c.id === localStorage.getItem('rv_last_ch')) || allChannels[0];
 
@@ -2151,16 +2057,16 @@ async function openChannel(ch, scrollToPostId = null) {
 /* ── CHECK AUTH ──────────────────────────────────────────────────── */
 async function checkAuth(channelId) {
   try {
-   const data = channelId
-    ? await api({ operation: 'isAuthorised', username: currentUser, channelId })
-    : { status: 'success', isAuthorised: false };
+    const data = await api({ operation: 'isAuthorised', username: currentUser, channelId });
     isAuthorised = data.status === 'success' && data.isAuthorised;
   } catch { isAuthorised = false; }
 
- document.getElementById('btn-write').style.display = isAuthorised ? 'flex' : 'none';
-document.getElementById('btn-golive').style.display = isAuthorised ? 'flex' : 'none';
+  document.getElementById('btn-write').style.display = isAuthorised ? 'flex' : 'none';
+
   try {
-    const d = await api({ operation: 'getUserStatus', name: currentUser });
+    const data = channelId
+    ? await api({ operation: 'isAuthorised', username: currentUser, channelId })
+    : { status: 'success', isAuthorised: false };
     isAdmin = d.userStatus === 'approved' && d.isAdmin === true;
     document.getElementById('drawer-create-btn').style.display = isAdmin ? 'flex' : 'none';
   } catch { isAdmin = false; }
@@ -2220,9 +2126,6 @@ function buildPostView(p, idx, total) {
 
   const avatarSrc = lh3(p.picLink) || fallbackAvatar(p.author);
   const isOwn = p.author === currentUser;
-  if ((p.media?.type === 'live' || p.media?.type === 'ended' || p.content === '📴 LIVE ENDED' || p.content?.startsWith('🔴 LIVE:')) ) {
-    return buildLivePostView(p, idx, total);
-  }
 
   let mediaHtml = '';
  if (p.media?.link) {
@@ -3119,196 +3022,6 @@ document.addEventListener('visibilitychange', () => {
 if (!localStorage.getItem('rv_swipe_seen')) {
   document.getElementById('swipe-hint').style.opacity = '1';
   localStorage.setItem('rv_swipe_seen', '1');
-}
-
-/* ── LIVE STREAMING ───────────────────────────────────────────────── */
-let activeLiveId = null;
-let activeLivePc = null;
-let liveViewerPingInterval = null;
-let liveHostPollInterval = null;
-let liveViewerPollInterval = null;
-
-document.getElementById('btn-golive').addEventListener('click', () => {
-  if (currentChannel) location.href = `golive.html?channelId=${encodeURIComponent(currentChannel.id)}`;
-});
-
-async function checkChannelForLive(channelId) {
-  try {
-    const data = await api({ operation: 'getChannelLive', channelId });
-    return data.live || null;
-  } catch { return null; }
-}
-
-function buildLivePostView(p, idx, total) {
-  const wrap = document.createElement('div');
-  wrap.className = 'post-view';
-  wrap.dataset.postId = p.postId;
-
-  const avatarSrc = lh3(p.picLink) || fallbackAvatar(p.author);
-  const isEnded = (p.media?.type === 'ended') || p.content === '📴 LIVE ENDED';
-const isLive = !isEnded && ((p.media?.type === 'live') || p.content?.startsWith('🔴 LIVE:'));
-
-  let liveHtml = '';
-  if (isLive) {
-    liveHtml = `
-      <div class="live-post-wrap" id="lvwrap-${p.postId}">
-        <div class="live-badge"><span class="live-badge-dot"></span>LIVE</div>
-        <div class="live-viewer-count" id="lvc-${p.postId}"><i class="fas fa-eye"></i> 0</div>
-        <video class="live-video-el" id="lvvid-${p.postId}" autoplay playsinline muted style="display:none;"></video>
-        <button class="live-join-btn" id="lvjoin-${p.postId}">
-          <i class="fas fa-circle-dot"></i> JOIN LIVE
-        </button>
-      </div>`;
-  } else if (isEnded) {
-    liveHtml = `
-      <div class="live-ended-wrap">
-        <div class="live-ended-label">📴 LIVE ENDED</div>
-        <div style="font-family:var(--font-mono);font-size:0.7rem;color:var(--steel);letter-spacing:0.08em;">NO PLAYBACK AVAILABLE</div>
-      </div>`;
-  }
-
-  wrap.innerHTML = `
-    <div class="post-header">
-      <img class="post-avatar" src="${avatarSrc}" onerror="this.src='https://picsum.photos/id/64/48/48'" alt="">
-      <div class="post-author-block">
-        <div class="post-author">${p.author}</div>
-        <div class="post-time">${fmtTime(p.created)}</div>
-      </div>
-      <div class="post-index">${String(idx+1).padStart(2,'0')} / ${String(total).padStart(2,'0')}</div>
-    </div>
-    <div class="post-body">
-      ${liveHtml}
-      ${!isLive && !isEnded && p.content ? `<div class="post-text">${p.content.replace(/\n/g,'<br>')}</div>` : ''}
-    </div>
-    <div class="post-foot">
-      <button class="post-action post-like-btn ${p.likedByCurrentUser?'liked':''}" data-pid="${p.postId}" data-liked="${p.likedByCurrentUser?'1':'0'}">
-        <i class="${p.likedByCurrentUser?'fas':'far'} fa-heart"></i>
-        <span class="like-count">${p.likes||0}</span>
-      </button>
-      <button class="post-action comment-toggle-btn" data-pid="${p.postId}">
-        <i class="far fa-comment"></i>
-        <span class="comment-count-label">—</span>
-      </button>
-      <button class="post-action post-view-badge" data-pid="${p.postId}">
-        <i class="far fa-eye"></i>
-        <span class="view-count-label">0</span>
-      </button>
-    </div>
-    <div class="comment-panel" id="cp-${p.postId}">
-      <div class="comment-list" id="cl-${p.postId}"></div>
-      <div class="comment-input-bar">
-        <input type="text" id="ci-${p.postId}" placeholder="Write a comment..." autocomplete="off">
-        <button class="comment-send" data-pid="${p.postId}"><i class="fas fa-paper-plane"></i></button>
-      </div>
-    </div>`;
-
-  wrap.querySelector('.post-like-btn').addEventListener('click', () => toggleLike(p.postId, wrap.querySelector('.post-like-btn')));
-  wrap.querySelector('.comment-toggle-btn').addEventListener('click', () => toggleComments(p.postId));
-  wrap.querySelector('.post-view-badge').addEventListener('click', () => openViewers(p.postId));
-  wrap.querySelector('.comment-send').addEventListener('click', () => sendComment(p.postId));
-  wrap.querySelector(`#ci-${p.postId}`).addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendComment(p.postId); }
-  });
-
-  if (isLive) {
-    wrap.querySelector(`#lvjoin-${p.postId}`).addEventListener('click', () => joinLiveAsViewer(p.postId));
-    startLiveViewerCountPoll(p.postId);
-  }
-
-  loadCommentCount(p.postId, wrap.querySelector('.comment-count-label'));
-  return wrap;
-}
-
-async function joinLiveAsViewer(postId) {
-  const joinBtn = document.getElementById(`lvjoin-${postId}`);
-  if (joinBtn) { joinBtn.disabled = true; joinBtn.textContent = 'CONNECTING...'; }
-
-  try {
-    const liveData = await api({ operation: 'getChannelLive', channelId: currentChannel.id });
-    const live = liveData.live;
-    if (!live) { toast('Live has ended', 'err'); return; }
-
-    activeLiveId = live.liveId;
-
-    const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] });
-    activeLivePc = pc;
-
-    pc.ontrack = e => {
-      const vid = document.getElementById(`lvvid-${postId}`);
-      if (vid) { vid.srcObject = e.streams[0]; vid.style.display='block'; }
-      if (joinBtn) joinBtn.style.display = 'none';
-    };
-
-    pc.onicecandidate = e => {
-      if (e.candidate) {
-        post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'ice-viewer', viewerId:currentUser, payload:JSON.stringify(e.candidate) }).catch(()=>{});
-      }
-    };
-
-    // Ask the host to create a dedicated offer for us
-    await post({ operation:'sendChannelLiveSignal', liveId:activeLiveId, type:'join-request', viewerId:currentUser, payload:'1' });
-
-    // Poll for our personal offer
-    let offerSdp = null;
-    for (let i = 0; i < 15 && !offerSdp; i++) {
-      await new Promise(r => setTimeout(r, 2000));
-      const sig = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'offer', viewerId:currentUser });
-      if (sig.signals?.length) offerSdp = sig.signals[sig.signals.length - 1].payload;
-    }
-    if (!offerSdp) {
-      toast('Host did not respond, try again', 'err');
-      if (joinBtn) { joinBtn.disabled=false; joinBtn.innerHTML='<i class="fas fa-circle-dot"></i> JOIN LIVE'; }
-      return;
-    }
-
-    await pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(offerSdp)));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-
-    await post({ operation:'sendChannelLiveAnswer', liveId:activeLiveId, viewerId:currentUser, sdpAnswer:JSON.stringify(answer) });
-
-    liveViewerPollInterval = setInterval(async () => {
-      try {
-        const sig = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'ice-host', viewerId:currentUser });
-        for (const s of (sig.signals||[])) {
-          try { await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(s.payload))); } catch {}
-        }
-      } catch {}
-    }, 3000);
-
-    liveViewerPingInterval = setInterval(() => {
-      post({ operation:'pingChannelLiveViewer', liveId:activeLiveId, username:currentUser }).catch(()=>{});
-    }, 10000);
-
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-        toast('Live connection lost', 'err');
-        clearInterval(liveViewerPollInterval);
-        clearInterval(liveViewerPingInterval);
-      }
-    };
-
-  } catch(err) {
-    console.error(err);
-    toast('Could not join live', 'err');
-    if (joinBtn) { joinBtn.disabled=false; joinBtn.innerHTML='<i class="fas fa-circle-dot"></i> JOIN LIVE'; }
-  }
-}
-function startLiveViewerCountPoll(postId) {
-  const pollFn = async () => {
-    try {
-      if (!activeLiveId) {
-        const liveData = await api({ operation:'getChannelLive', channelId:currentChannel?.id });
-        if (liveData.live) activeLiveId = liveData.live.liveId;
-      }
-      if (!activeLiveId) return;
-      const data = await api({ operation:'getChannelLiveViewerCount', liveId:activeLiveId });
-      const el = document.getElementById(`lvc-${postId}`);
-      if (el) el.innerHTML = `<i class="fas fa-eye"></i> ${data.count||0}`;
-    } catch {}
-  };
-  pollFn();
-  setInterval(pollFn, 8000);
 }
 
 /* ── INIT ─────────────────────────────────────────────────────────── */

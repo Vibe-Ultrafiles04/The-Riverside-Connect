@@ -502,8 +502,16 @@
     <!-- Monitor -->
     <div class="monitor-panel">
       <div class="monitor-bar">
-        <div class="monitor-title">Program Output</div>
-        <div class="on-air" id="on-air"><div class="bd"></div>ON AIR</div>
+  <div class="monitor-title">Program Output</div>
+  <select id="aspect-select" onchange="setAspectRatio(this.value)"
+    style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.75rem;padding:4px 8px;outline:none;">
+    <option value="16:9">16:9 Landscape</option>
+    <option value="9:16">9:16 Portrait</option>
+    <option value="1:1">1:1 Square</option>
+    <option value="4:3">4:3 Classic</option>
+  </select>
+  <div class="on-air" id="on-air"><div class="bd"></div>ON AIR</div>
+  
         <div class="vcbadge" id="vcbadge"><i class="fas fa-users" style="font-size:0.6rem"></i> <span id="vc-count">0</span> connected</div>
         <div class="pip-pill" onclick="togglePiP()" title="Picture-in-Picture"><i class="fas fa-external-link-alt"></i> PiP</div>
         <button class="btn btn-ghost btn-sm" onclick="cycleLayout()"><i class="fas fa-th"></i> Layout</button>
@@ -534,6 +542,7 @@
           <button class="cam-ctrl-btn" onclick="zoomIn()" title="Zoom In"><i class="fas fa-plus"></i></button>
           <button class="cam-ctrl-btn" onclick="zoomOut()" title="Zoom Out"><i class="fas fa-minus"></i></button>
           <button class="cam-ctrl-btn" id="flip-btn" onclick="toggleFlip()" title="Mirror"><i class="fas fa-arrows-alt-h"></i></button>
+          <button class="cam-ctrl-btn" id="switch-cam-btn" onclick="switchCamera()" title="Switch Camera"><i class="fas fa-sync-alt"></i></button>
           <button class="cam-ctrl-btn" id="rotate-btn" onclick="rotate90()" title="Rotate 90°"><i class="fas fa-redo"></i></button>
           <button class="cam-ctrl-btn" id="tilt-lock-btn" onclick="toggleTiltLock()" title="Lock Tilt" style="display:none"><i class="fas fa-lock-open"></i></button>
         </div>
@@ -797,6 +806,7 @@ let currentTransition = 'cut';
 
 // Camera transform state
 let camZoom = 1.0;
+let currentFacingMode = 'user';
 let camFlip = false;
 let camRotation = 0;        // degrees: 0, 90, 180, 270
 let tiltLocked = false;
@@ -815,6 +825,22 @@ let compositeCanvas = null;
 let compositeCtx = null;
 let compositeStream = null;
 let rafId = null;
+
+// Aspect ratio config
+const ASPECTS = {
+  '16:9': { w:1280, h:720 },
+  '9:16': { w:720,  h:1280 },
+  '1:1':  { w:1080, h:1080 },
+  '4:3':  { w:1024, h:768 }
+};
+
+function setAspectRatio(key) {
+  const a = ASPECTS[key] || ASPECTS['16:9'];
+  compositeCanvas.width = a.w;
+  compositeCanvas.height = a.h;
+  document.getElementById('canvas-wrap').style.aspectRatio = `${a.w} / ${a.h}`;
+  showToast(`Aspect ratio set to ${key}`, 'info');
+}
 
 // WebRTC viewers
 let viewerConnections = {};
@@ -869,10 +895,10 @@ async function init() {
 function startRenderLoop() {
   const canvas = compositeCanvas;
   const ctx    = compositeCtx;
-  const W = 1280, H = 720;
 
   function frame() {
     rafId = requestAnimationFrame(frame);
+    const W = compositeCanvas.width, H = compositeCanvas.height;
 
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#000';
@@ -1290,6 +1316,31 @@ async function connectPhone() {
     await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'postCameraAnswer', deviceCode:code, sdpAnswer:pc.localDescription.sdp, iceCandidates:studioIce })});
     cameras['phone-'+code] = { ...(cameras['phone-'+code]||{}), peerConnection:pc };
   } catch(e) { showToast('Connection failed: ' + e.message, 'error'); }
+}
+
+async function switchCamera() {
+  if (!activeCameraId || !cameras[activeCameraId]?.local) {
+    showToast('Switch only works on your local camera', 'error');
+    return;
+  }
+  const newMode = currentFacingMode === 'user' ? 'environment' : 'user';
+  try {
+    const newStream = await navigator.mediaDevices.getUserMedia({
+      video: { width:1280, height:720, facingMode: newMode },
+      audio: true
+    });
+    // stop old tracks
+    cameras[activeCameraId].stream.getTracks().forEach(t => t.stop());
+    cameras[activeCameraId].stream = newStream;
+    // swap the video element's source — canvas draws from this each frame
+    const vid = getVideoElementForCamera(activeCameraId);
+    if (vid) vid.srcObject = newStream;
+    setupAudioAnalysis(newStream, 'studio');
+    currentFacingMode = newMode;
+    showToast(`📷 Switched to ${newMode === 'user' ? 'front' : 'back'} camera`, 'success');
+  } catch (e) {
+    showToast('Could not switch camera: ' + e.message, 'error');
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════

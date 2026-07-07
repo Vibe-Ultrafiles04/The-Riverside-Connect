@@ -3145,8 +3145,8 @@ function buildLivePostView(p, idx, total) {
   wrap.dataset.postId = p.postId;
 
   const avatarSrc = lh3(p.picLink) || fallbackAvatar(p.author);
-  const isLive = (p.media?.type || '') === 'live';
-  const isEnded = (p.media?.type || '') === 'ended' || p.content === '📴 LIVE ENDED';
+  const isEnded = (p.media?.type === 'ended') || p.content === '📴 LIVE ENDED';
+const isLive = !isEnded && ((p.media?.type === 'live') || p.content?.startsWith('🔴 LIVE:'));
 
   let liveHtml = '';
   if (isLive) {

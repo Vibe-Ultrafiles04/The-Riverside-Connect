@@ -3230,14 +3230,25 @@ async function joinLiveAsViewer(postId) {
 
     activeLiveId = live.liveId;
 
-    const pc = new RTCPeerConnection({ iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}] });
+   const ICE_SERVERS = [
+  { urls: 'stun:stun.l.google.com:19302' },
+  { urls: 'stun:stun1.l.google.com:19302' },
+  { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+  { urls: 'turn:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' }
+];
+const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     activeLivePc = pc;
 
-    pc.ontrack = e => {
-      const vid = document.getElementById(`lvvid-${postId}`);
-      if (vid) { vid.srcObject = e.streams[0]; vid.style.display='block'; }
-      if (joinBtn) joinBtn.style.display = 'none';
-    };
+   pc.ontrack = e => {
+  const vid = document.getElementById(`lvvid-${postId}`);
+  if (vid) {
+    vid.srcObject = e.streams[0];
+    vid.style.display = 'block';
+    vid.play().catch(() => {});
+  }
+  if (joinBtn) joinBtn.style.display = 'none';
+};
 
     pc.onicecandidate = e => {
       if (e.candidate) {
@@ -3267,14 +3278,17 @@ async function joinLiveAsViewer(postId) {
 
     await post({ operation:'sendChannelLiveAnswer', liveId:activeLiveId, viewerId:currentUser, sdpAnswer:JSON.stringify(answer) });
 
-    liveViewerPollInterval = setInterval(async () => {
-      try {
-        const sig = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'ice-host', viewerId:currentUser });
-        for (const s of (sig.signals||[])) {
-          try { await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(s.payload))); } catch {}
-        }
-      } catch {}
-    }, 3000);
+const seenHostIceIds = new Set();
+liveViewerPollInterval = setInterval(async () => {
+  try {
+    const sig = await api({ operation:'getChannelLiveSignals', liveId:activeLiveId, type:'ice-host', viewerId:currentUser });
+    for (const s of (sig.signals||[])) {
+      if (seenHostIceIds.has(s.signalId)) continue;
+      seenHostIceIds.add(s.signalId);
+      try { await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(s.payload))); } catch {}
+    }
+  } catch {}
+}, 3000);
 
     liveViewerPingInterval = setInterval(() => {
       post({ operation:'pingChannelLiveViewer', liveId:activeLiveId, username:currentUser }).catch(()=>{});

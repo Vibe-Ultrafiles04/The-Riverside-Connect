@@ -86,6 +86,22 @@
 
     .tb-spacer { flex: 1; }
 
+    .tb-live-btn { color: var(--danger); }
+
+.tb-live-btn.is-live {
+  animation: liveGlow 1.4s ease-in-out infinite;
+}
+@keyframes liveGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239,68,68,0.45);
+    background: rgba(239,68,68,0.08);
+  }
+  50% {
+    box-shadow: 0 0 12px 3px rgba(239,68,68,0.35);
+    background: rgba(239,68,68,0.2);
+  }
+}
+
     .tb-icon-btn {
       position: relative;
       width: 36px;
@@ -123,7 +139,7 @@
       align-items: center; justify-content: center;
       padding: 0 3px;
       border: 1.5px solid var(--paper);
-      font-family: var(--font-mono);
+      font-family: var(--font-body);
     }
     .tb-badge.visible { display: flex; }
 
@@ -474,7 +490,7 @@
       align-items: center;
       justify-content: center;
       gap: 6px;
-      font-family: var(--font-mono);
+      font-family: var(--font-body);
       font-size: 0.7rem;
       letter-spacing: 0.05em;
       color: var(--steel);
@@ -807,6 +823,11 @@
     <i class="fas fa-rotate"></i>
   </button>
 
+  <a href="live.html?filter=live" class="tb-icon-btn tb-live-btn" id="tb-live" title="Live Now">
+  <i class="fas fa-tower-broadcast"></i>
+  <span class="tb-badge" id="live-badge-tb">0</span>
+</a>
+
   <a href="announce.html" class="tb-icon-btn" id="tb-ann" title="Notifications">
     <i class="fas fa-bell"></i>
     <span class="tb-badge" id="ann-badge-tb">0</span>
@@ -1029,6 +1050,35 @@ function updateNotifUI() {
   }
 }
 updateNotifUI();
+
+
+async function loadLiveBadge() {
+  try {
+    const chRes  = await fetch(`${SCRIPT_URL}?operation=getLiveChannels`);
+    const chData = await chRes.json();
+    const channels = chData.channels || [];
+
+    const counts = await Promise.all(channels.map(ch =>
+      fetch(`${SCRIPT_URL}?operation=getLiveBroadcasts&channelId=${encodeURIComponent(ch.id)}`)
+        .then(r => r.json())
+        .then(d => (d.broadcasts || []).filter(b => b.status === 'live').length)
+        .catch(() => 0)
+    ));
+
+    const total = counts.reduce((a, b) => a + b, 0);
+    const btn   = document.getElementById('tb-live');
+    const badge = document.getElementById('live-badge-tb');
+
+    if (total > 0) {
+      badge.textContent = total > 99 ? '99+' : total;
+      badge.classList.add('visible');
+      btn.classList.add('is-live');
+    } else {
+      badge.classList.remove('visible');
+      btn.classList.remove('is-live');
+    }
+  } catch {}
+}
 
 async function toggleNotifications() {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) {
@@ -1478,9 +1528,11 @@ window.addEventListener('DOMContentLoaded', () => {
   loadFeed();
   loadMorePanelData();
   loadAnnBadge();
+  loadLiveBadge();                       // add this
   setInterval(loadAnnBadge, 30000);
+  setInterval(loadLiveBadge, 30000);     // add this
   document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 });
 </script>
 </body>
-</html>
+</html>>

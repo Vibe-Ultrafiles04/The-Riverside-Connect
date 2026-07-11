@@ -86,13 +86,13 @@
 
     .tb-spacer { flex: 1; }
 
-   .tb-live-btn {
+.tb-live-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   height: 26px;
   padding: 0 14px 0 10px; /* extra right padding to make room for the badge */
-  background: #ef4444;
+  background: #000000;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -106,11 +106,14 @@
   position: relative;
   transition: all 0.15s;
 }
-.tb-live-btn:hover { background: #dc2626; }
+.tb-live-btn:hover { background: #1a1a1a; }
 
 .tb-live-btn.is-live {
+  background: #ef4444;
   animation: liveGlow 1.4s ease-in-out infinite;
 }
+.tb-live-btn.is-live:hover { background: #dc2626; }
+
 @keyframes liveGlow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
   50%      { box-shadow: 0 0 10px 3px rgba(239,68,68,0.6); }

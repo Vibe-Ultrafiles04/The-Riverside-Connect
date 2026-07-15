@@ -499,19 +499,20 @@ function lh3(url) {
 function fallback(name) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1e293b&color=60a5fa&size=88`;
 }
-/* Drop real image URLs in here whenever you have them — every row below
-   pulls from this object, so swapping an icon is a one-line change. */
-const APP_ICON = 'maskable_icon_x192.png';
+/* ── ICON SOURCES ─────────────────────────────────────────────────
+   One line per row, each with its own literal path. All point at the
+   same placeholder for now — replace each value individually once
+   you have real filenames/URLs for that row. */
 const ICONS = {
-  home:     APP_ICON,
-  announce: APP_ICON,
-  lyrics:   APP_ICON,
-  live:     APP_ICON,
-  studio:   APP_ICON,
-  camera:   APP_ICON,
-  split:    APP_ICON,
-  profile:  APP_ICON,
-  notifs:   APP_ICON
+  home:     'maskable_icon_x192.png',
+  announce: 'maskable_icon_x192.png',
+  lyrics:   'maskable_icon_x192.png',
+  live:     'maskable_icon_x192.png',
+  studio:   'maskable_icon_x192.png',
+  camera:   'maskable_icon_x192.png',
+  split:    'maskable_icon_x192.png',
+  profile:  'maskable_icon_x192.png',
+  notifs:   'maskable_icon_x192.png'
 };
 function fmtTime(ts) {
   if (!ts) return '';

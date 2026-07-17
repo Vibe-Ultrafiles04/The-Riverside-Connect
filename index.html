@@ -287,37 +287,12 @@
       letter-spacing: 0.06em;
     }
 
-    .list-loading, .list-error {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      padding: 60px 20px;
-      text-align: center;
-    }
-    .list-loading i, .list-error i {
-      font-size: 2rem;
-      color: var(--accent2);
-      opacity: 0.4;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.2; }
-      50%       { opacity: 0.5; }
-    }
-    .list-loading-title, .list-error-title {
-      font-family: var(--font-head);
-      font-size: 1.4rem;
-      letter-spacing: 0.1em;
-      color: var(--lead);
-      opacity: 0.5;
-    }
-    .list-loading-sub, .list-error-sub {
+    .list-error-inline {
+      padding: 10px 16px 16px;
+      color: var(--danger);
       font-family: var(--font-mono);
-      font-size: 0.7rem;
-      letter-spacing: 0.1em;
-      color: var(--steel);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
     }
 
     /* ══ TOAST ════════════════════════════════════════════════ */
@@ -415,7 +390,7 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
-      .list-loading i, .list-error i { animation: none; opacity: 0.4; }
+      .list-empty, .list-error-inline { animation: none; }
     }
   </style>
 </head>
@@ -449,16 +424,155 @@
   </a>
 </header>
 
-<!-- ══ CHAT LIST ═══════════════════════════════════════════════════ -->
+<!-- ══ CHAT LIST — STATIC SHELL, RENDERS INSTANTLY, NO NETWORK NEEDED ══ -->
 <div id="chat-list">
-  <div class="list-loading" id="list-loading">
-    <i class="fas fa-church"></i>
-    <div class="list-loading-title">RIVERSIDE</div>
-    <div class="list-loading-sub">LOADING…</div>
+
+  <!-- Home -->
+  <a href="home.html" class="chat-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Chat&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Chat</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Direct chats</span>
+        <span class="row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Announcements -->
+  <a href="announce.html" class="chat-row" id="ann-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Announcements&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Announcements</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle" id="ann-row-sub">Loading…</span>
+        <span class="row-badge" id="ann-row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <!-- Channels -->
+  <div class="list-section-label">CHANNELS</div>
+  <div id="channels-slot">
+    <div class="list-empty">Loading channels…</div>
   </div>
+
+  <!-- Q&A -->
+  <div class="list-section-label">Q&amp;A</div>
+  <div id="qna-slot">
+    <div class="list-empty">Loading Q&amp;A…</div>
+  </div>
+
+  <!-- More / tools -->
+  <div class="list-section-label">MORE</div>
+
+  <a href="lyric.html" class="chat-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Lyrics&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Lyrics</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Digital hymnal &amp; songs</span>
+        <span class="row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <a href="live.html" class="chat-row" id="live-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Live&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Live</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle" id="live-row-sub">Loading…</span>
+        <span class="row-badge" id="live-row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <a href="studio.html" class="chat-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Studio&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Studio</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Broadcast &amp; create</span>
+        <span class="row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <a href="camera.html" class="chat-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Camera&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Camera</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Capture a moment</span>
+        <span class="row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <a href="split.html" class="chat-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Split&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Split</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Track &amp; split cash</span>
+        <span class="row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <a href="user.html" class="chat-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Profile&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Profile</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Your account &amp; settings</span>
+        <span class="row-badge"></span>
+      </div>
+    </div>
+  </a>
+
+  <button class="chat-row" id="notif-row">
+    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Notifs&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Notifications</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Push alerts for this device</span>
+        <span class="row-badge" id="notif-row-badge"></span>
+      </div>
+    </div>
+  </button>
+
 </div>
 
-<!-- ══ PENDING SCREEN ════════════════════════════════════════════════ -->
+<!-- ══ PENDING SCREEN (only shown if status check finds non-approved) ══ -->
 <div id="pending-screen">
   <div class="pending-badge" id="pending-badge">PENDING APPROVAL</div>
   <div class="pending-icon"><i class="fas fa-church"></i></div>
@@ -488,9 +602,11 @@ const userName = localStorage.getItem('userName') || '';
 if (!userName) { window.location.href = 'login.html'; }
 
 let isNotificationEnabled = localStorage.getItem('notificationsEnabled') !== 'false';
-const CACHE_KEY = 'rc_chatlist_html_v1';
 
-/* ── SERVICE WORKER REGISTRATION (independent of notifications/FCM) ──── */
+const CHANNELS_CACHE_KEY = 'rc_channels_html_v1';
+const QNA_CACHE_KEY      = 'rc_qna_html_v1';
+
+/* ── SERVICE WORKER REGISTRATION (independent of everything else) ──── */
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
@@ -508,21 +624,6 @@ function lh3(url) {
 function fallback(name) {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1e293b&color=60a5fa&size=88`;
 }
-/* ── ICON SOURCES ─────────────────────────────────────────────────
-   One line per row, each with its own literal path. All point at the
-   same placeholder for now — replace each value individually once
-   you have real filenames/URLs for that row. */
-const ICONS = {
-  home:     'maskable_icon_x192.png',
-  announce: 'maskable_icon_x192.png',
-  lyrics:   'maskable_icon_x192.png',
-  live:     'maskable_icon_x192.png',
-  studio:   'maskable_icon_x192.png',
-  camera:   'maskable_icon_x192.png',
-  split:    'maskable_icon_x192.png',
-  profile:  'maskable_icon_x192.png',
-  notifs:   'maskable_icon_x192.png'
-};
 function fmtTime(ts) {
   if (!ts) return '';
   const d = new Date(ts);
@@ -558,7 +659,7 @@ function toast(msg, type = 'inf', dur = 3200) {
   }
 })();
 
-/* ── NOTIFICATION TOGGLE (row-driven) ────────────────────────────── */
+/* ── NOTIFICATION TOGGLE ─────────────────────────────────────────── */
 function updateNotifRowUI() {
   const badge = document.getElementById('notif-row-badge');
   if (!badge) return;
@@ -570,6 +671,7 @@ function updateNotifRowUI() {
     badge.className = 'row-badge visible off';
   }
 }
+updateNotifRowUI();
 
 async function toggleNotifications() {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) {
@@ -594,8 +696,9 @@ async function toggleNotifications() {
     toast('Notifications turned off', 'inf');
   }
 }
+document.getElementById('notif-row').addEventListener('click', toggleNotifications);
 
-/* ── FCM TOKEN: registers a fresh token with the backend on every open ── */
+/* ── FCM TOKEN ────────────────────────────────────────────────────── */
 async function registerFcmToken(forcePermissionPrompt) {
   if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   if (Notification.permission === 'denied' && !forcePermissionPrompt) return;
@@ -651,7 +754,22 @@ installBtn.addEventListener('click', async () => {
 });
 window.addEventListener('appinstalled', () => installBar.classList.remove('show'));
 
-/* ── LIVE BADGE (top bar) ─────────────────────────────────────────── */
+/* ── STATUS CHECK (shows pending overlay only if needed; never blocks list) ── */
+async function loadStatus() {
+  try {
+    const res  = await fetch(`${DASHBOARD_URL}?operation=getUserStatus&name=${encodeURIComponent(userName)}`);
+    const data = await res.json();
+    const isApproved = (data.userStatus || '').toLowerCase() === 'approved';
+    if (!isApproved) {
+      document.getElementById('pending-badge').textContent = (data.userStatus || 'pending').toUpperCase();
+      document.getElementById('pending-screen').classList.add('show');
+    }
+  } catch {
+    // Fail silently — don't block or hide the shell over a status-check error.
+  }
+}
+
+/* ── LIVE BADGE (top bar + row, both already exist in static markup) ── */
 async function loadLiveBadge() {
   try {
     const chRes  = await fetch(`${SCRIPT_URL}?operation=getLiveChannels`);
@@ -678,23 +796,23 @@ async function loadLiveBadge() {
       btn.classList.remove('is-live');
     }
 
-    // Reflect in the row too, if the list has been built already
     const rowBadge = document.getElementById('live-row-badge');
     const rowSub   = document.getElementById('live-row-sub');
-    if (rowBadge && rowSub) {
-      if (total > 0) {
-        rowBadge.textContent = total > 99 ? '99+' : total;
-        rowBadge.className = 'row-badge visible live';
-        rowSub.textContent = `${total} stream${total > 1 ? 's' : ''} live now`;
-      } else {
-        rowBadge.classList.remove('visible');
-        rowSub.textContent = 'No live streams right now';
-      }
+    if (total > 0) {
+      rowBadge.textContent = total > 99 ? '99+' : total;
+      rowBadge.className = 'row-badge visible live';
+      rowSub.textContent = `${total} stream${total > 1 ? 's' : ''} live now`;
+    } else {
+      rowBadge.classList.remove('visible');
+      rowSub.textContent = 'No live streams right now';
     }
-  } catch {}
+  } catch {
+    const rowSub = document.getElementById('live-row-sub');
+    if (rowSub) rowSub.textContent = 'Live';
+  }
 }
 
-/* ── ANNOUNCEMENTS BADGE ──────────────────────────────────────────── */
+/* ── ANNOUNCEMENTS BADGE (top bar + row, both already exist) ────────── */
 async function loadAnnBadge() {
   try {
     const res  = await fetch(`${DASHBOARD_URL}?operation=getUnseenAnnCount&name=${encodeURIComponent(userName)}`);
@@ -707,27 +825,25 @@ async function loadAnnBadge() {
 
     const rowBadge = document.getElementById('ann-row-badge');
     const rowSub   = document.getElementById('ann-row-sub');
-    if (rowBadge && rowSub) {
-      if (n > 0) {
-        rowBadge.textContent = n > 99 ? '99+' : n;
-        rowBadge.classList.add('visible');
-        rowSub.textContent = `${n} new update${n > 1 ? 's' : ''}`;
-      } else {
-        rowBadge.classList.remove('visible');
-        rowSub.textContent = 'No new updates';
-      }
+    if (n > 0) {
+      rowBadge.textContent = n > 99 ? '99+' : n;
+      rowBadge.classList.add('visible');
+      rowSub.textContent = `${n} new update${n > 1 ? 's' : ''}`;
+    } else {
+      rowBadge.classList.remove('visible');
+      rowSub.textContent = 'No new updates';
     }
-  } catch {}
+  } catch {
+    const rowSub = document.getElementById('ann-row-sub');
+    if (rowSub) rowSub.textContent = 'Announcements';
+  }
 }
 
-/* ── ROW BUILDER ──────────────────────────────────────────────────── */
-function buildRow({ id, href, onClick, avatarSrc, fallbackName, title, subtitle, subtitleId, time, badgeId, badgeClass }) {
-  const tag = href ? 'a' : 'button';
-  const el = document.createElement(tag);
+/* ── ROW BUILDER (used only for the dynamic Channels/Q&A rows) ──────── */
+function buildRow({ href, avatarSrc, fallbackName, title, subtitle, time }) {
+  const el = document.createElement('a');
   el.className = 'chat-row';
-  if (href) el.href = href;
-  if (id) el.id = id;
-
+  el.href = href;
   el.innerHTML = `
     <img class="row-avatar" src="${avatarSrc}" onerror="this.src='${fallback(fallbackName)}'" alt="">
     <div class="row-content">
@@ -736,216 +852,128 @@ function buildRow({ id, href, onClick, avatarSrc, fallbackName, title, subtitle,
         <span class="row-time">${time ? esc(time) : ''}</span>
       </div>
       <div class="row-sub-line">
-        <span class="row-subtitle" ${subtitleId ? `id="${subtitleId}"` : ''}>${esc(subtitle || '')}</span>
-        <span class="row-badge ${badgeClass || ''}" ${badgeId ? `id="${badgeId}"` : ''}></span>
+        <span class="row-subtitle">${esc(subtitle || '')}</span>
+        <span class="row-badge"></span>
       </div>
     </div>
   `;
-
-  if (onClick) el.addEventListener('click', onClick);
   return el;
 }
 
-function sectionLabel(text) {
-  const el = document.createElement('div');
-  el.className = 'list-section-label';
-  el.textContent = text;
-  return el;
-}
-
-/* ── BUILD THE FULL CHAT LIST ─────────────────────────────────────── */
-async function loadChatList() {
-  const list = document.getElementById('chat-list');
-
+/* ── CHANNELS SLOT ─────────────────────────────────────────────────── */
+async function loadChannels() {
+  const slot = document.getElementById('channels-slot');
   try {
-    // 1. Check user status first
-    const statusRes  = await fetch(`${DASHBOARD_URL}?operation=getUserStatus&name=${encodeURIComponent(userName)}`);
-    const statusData = await statusRes.json();
-    const isApproved  = (statusData.userStatus || '').toLowerCase() === 'approved';
+    const chRes = await fetch(`${DASHBOARD_URL}?operation=getAllChannels`);
+    const { channels = [] } = await chRes.json();
 
-    if (!isApproved) {
-      const badge = document.getElementById('pending-badge');
-      badge.textContent = (statusData.userStatus || 'pending').toUpperCase();
-      document.getElementById('pending-screen').classList.add('show');
-      list.innerHTML = '';
+    if (!channels.length) {
+      slot.innerHTML = `<div class="list-empty">No channels available yet</div>`;
+      try { sessionStorage.setItem(CHANNELS_CACHE_KEY, slot.innerHTML); } catch {}
       return;
     }
 
-    // 2. Fetch channels + Q&A channels in parallel
-    const [chRes, qnaRes] = await Promise.all([
-      fetch(`${DASHBOARD_URL}?operation=getAllChannels`).then(r => r.json()).catch(() => ({ channels: [] })),
-      fetch(`${DASHBOARD_URL}?operation=getAllQnAChannels`).then(r => r.json()).catch(() => ({ channels: [] }))
-    ]);
-    const channels    = chRes.channels || [];
-    const qnaChannels = qnaRes.channels || [];
+    const frag = document.createDocumentFragment();
+    const rows = channels.map(ch => {
+      const avatarSrc = ch.picLink ? lh3(ch.picLink) : fallback(ch.name);
+      const row = buildRow({
+        href: `channel.html?channelId=${encodeURIComponent(ch.id)}`,
+        avatarSrc,
+        fallbackName: ch.name,
+        title: ch.name,
+        subtitle: 'No posts yet'
+      });
+      frag.appendChild(row);
+      return row;
+    });
+    slot.innerHTML = '';
+    slot.appendChild(frag);
 
-    // 3. Fetch latest post per channel for the preview line (best-effort, isolated)
-    const channelPosts = await Promise.all(channels.map(ch =>
+    // Post previews are an enhancement — fetched after rows are already visible.
+    channels.forEach((ch, i) => {
       fetch(`${SCRIPT_URL}?operation=getChannelPosts&channelId=${encodeURIComponent(ch.id)}&username=${encodeURIComponent(userName)}`)
         .then(r => r.json())
         .then(d => {
           const posts = (d.posts || []).slice().sort((a, b) => new Date(b.created) - new Date(a.created));
-          return posts[0] || null;
-        })
-        .catch(() => null)
-    ));
-
-    list.innerHTML = '';
-
-    // ── Home ──
-    list.appendChild(buildRow({
-      href: 'home.html',
-      avatarSrc: ICONS.home,
-      fallbackName: 'Chat',
-      title: 'Chat',
-      subtitle: 'Direct chats'
-    }));
-
-    // ── Announcements ──
-    list.appendChild(buildRow({
-      href: 'announce.html',
-      avatarSrc: ICONS.announce,
-      fallbackName: 'Announcements',
-      title: 'Announcements',
-      subtitle: 'Loading…',
-      subtitleId: 'ann-row-sub',
-      badgeId: 'ann-row-badge'
-    }));
-
-    // ── Channels ──
-    list.appendChild(sectionLabel('CHANNELS'));
-    if (!channels.length) {
-      const empty = document.createElement('div');
-      empty.className = 'list-empty';
-      empty.textContent = 'No channels available yet';
-      list.appendChild(empty);
-    } else {
-      channels.forEach((ch, i) => {
-        const post = channelPosts[i];
-        const avatarSrc = ch.picLink ? lh3(ch.picLink) : fallback(ch.name);
-        let preview = 'No posts yet';
-        if (post) {
+          const post = posts[0];
+          if (!post) return;
           const cleanText = (post.content || '')
             .replace(/https?:\/\/drive\.google\.com\/[^\s<>"']*/gi, '')
             .replace(/\/view\b\S*/gi, '')
             .replace(/usp=\S+/gi, '')
             .replace(/\s{2,}/g, ' ').trim();
-          preview = cleanText || (post.media?.link ? '📎 Attachment' : 'New post');
-        }
-        list.appendChild(buildRow({
-          href: `channel.html?channelId=${encodeURIComponent(ch.id)}`,
-          avatarSrc,
-          fallbackName: ch.name,
-          title: ch.name,
-          subtitle: preview,
-          time: post ? fmtTime(post.created) : ''
-        }));
-      });
-    }
+          const preview = cleanText || (post.media?.link ? '📎 Attachment' : 'New post');
+          const row = rows[i];
+          row.querySelector('.row-subtitle').textContent = preview;
+          row.querySelector('.row-time').textContent = fmtTime(post.created);
+        })
+        .catch(() => {})
+        .finally(() => {
+          try { sessionStorage.setItem(CHANNELS_CACHE_KEY, slot.innerHTML); } catch {}
+        });
+    });
 
-    // ── Q&A ──
-    list.appendChild(sectionLabel('Q&A'));
-    if (!qnaChannels.length) {
-      const empty = document.createElement('div');
-      empty.className = 'list-empty';
-      empty.textContent = 'No Q&A spaces yet';
-      list.appendChild(empty);
-    } else {
-      qnaChannels.forEach(ch => {
-        const avatarSrc = ch.picLink ? lh3(ch.picLink) : fallback(ch.name);
-        list.appendChild(buildRow({
-          href: `Q&A.html?channelId=${encodeURIComponent(ch.id)}`,
-          avatarSrc,
-          fallbackName: ch.name,
-          title: ch.name,
-          subtitle: 'Tap to ask or answer a question'
-        }));
-      });
-    }
-
-    // ── More / tools ──
-    list.appendChild(sectionLabel('MORE'));
-
-    list.appendChild(buildRow({
-      href: 'lyric.html',
-      avatarSrc: ICONS.lyrics,
-      fallbackName: 'Lyrics',
-      title: 'Lyrics',
-      subtitle: 'Digital hymnal & songs'
-    }));
-
-    list.appendChild(buildRow({
-      href: 'live.html',
-      avatarSrc: ICONS.live,
-      fallbackName: 'Live',
-      title: 'Live',
-      subtitle: 'Loading…',
-      subtitleId: 'live-row-sub',
-      badgeId: 'live-row-badge'
-    }));
-
-    list.appendChild(buildRow({
-      href: 'studio.html',
-      avatarSrc: ICONS.studio,
-      fallbackName: 'Studio',
-      title: 'Studio',
-      subtitle: 'Broadcast & create'
-    }));
-
-    list.appendChild(buildRow({
-      href: 'camera.html',
-      avatarSrc: ICONS.camera,
-      fallbackName: 'Camera',
-      title: 'Camera',
-      subtitle: 'Capture a moment'
-    }));
-
-    list.appendChild(buildRow({
-      href: 'split.html',
-      avatarSrc: ICONS.split,
-      fallbackName: 'Split',
-      title: 'Split',
-      subtitle: 'Track & split cash'
-    }));
-
-    list.appendChild(buildRow({
-      href: 'user.html',
-      avatarSrc: ICONS.profile,
-      fallbackName: 'Profile',
-      title: 'Profile',
-      subtitle: 'Your account & settings'
-    }));
-
-    list.appendChild(buildRow({
-      id: 'notif-row',
-      avatarSrc: ICONS.notifs,
-      fallbackName: 'Notifs',
-      title: 'Notifications',
-      subtitle: 'Push alerts for this device',
-      badgeId: 'notif-row-badge',
-      onClick: toggleNotifications
-    }));
-    updateNotifRowUI();
-
-    // Cache the finished list so returning to this page paints instantly
-    // instead of showing the loading state again.
-    try { sessionStorage.setItem(CACHE_KEY, list.innerHTML); } catch {}
-
+    try { sessionStorage.setItem(CHANNELS_CACHE_KEY, slot.innerHTML); } catch {}
   } catch (err) {
-    console.error('Chat list load error:', err);
-    // Only show the error state if we have nothing cached on screen already.
-    if (!sessionStorage.getItem(CACHE_KEY)) {
-      list.innerHTML = `
-        <div class="list-error">
-          <i class="fas fa-wifi" style="animation:none;"></i>
-          <div class="list-error-title">LOAD FAILED</div>
-          <div class="list-error-sub">CHECK CONNECTION AND RELOAD</div>
-        </div>`;
+    console.error('Channels load error:', err);
+    if (!sessionStorage.getItem(CHANNELS_CACHE_KEY)) {
+      slot.innerHTML = `<div class="list-error-inline">Couldn't load channels — tap refresh</div>`;
     } else {
-      toast('Could not refresh list', 'err');
+      toast('Could not refresh channels', 'err');
     }
   }
 }
+
+/* ── Q&A SLOT ──────────────────────────────────────────────────────── */
+async function loadQnA() {
+  const slot = document.getElementById('qna-slot');
+  try {
+    const qnaRes = await fetch(`${DASHBOARD_URL}?operation=getAllQnAChannels`);
+    const { channels: qnaChannels = [] } = await qnaRes.json();
+
+    if (!qnaChannels.length) {
+      slot.innerHTML = `<div class="list-empty">No Q&amp;A spaces yet</div>`;
+      try { sessionStorage.setItem(QNA_CACHE_KEY, slot.innerHTML); } catch {}
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    qnaChannels.forEach(ch => {
+      const avatarSrc = ch.picLink ? lh3(ch.picLink) : fallback(ch.name);
+      frag.appendChild(buildRow({
+        href: `Q&A.html?channelId=${encodeURIComponent(ch.id)}`,
+        avatarSrc,
+        fallbackName: ch.name,
+        title: ch.name,
+        subtitle: 'Tap to ask or answer a question'
+      }));
+    });
+    slot.innerHTML = '';
+    slot.appendChild(frag);
+
+    try { sessionStorage.setItem(QNA_CACHE_KEY, slot.innerHTML); } catch {}
+  } catch (err) {
+    console.error('Q&A load error:', err);
+    if (!sessionStorage.getItem(QNA_CACHE_KEY)) {
+      slot.innerHTML = `<div class="list-error-inline">Couldn't load Q&amp;A — tap refresh</div>`;
+    } else {
+      toast('Could not refresh Q&A', 'err');
+    }
+  }
+}
+
+/* ── INSTANT RESTORE (paint cached Channels/Q&A immediately, no spinner) ── */
+function restoreCachedSlots() {
+  try {
+    const cachedChannels = sessionStorage.getItem(CHANNELS_CACHE_KEY);
+    if (cachedChannels) document.getElementById('channels-slot').innerHTML = cachedChannels;
+  } catch {}
+  try {
+    const cachedQnA = sessionStorage.getItem(QNA_CACHE_KEY);
+    if (cachedQnA) document.getElementById('qna-slot').innerHTML = cachedQnA;
+  } catch {}
+}
+restoreCachedSlots();
 
 /* ── REFRESH ─────────────────────────────────────────────────────── */
 let isRefreshing = false;
@@ -956,7 +984,7 @@ async function refreshAll() {
   btn.classList.add('spinning');
   btn.disabled = true;
   try {
-    await Promise.all([loadChatList(), loadAnnBadge(), loadLiveBadge()]);
+    await Promise.all([loadStatus(), loadChannels(), loadQnA(), loadAnnBadge(), loadLiveBadge()]);
     toast('Refreshed', 'ok', 1500);
   } catch {
     toast('Refresh failed', 'err');
@@ -967,36 +995,18 @@ async function refreshAll() {
   }
 }
 
-/* ── INSTANT RESTORE ──────────────────────────────────────────────── */
-// Paints the last-known list immediately (no spinner) while loadChatList()
-// quietly re-fetches and swaps in fresh content underneath.
-function restoreCachedList() {
-  let cached;
-  try { cached = sessionStorage.getItem(CACHE_KEY); } catch { cached = null; }
-  if (!cached) return false;
-
-  const list = document.getElementById('chat-list');
-  list.innerHTML = cached;
-
-  // innerHTML restore drops JS listeners — reattach the Notifs row handler.
-  const notifRow = document.getElementById('notif-row');
-  if (notifRow) notifRow.addEventListener('click', toggleNotifications);
-  updateNotifRowUI();
-  return true;
-}
-
 /* ── INIT ─────────────────────────────────────────────────────────── */
-// Restore synchronously as soon as this script runs — before waiting on
-// DOMContentLoaded or any network call — so there's nothing to "load" on
-// the way back from another page.
-const hadCache = restoreCachedList();
-
+// The shell (topbar + all static rows) is already visible the instant the
+// HTML parses — nothing below this line can block or hide it. Each of
+// these runs independently; a slow/failed call only affects its own
+// section, never the rest of the page.
 window.addEventListener('DOMContentLoaded', () => {
-  loadChatList().then(() => {
-    loadAnnBadge();
-    loadLiveBadge();
-  });
-  // Every app open: register a fresh FCM token with the backend, period.
+  loadStatus();
+  loadChannels();
+  loadQnA();
+  loadAnnBadge();
+  loadLiveBadge();
+
   registerFcmToken(false).catch(err => console.error('FCM registration failed:', err));
 
   setInterval(loadAnnBadge, 30000);

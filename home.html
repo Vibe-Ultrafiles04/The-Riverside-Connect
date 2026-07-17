@@ -1543,6 +1543,9 @@ function extractFileId(url) {
   const m = url.match(/[-\w]{25,}/);
   return m ? m[0] : '';
 }
+function maybeFlushPending() {
+  if (!isFlushingDrafts && getPendingDrafts().length) flushPendingDrafts();
+}
 
 function getLh3Link(url) {
   const id = extractFileId(url);
@@ -1817,6 +1820,7 @@ async function loadComments(silent = true) {
 
     if (silent && data.comments.length === lastCommentCount) {
       setOnlineStatus(true);
+      maybeFlushPending();          
       return;
     }
     lastCommentCount = data.comments.length;
@@ -1827,6 +1831,7 @@ async function loadComments(silent = true) {
     cacheComments(allComments, data.announcements);
     setOnlineStatus(true);
     mergeInPendingDrafts();
+    maybeFlushPending();           
 
     const filtered = getCommentsForActiveDate();
     renderComments(filtered, silent);

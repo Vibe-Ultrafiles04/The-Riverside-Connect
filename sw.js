@@ -110,7 +110,7 @@ self.addEventListener("notificationclick", (event) => {
 });
 // sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
 
-const CACHE_NAME = 'Riverside-Connect-v7';   // bumped version after removing FCM from main SW
+const CACHE_NAME = 'Riverside-Connect-v8'; // bumped — fixes offline caching
 
 const STATIC_ASSETS = [
   './',
@@ -123,15 +123,28 @@ const STATIC_ASSETS = [
   './split.html',
   './announce.html',
   './channel.html',
+  './live.html',
+  './studio.html',
+  './camera.html',
+  './lyric.html',
   './manifest.json',
   './maskable_icon_x192.png',
   './maskable_icon_x512.png',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.woff2',
+  // Caching is done file-by-file below (not cache.addAll()), so if any one
+  // of these is missing or renamed, it only skips itself — it can no longer
+  // wipe out caching for every other file in the list.
 ];
 
 const API_CACHE_PATTERNS = [
+  '?operation=getUserStatus',
+  '?operation=getAllChannels',
   '?operation=getAllQnAChannels',
+  '?operation=getUnseenAnnCount',
+  '?operation=getChannelPosts',
+  '?operation=getLiveChannels',
+  '?operation=getLiveBroadcasts',
   '?operation=getQnAGames',
   '?operation=getQnAQuestionsAndChoices',
   '?operation=getQnALeaderboard',
@@ -143,17 +156,25 @@ const EXPECTED_CACHES = [CACHE_NAME];
 
 const API_BASE = 'https://script.google.com/macros/s/AKfycbzZ9VVt9A2LlehC6jMMwNMVSkWCBFnN86W7m3gQgAIqbRVPgDUhE1IzHmLtFzV6zbQE/exec';
 
-// ====================== YOUR ORIGINAL CACHING LOGIC (UNTOUCHED) ======================
-
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('[SW] Installing v' + CACHE_NAME + ' — caching core assets');
-        return cache.addAll(STATIC_ASSETS);
+        console.log('[SW] Installing ' + CACHE_NAME + ' — caching core assets');
+        // IMPORTANT: cache each file independently instead of cache.addAll().
+        // addAll() is atomic — one missing/blocked URL fails the WHOLE
+        // install and leaves the cache completely empty, which means the
+        // app has nothing to serve at all when offline. Caching one-by-one
+        // means a single bad entry only skips itself.
+        return Promise.all(
+          STATIC_ASSETS.map(url =>
+            cache.add(url).catch(err => {
+              console.warn('[SW] Skipped (missing or blocked):', url, err.message);
+            })
+          )
+        );
       })
       .then(() => self.skipWaiting())
-      .catch(err => console.error('[SW] Install failed:', err))
   );
 });
 
@@ -182,7 +203,7 @@ self.addEventListener('fetch', event => {
 
     if (event.request.method === 'GET') {
 
-      const isCacheableApiCall = API_CACHE_PATTERNS.some(pattern => 
+      const isCacheableApiCall = API_CACHE_PATTERNS.some(pattern =>
         event.request.url.includes(pattern)
       );
 
@@ -195,7 +216,7 @@ self.addEventListener('fetch', event => {
           return cache.match(event.request).then(cachedResponse => {
             const networkedFetch = fetch(event.request)
               .then(freshResponse => {
-                if (freshResponse && freshResponse.status === 200 && 
+                if (freshResponse && freshResponse.status === 200 &&
                     freshResponse.headers.get('content-type')?.includes('application/json')) {
                   cache.put(event.request, freshResponse.clone());
                 }
@@ -219,11 +240,14 @@ self.addEventListener('fetch', event => {
                     viewCounts: [],
                     announcementsViewCounts: [],
                     channels: [],
+                    broadcasts: [],
                     games: [],
                     questions: [],
                     leaders: [],
                     results: [],
                     participants: [],
+                    posts: [],
+                    unseenCount: 0,
                     message: "Offline — last known data or placeholder"
                   }),
                   { status: 200, headers: { 'Content-Type': 'application/json' } }
@@ -256,11 +280,16 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (event.request.mode === 'navigate' || 
-      url.pathname.endsWith('.html') || 
+  // ── Navigation & HTML pages → network-first, cache fallback,
+  //    with a guaranteed final fallback to index.html so respondWith()
+  //    never resolves to undefined (which itself throws a hard error).
+  if (event.request.mode === 'navigate' ||
+      url.pathname.endsWith('.html') ||
       url.pathname === '/') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
+      fetch(event.request).catch(() =>
+        caches.match(event.request).then(cached => cached || caches.match('./index.html'))
+      )
     );
     return;
   }
@@ -294,7 +323,7 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       }).catch(() => {
         if (event.request.mode === 'navigate') {
-          return caches.match('./home.html');
+          return caches.match('./index.html');
         }
         return new Response('', { status: 503 });
       });
@@ -307,7 +336,6 @@ self.addEventListener('sync', event => {
     event.waitUntil(syncPendingMessages());
   }
 });
-
 
 async function syncPendingMessages() {
   console.log('[SW] Background sync triggered — attempting to send pending messages/announcements');

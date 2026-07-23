@@ -1921,6 +1921,8 @@ async function post(body) {
 
 /* ── LOAD CHANNELS ───────────────────────────────────────────────── */
 async function loadChannels(force = false) {
+  checkAdminStatus(); // runs once, independent of whether any channel exists
+
   let channels = force ? null : getCachedChannels();
   if (channels) {
     allChannels = channels;
@@ -1938,7 +1940,7 @@ async function loadChannels(force = false) {
     ? allChannels.find(c => c.id === urlChId)
     : allChannels.find(c => c.id === localStorage.getItem('rv_last_ch')) || allChannels[0];
 
-  if (target) {
+ if (target) {
     openChannel(target, urlPostId || null);
   } else {
     // No channels exist — show empty state immediately
@@ -1947,8 +1949,6 @@ async function loadChannels(force = false) {
         <div class="empty-label">NO CHANNELS YET</div>
         <div class="empty-sub">AN ADMIN CAN CREATE THE FIRST ONE</div>
       </div>`;
-    // Still run auth check so the create button appears for admins
-    await checkAuth(null);
   }
 }
 
@@ -2054,20 +2054,26 @@ async function openChannel(ch, scrollToPostId = null) {
   startPolling();
 }
 
-/* ── CHECK AUTH ──────────────────────────────────────────────────── */
+/* ── CHECK AUTH (per-channel posting permission) ──────────────────── */
 async function checkAuth(channelId) {
   try {
-    const data = await api({ operation: 'isAuthorised', username: currentUser, channelId: channelId || '' });
+    const data = await api({ operation: 'isAuthorised', username: currentUser, channelId });
     isAuthorised = data.status === 'success' && data.isAuthorised === true;
-    isAdmin      = data.status === 'success' && data.isAdmin === true;
-  } catch {
-    isAuthorised = false;
-    isAdmin = false;
-  }
+  } catch { isAuthorised = false; }
 
   document.getElementById('btn-write').style.display = isAuthorised ? 'flex' : 'none';
+}
+
+/* ── CHECK ADMIN (global, same source as profile.html) ─────────────── */
+async function checkAdminStatus() {
+  try {
+    const data = await api({ operation: 'getUserStatus', name: currentUser });
+    isAdmin = !!data.isAdmin;
+  } catch { isAdmin = false; }
+
   document.getElementById('drawer-create-btn').style.display = isAdmin ? 'flex' : 'none';
 }
+
 /* ── RENDER POSTS ─────────────────────────────────────────────────── */
 async function renderPosts(channelId, scrollToPostId = null) {
   const rail = document.getElementById('post-rail');

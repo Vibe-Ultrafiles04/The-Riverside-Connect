@@ -2057,21 +2057,17 @@ async function openChannel(ch, scrollToPostId = null) {
 /* ── CHECK AUTH ──────────────────────────────────────────────────── */
 async function checkAuth(channelId) {
   try {
-    const data = await api({ operation: 'isAuthorised', username: currentUser, channelId });
-    isAuthorised = data.status === 'success' && data.isAuthorised;
-  } catch { isAuthorised = false; }
+    const data = await api({ operation: 'isAuthorised', username: currentUser, channelId: channelId || '' });
+    isAuthorised = data.status === 'success' && data.isAuthorised === true;
+    isAdmin      = data.status === 'success' && data.isAdmin === true;
+  } catch {
+    isAuthorised = false;
+    isAdmin = false;
+  }
 
   document.getElementById('btn-write').style.display = isAuthorised ? 'flex' : 'none';
-
-  try {
-    const data = channelId
-    ? await api({ operation: 'isAuthorised', username: currentUser, channelId })
-    : { status: 'success', isAuthorised: false };
-    isAdmin = d.userStatus === 'approved' && d.isAdmin === true;
-    document.getElementById('drawer-create-btn').style.display = isAdmin ? 'flex' : 'none';
-  } catch { isAdmin = false; }
+  document.getElementById('drawer-create-btn').style.display = isAdmin ? 'flex' : 'none';
 }
-
 /* ── RENDER POSTS ─────────────────────────────────────────────────── */
 async function renderPosts(channelId, scrollToPostId = null) {
   const rail = document.getElementById('post-rail');

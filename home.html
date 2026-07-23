@@ -1284,6 +1284,36 @@
       0%, 85%, 100% { opacity: 0.55; }
       42% { opacity: 1; }
     }
+
+    #swipe-hint {
+  position: fixed;
+  bottom: 92px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-med);
+  color: var(--text-secondary);
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  white-space: nowrap;
+}
+#swipe-hint.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#swipe-hint i { font-size: 0.7rem; color: var(--blue-bright); animation: hintNudge 1.4s ease-in-out infinite; }
+#swipe-hint i.fa-chevron-right { animation-direction: reverse; }
+@keyframes hintNudge {
+  0%,100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
   </style>
 </head>
 <body>
@@ -1356,6 +1386,12 @@
     <span id="reply-text">Replying to…</span>
   </span>
   <button class="reply-cancel-btn" onclick="cancelReply()"><i class="fas fa-times"></i></button>
+</div>
+
+<div id="swipe-hint">
+  <i class="fas fa-chevron-left"></i>
+  <span>Swipe to browse previous days</span>
+  <i class="fas fa-chevron-right"></i>
 </div>
 
 <!-- ══ FILE PREVIEW ══ -->
@@ -1485,6 +1521,7 @@ let activeDateStr = null;     // 'YYYY-MM-DD' of the currently shown date; null 
 let threadMode = false;       // true = My Thread filter active
 let isOnline = navigator.onLine;
 let swipePreviewActive = false; // true while a live swipe-preview label is shown
+let initialDateSet = false;
 
 /* ── Local persistence keys ── */
 const CACHE_KEY   = 'rc_cached_comments_v1';
@@ -1545,6 +1582,21 @@ function extractFileId(url) {
 }
 function maybeFlushPending() {
   if (!isFlushingDrafts && getPendingDrafts().length) flushPendingDrafts();
+}
+
+function maybeShowSwipeHint() {
+  if (localStorage.getItem('rc_swipe_hint_seen')) return;
+  const dates = getSortedActiveDates();
+  if (dates.length < 2) return; // nothing to swipe to yet — don't tease a feature with no history
+  const hint = document.getElementById('swipe-hint');
+  if (!hint) return;
+  setTimeout(() => {
+    hint.classList.add('show');
+    setTimeout(() => {
+      hint.classList.remove('show');
+      localStorage.setItem('rc_swipe_hint_seen', '1');
+    }, 3200);
+  }, 700);
 }
 
 function getLh3Link(url) {
@@ -1831,7 +1883,18 @@ async function loadComments(silent = true) {
     cacheComments(allComments, data.announcements);
     setOnlineStatus(true);
     mergeInPendingDrafts();
-    maybeFlushPending();           
+    maybeFlushPending();    
+
+    if (!initialDateSet) {
+  initialDateSet = true;
+  const dates = getSortedActiveDates();
+  if (dates.length && dates[dates.length - 1] !== todayStr()) {
+    activeDateStr = dates[dates.length - 1]; // jump to most recent day that actually has messages
+  }
+  maybeShowSwipeHint(); // added in step 2 below
+}
+
+    
 
     const filtered = getCommentsForActiveDate();
     renderComments(filtered, silent);

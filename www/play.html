@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>Play · Riverside Q&A</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   RIVERSIDE PLAY — channels.html design system, system-ui font
+═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --ink:        #e2e8f0;
+  --paper:      #0f172a;
+  --cream:      #1e293b;
+  --wire:       rgba(96,165,250,0.18);
+  --steel:      #94a3b8;
+  --lead:       #cbd5e1;
+  --accent:     #ef4444;
+  --accent2:    #60a5fa;
+  --gold:       #facc15;
+  --green:      #10b981;
+  --purple:     #a78bfa;
+  --white:      #f8fafc;
+
+  --font-body:  system-ui, -apple-system, sans-serif;
+
+  --bar-h:      56px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MASTHEAD
+═══════════════════════════════════════════════════════════════════════ */
+#masthead {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--bar-h);
+  background: rgba(15,23,42,0.96);
+  border-bottom: 1px solid rgba(96,165,250,0.22);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+}
+
+.mh-back {
+  height: 100%;
+  width: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--wire);
+  color: var(--accent2);
+  text-decoration: none;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.mh-back:hover { background: var(--cream); }
+
+.mh-info {
+  flex: 1;
+  min-width: 0;
+  padding: 0 16px;
+  overflow: hidden;
+}
+.mh-game-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
+.mh-game-meta {
+  font-size: 0.7rem;
+  color: var(--steel);
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mh-tools {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  flex-shrink: 0;
+  border-left: 1px solid var(--wire);
+}
+.mh-btn {
+  height: 100%;
+  width: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--wire);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.15s, color 0.15s;
+}
+.mh-btn:last-child { border-right: none; }
+.mh-btn:hover { background: var(--cream); color: var(--accent2); }
+
+/* Timer in masthead */
+.mh-timer {
+  height: 100%;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-right: 1px solid var(--wire);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent2);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  transition: color 0.3s;
+}
+.mh-timer.warning { color: var(--gold); }
+.mh-timer.danger  {
+  color: var(--accent);
+  animation: timerPulse 0.9s ease-in-out infinite;
+}
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════════════════════════════════════ */
+#progress-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 3px;
+  background: rgba(96,165,250,0.12);
+  z-index: 900;
+}
+#progress-fill {
+  height: 100%;
+  background: var(--accent2);
+  width: 0%;
+  transition: width 0.35s ease;
+}
+
+/* Question counter */
+#q-counter {
+  position: fixed;
+  bottom: 10px;
+  right: 14px;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  z-index: 800;
+  pointer-events: none;
+  background: rgba(15,23,42,0.8);
+  padding: 3px 8px;
+  border: 1px solid var(--wire);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   STAGE
+═══════════════════════════════════════════════════════════════════════ */
+#stage {
+  padding-top: calc(var(--bar-h) + 20px);
+  padding-bottom: 100px;
+  min-height: 100%;
+}
+
+.stage-inner {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 0 20px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   QUESTION CARD
+═══════════════════════════════════════════════════════════════════════ */
+#question-wrap {
+  background: rgba(30,41,59,0.7);
+  border-bottom: 1px solid var(--wire);
+  border-top: 1px solid var(--wire);
+  animation: fadeQ 0.25s ease;
+}
+@keyframes fadeQ {
+  from { opacity:0; transform: translateY(10px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+@media (min-width: 640px) {
+  #question-wrap {
+    border: 1px solid var(--wire);
+    margin: 0 16px;
+  }
+}
+
+.q-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--wire);
+  background: rgba(15,23,42,0.6);
+}
+.q-num {
+  background: rgba(96,165,250,0.15);
+  border: 1px solid rgba(96,165,250,0.3);
+  color: var(--accent2);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 4px 10px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.q-text {
+  font-size: 1.12rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--ink);
+  flex: 1;
+}
+
+.q-image-wrap {
+  width: 100%;
+  background: #000;
+  overflow: hidden;
+  border-bottom: 1px solid var(--wire);
+  display: none;
+}
+.q-image-wrap img {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CHOICES
+═══════════════════════════════════════════════════════════════════════ */
+.choices-list {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.choice-btn {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(96,165,250,0.28);
+  color: var(--ink);
+  border-radius: 0;
+  cursor: pointer;
+  font-size: 1rem;
+  font-family: var(--font-body);
+  text-align: left;
+  transition: all 0.18s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+.choice-btn::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background 0.18s;
+}
+.choice-btn:hover:not(:disabled) {
+  background: rgba(96,165,250,0.1);
+  border-color: var(--accent2);
+}
+.choice-btn:hover:not(:disabled)::before { background: var(--accent2); }
+
+.choice-btn:disabled { cursor: default; }
+
+.choice-btn.correct {
+  background: rgba(16,185,129,0.15) !important;
+  border-color: #34d399 !important;
+  color: #6ee7b7 !important;
+}
+.choice-btn.correct::before { background: var(--green) !important; }
+
+.choice-btn.incorrect {
+  background: rgba(239,68,68,0.12) !important;
+  border-color: #f87171 !important;
+  color: #fca5a5 !important;
+}
+.choice-btn.incorrect::before { background: var(--accent) !important; }
+
+.choice-btn.selected {
+  background: rgba(96,165,250,0.14) !important;
+  border-color: var(--accent2) !important;
+}
+.choice-btn.selected::before { background: var(--accent2) !important; }
+
+.choice-btn img {
+  max-width: 160px;
+  max-height: 110px;
+  object-fit: contain;
+  border: 1px solid var(--wire);
+  align-self: flex-start;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REASON BOX
+═══════════════════════════════════════════════════════════════════════ */
+#reason-box {
+  margin: 0 20px 16px;
+  padding: 14px 16px;
+  background: rgba(96,165,250,0.06);
+  border: 1px solid rgba(96,165,250,0.2);
+  border-left: 3px solid var(--accent2);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--lead);
+  display: none;
+}
+#reason-box strong {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--accent2);
+  margin-bottom: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NAV FOOT
+═══════════════════════════════════════════════════════════════════════ */
+.nav-foot {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--wire);
+  border-bottom: 1px solid var(--wire);
+  background: rgba(15,23,42,0.7);
+  height: 50px;
+  margin-top: 0;
+}
+@media (min-width: 640px) {
+  .nav-foot { margin: 0 16px; border: 1px solid var(--wire); border-top: none; }
+}
+
+.nav-btn {
+  flex: 1;
+  height: 100%;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--wire);
+  color: var(--steel);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.nav-btn:last-child { border-right: none; }
+.nav-btn:hover:not(:disabled) { background: var(--cream); color: var(--ink); }
+.nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.nav-btn.primary {
+  color: var(--accent2);
+  flex: 2;
+}
+.nav-btn.primary:hover:not(:disabled) { background: rgba(96,165,250,0.12); }
+.nav-btn.submit-btn {
+  color: var(--green);
+}
+.nav-btn.submit-btn:hover:not(:disabled) { background: rgba(16,185,129,0.1); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   FINAL SCREEN
+═══════════════════════════════════════════════════════════════════════ */
+#final-screen {
+  display: none;
+  padding: 0;
+}
+
+.final-card {
+  background: rgba(30,41,59,0.7);
+  border-top: 1px solid var(--wire);
+  border-bottom: 1px solid var(--wire);
+  padding: 40px 28px;
+  text-align: center;
+}
+@media (min-width: 640px) {
+  .final-card { margin: 0 16px; border: 1px solid var(--wire); }
+}
+
+.final-icon {
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+  display: block;
+  animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes popIn {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.final-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+  letter-spacing: 0.01em;
+}
+.final-score {
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--accent2);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin: 16px 0 8px;
+}
+.final-score-label {
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  text-transform: uppercase;
+}
+.final-sub {
+  font-size: 0.92rem;
+  color: var(--steel);
+  line-height: 1.55;
+  margin-top: 16px;
+}
+.final-sub a {
+  color: var(--accent2);
+  text-decoration: none;
+  font-weight: 600;
+}
+.final-sub a:hover { text-decoration: underline; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LOADING / EMPTY
+═══════════════════════════════════════════════════════════════════════ */
+.state-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 80px 32px;
+  text-align: center;
+  color: var(--steel);
+}
+.state-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid rgba(96,165,250,0.2);
+  border-top-color: var(--accent2);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.state-label {
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LEADERBOARD / SURVEY BOTTOM SHEET
+═══════════════════════════════════════════════════════════════════════ */
+#board-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 980;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+#board-overlay.open { display: flex; }
+
+.board-sheet {
+  background: rgba(15,23,42,0.98);
+  border-top: 1px solid rgba(96,165,250,0.3);
+  width: 100%;
+  max-width: 640px;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease;
+  border-radius: 16px 16px 0 0;
+}
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--wire);
+  flex-shrink: 0;
+}
+.board-head-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent2);
+  text-transform: uppercase;
+}
+.board-close {
+  background: none; border: none;
+  font-size: 1.2rem; cursor: pointer;
+  color: var(--steel); width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s;
+}
+.board-close:hover { color: var(--accent2); }
+
+.board-body {
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(96,165,250,0.4) transparent;
+}
+
+/* Leaderboard rows */
+.leader-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--wire);
+  transition: background 0.15s;
+}
+.leader-row:hover { background: var(--cream); }
+
+.leader-rank {
+  font-size: 1.2rem;
+  font-weight: 800;
+  width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  color: var(--steel);
+}
+.leader-rank.r1 { color: #ffd700; }
+.leader-rank.r2 { color: #c0c0c0; }
+.leader-rank.r3 { color: #cd7f32; }
+
+.leader-name { flex: 1; font-weight: 600; font-size: 0.9rem; }
+.leader-score {
+  font-size: 0.85rem;
+  color: var(--accent2);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* Survey carousel */
+.survey-carousel {
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.survey-slides {
+  display: flex;
+  transition: transform 0.35s ease;
+  height: 100%;
+}
+.survey-slide {
+  flex: 0 0 100%;
+  overflow-y: auto;
+  padding: 20px;
+  -webkit-overflow-scrolling: touch;
+}
+.survey-q-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent2);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.survey-q-meta {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--steel);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.survey-bar-row { margin-bottom: 10px; }
+.survey-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.86rem;
+  margin-bottom: 5px;
+  color: var(--lead);
+}
+.survey-bar-label span:last-child {
+  color: var(--purple);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.survey-bar-track {
+  height: 7px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.survey-bar-fill {
+  height: 100%;
+  background: var(--purple);
+  border-radius: 4px;
+  transition: width 0.6s ease;
+  width: 0;
+}
+.survey-q-image {
+  max-width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  display: block;
+  border-radius: 8px;
+  border: 1px solid var(--wire);
+  margin-bottom: 16px;
+}
+
+.participants-section { padding: 20px; }
+.participants-title {
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: var(--steel);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.participants-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.participant-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.participant-chip img {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(167,139,250,0.35);
+}
+.participant-chip span {
+  font-size: 0.7rem;
+  color: var(--steel);
+  letter-spacing: 0.04em;
+  text-align: center;
+  max-width: 60px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Carousel dots */
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--wire);
+}
+.carousel-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: all 0.25s;
+  cursor: pointer;
+}
+.carousel-dot.active {
+  background: var(--accent2);
+  transform: scale(1.25);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════════════════════ */
+#toast-area {
+  position: fixed;
+  top: calc(var(--bar-h) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast-msg {
+  pointer-events: auto;
+  background: rgba(15,23,42,0.96);
+  color: var(--ink);
+  padding: 10px 18px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  animation: toastIn 0.3s ease;
+  max-width: 90vw;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.toast-msg.err     { border-left: 3px solid var(--accent); }
+.toast-msg.ok      { border-left: 3px solid var(--green); }
+.toast-msg.info    { border-left: 3px solid var(--accent2); }
+@keyframes toastIn {
+  from { opacity:0; transform: translateY(-12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ MASTHEAD ═══════════════════════════════════════════════════════════ -->
+<header id="masthead">
+  <a href="Q&A.html" class="mh-back" title="Back to games">
+    <i class="fas fa-arrow-left"></i>
+  </a>
+
+  <div class="mh-info">
+    <div class="mh-game-name" id="mh-game-name">LOADING GAME...</div>
+    <div class="mh-game-meta" id="mh-game-meta">&nbsp;</div>
+  </div>
+
+  <div class="mh-tools">
+    <div class="mh-timer" id="mh-timer" style="display:none;">
+      <i class="fas fa-clock" style="font-size:0.75rem; opacity:0.7;"></i>
+      <span id="timer-val">--:--</span>
+    </div>
+    <button class="mh-btn" id="btn-board" title="Leaderboard / Results" style="display:none;">
+      <i class="fas fa-trophy"></i>
+    </button>
+  </div>
+</header>
+
+<!-- ═══ STAGE ══════════════════════════════════════════════════════════════ -->
+<div id="stage">
+  <div class="stage-inner">
+
+    <!-- Loading state -->
+    <div class="state-view" id="loading-state">
+      <div class="state-spinner"></div>
+      <div class="state-label">Loading game...</div>
+    </div>
+
+    <!-- Question area -->
+    <div id="question-wrap" style="display:none;">
+      <div class="q-header">
+        <div class="q-num" id="q-num">Q1</div>
+        <div class="q-text" id="q-text"></div>
+      </div>
+      <div class="q-image-wrap" id="q-image-wrap">
+        <img id="q-image" src="" alt="" loading="lazy"
+             onerror="this.closest('.q-image-wrap').style.display='none'">
+      </div>
+      <div class="choices-list" id="choices-list"></div>
+      <div id="reason-box">
+        <strong>EXPLANATION</strong>
+        <span id="reason-text"></span>
+      </div>
+    </div>
+
+    <!-- Nav footer -->
+    <div class="nav-foot" id="nav-foot" style="display:none;">
+      <button class="nav-btn" id="btn-back" disabled>
+        <i class="fas fa-chevron-left"></i> Back
+      </button>
+      <button class="nav-btn primary" id="btn-next">
+        Next <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- Final screen -->
+    <div id="final-screen">
+      <div class="final-card" id="final-card"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Progress bar -->
+<div id="progress-bar"><div id="progress-fill"></div></div>
+<div id="q-counter"></div>
+
+<!-- ═══ BOARD OVERLAY ══════════════════════════════════════════════════════ -->
+<div id="board-overlay">
+  <div class="board-sheet">
+    <div class="board-head">
+      <span class="board-head-title" id="board-title">LEADERBOARD</span>
+      <button class="board-close" id="board-close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="board-body" id="board-body"></div>
+    <div class="carousel-dots" id="carousel-dots" style="display:none;"></div>
+  </div>
+</div>
+
+<div id="toast-area"></div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztGcPfIe_AWXSKMcYNvhtAuL5O315bo5hgcicw5Xe4sBEyDb8dreEBi42ALnZY64l2/exec';
+
+const gameId  = new URLSearchParams(location.search).get('gameId');
+const username = localStorage.getItem('userName') || '';
+
+if (!username) location.href = 'index.html';
+
+let currentGame     = null;
+let currentIdx      = 0;
+let score           = 0;
+let timerInterval   = null;
+let quizResponses   = {};   // { idx: choiceIndex }
+let surveyResponses = {};   // { idx: choiceIndex }
+let hasSubmitted    = false;
+let boardLoaded     = false;
+let boardMode       = 'leaderboard'; // or 'survey'
+let surveySlideIdx  = 0;
+let surveySlides    = [];
+
+/* ── UTILITY ─────────────────────────────────────────────────────── */
+function lh3(url) {
+  if (!url) return '';
+  const m = url.match(/[-\w]{25,}/);
+  return m ? `https://lh3.googleusercontent.com/d/${m[0]}` : url;
+}
+
+function fallbackAvatar(name) {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=1e293b&color=60a5fa&size=88`;
+}
+
+/* ── TOAST ──────────────────────────────────────────────────────── */
+function toast(msg, type = 'info', dur = 3400) {
+  const area = document.getElementById('toast-area');
+  const el = document.createElement('div');
+  el.className = `toast-msg ${type}`;
+  el.textContent = msg;
+  area.appendChild(el);
+  setTimeout(() => el.remove(), dur);
+}
+
+/* ── API ─────────────────────────────────────────────────────────── */
+async function api(params) {
+  const r = await fetch(`${SCRIPT_URL}?${new URLSearchParams(params)}`);
+  return r.json();
+}
+
+async function postData(body) {
+  const r = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
+  return r.json();
+}
+
+/* ── LOAD GAME ───────────────────────────────────────────────────── */
+async function loadGame() {
+  if (!gameId) {
+    showError('No game ID provided.');
+    return;
+  }
+
+  try {
+    const [gameRes, qRes] = await Promise.all([
+      api({ operation: 'getQnAGame', gameId, username }),
+      api({ operation: 'getQnAQuestionsAndChoices', gameId })
+    ]);
+
+    if (gameRes.status !== 'success') { showError('Failed to load game.'); return; }
+    if (qRes.status  !== 'success')  { showError('Failed to load questions.'); return; }
+
+    currentGame = { ...gameRes.game, questions: qRes.questions || [] };
+
+    // Check survey submission status
+    if (currentGame.mode === 'survey') {
+      try {
+        const chk = await api({ operation: 'hasUserSubmittedSurvey', gameId, username });
+        hasSubmitted = chk.status === 'success' && !!chk.submitted;
+      } catch {}
+    }
+
+    // Masthead
+    document.getElementById('mh-game-name').textContent = currentGame.name;
+    const modeLabel = currentGame.mode === 'survey' ? 'SURVEY' : 'QUIZ';
+    document.getElementById('mh-game-meta').textContent = `${modeLabel} · ${currentGame.questions.length} QUESTION${currentGame.questions.length !== 1 ? 'S' : ''}`;
+
+    // Board button
+    const btnBoard = document.getElementById('btn-board');
+    btnBoard.style.display = 'flex';
+    btnBoard.querySelector('i').className = currentGame.mode === 'survey' ? 'fas fa-chart-bar' : 'fas fa-trophy';
+    btnBoard.addEventListener('click', openBoard);
+
+    // Timer
+    if (currentGame.timer && currentGame.timer > 0) {
+      document.getElementById('mh-timer').style.display = 'flex';
+      startTimer(currentGame.timer);
+    }
+
+    // Hide loading, show question
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('question-wrap').style.display = 'block';
+    document.getElementById('nav-foot').style.display = 'flex';
+    showQuestion(0);
+
+  } catch (err) {
+    console.error(err);
+    showError('Network error — check connection.');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('loading-state').innerHTML = `
+    <div style="color:var(--accent);font-size:1.1rem;font-weight:600;">${msg}</div>
+    <div style="font-size:0.8rem;color:var(--steel);letter-spacing:0.06em;margin-top:8px;">
+      <a href="Q&A.html" style="color:var(--accent2);">← BACK TO GAMES</a>
+    </div>`;
+}
+
+/* ── SHOW QUESTION ────────────────────────────────────────────────── */
+function showQuestion(idx) {
+  currentIdx = idx;
+  const q     = currentGame.questions[idx];
+  const total = currentGame.questions.length;
+  const isSurvey = currentGame.mode === 'survey';
+
+  // Q header
+  document.getElementById('q-num').textContent = `Q${idx + 1}`;
+  document.getElementById('q-text').textContent = q.text || 'Question missing';
+
+  // Image
+  const imgWrap = document.getElementById('q-image-wrap');
+  const imgEl   = document.getElementById('q-image');
+  if (q.imageLink) {
+    imgEl.src = lh3(q.imageLink);
+    imgWrap.style.display = 'block';
+  } else {
+    imgWrap.style.display = 'none';
+  }
+
+  // Choices
+  const list = document.getElementById('choices-list');
+  list.innerHTML = '';
+  (q.choices || []).forEach((choice, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+
+    let inner = `<span>${choice.text || ''}</span>`;
+    if (choice.imageLink) {
+      inner += `<img src="${lh3(choice.imageLink)}" loading="lazy"
+                    onerror="this.style.display='none'" alt="">`;
+    }
+    btn.innerHTML = inner;
+    btn.addEventListener('click', () => selectChoice(i));
+    list.appendChild(btn);
+  });
+
+  // Reason
+  const reasonBox  = document.getElementById('reason-box');
+  const reasonText = document.getElementById('reason-text');
+  reasonBox.style.display = 'none';
+  reasonText.textContent  = q.reason || '';
+
+  // Restore previous answer
+  const prev = isSurvey ? surveyResponses[idx] : quizResponses[idx];
+  if (prev !== undefined) {
+    restoreAnswer(idx, prev, false);
+  }
+
+  // Progress
+  updateProgress(idx, total);
+
+  // Nav buttons
+  updateNavButtons(idx, total);
+}
+
+/* ── SELECT CHOICE ────────────────────────────────────────────────── */
+function selectChoice(choiceIdx) {
+  const q       = currentGame.questions[currentIdx];
+  const isSurvey = currentGame.mode === 'survey';
+
+  if (isSurvey) {
+    surveyResponses[currentIdx] = choiceIdx;
+  } else {
+    if (quizResponses[currentIdx] === undefined) {
+      quizResponses[currentIdx] = choiceIdx;
+      if (q.correctIndex === choiceIdx) score++;
+    }
+  }
+
+  restoreAnswer(currentIdx, isSurvey ? surveyResponses[currentIdx] : quizResponses[currentIdx], true);
+  updateNavButtons(currentIdx, currentGame.questions.length);
+}
+
+/* ── RESTORE ANSWER (visual) ─────────────────────────────────────── */
+function restoreAnswer(idx, chosen, animate) {
+  const q = currentGame.questions[idx];
+  const isSurvey = currentGame.mode === 'survey';
+  const btns = document.querySelectorAll('#choices-list .choice-btn');
+
+  btns.forEach((btn, i) => {
+    btn.classList.remove('correct', 'incorrect', 'selected');
+    if (isSurvey) {
+      btn.disabled = false;
+      if (i === chosen) btn.classList.add('selected');
+    } else {
+      btn.disabled = true;
+      if (i === chosen) btn.classList.add('selected');
+      if (i === q.correctIndex) btn.classList.add('correct');
+      if (i === chosen && chosen !== q.correctIndex) btn.classList.add('incorrect');
+    }
+  });
+
+  if (!isSurvey && q.reason) {
+    const box = document.getElementById('reason-box');
+    box.style.display = 'block';
+    if (animate) {
+      box.style.animation = 'none';
+      box.offsetHeight;
+      box.style.animation = '';
+    }
+  }
+}
+
+/* ── NAV BUTTONS ─────────────────────────────────────────────────── */
+function updateNavButtons(idx, total) {
+  const isSurvey  = currentGame.mode === 'survey';
+  const isLast    = idx === total - 1;
+  const btnBack   = document.getElementById('btn-back');
+  const btnNext   = document.getElementById('btn-next');
+  const answered  = isSurvey ? surveyResponses[idx] !== undefined : quizResponses[idx] !== undefined;
+
+  btnBack.disabled = idx === 0;
+
+  btnBack.onclick = () => showQuestion(idx - 1);
+
+  // Next / Submit button
+  btnNext.classList.remove('primary', 'submit-btn');
+
+  if (isLast) {
+    if (isSurvey) {
+      btnNext.classList.add('submit-btn');
+      if (hasSubmitted) {
+        btnNext.innerHTML = '<i class="fas fa-check"></i> ALREADY SUBMITTED';
+        btnNext.disabled = true;
+      } else {
+        btnNext.innerHTML = '<i class="fas fa-paper-plane"></i> SUBMIT RESPONSES';
+        btnNext.disabled = false;
+        btnNext.onclick = finishGame;
+      }
+    } else {
+      btnNext.classList.add('primary');
+      btnNext.innerHTML = '<i class="fas fa-flag-checkered"></i> COMPLETE GAME';
+      btnNext.disabled = !answered;
+      btnNext.onclick = finishGame;
+    }
+  } else {
+    btnNext.classList.add('primary');
+    btnNext.innerHTML = 'NEXT <i class="fas fa-chevron-right"></i>';
+    if (isSurvey) {
+      btnNext.disabled = false;
+    } else {
+      btnNext.disabled = !answered;
+    }
+    btnNext.onclick = () => showQuestion(idx + 1);
+  }
+}
+
+/* ── PROGRESS ─────────────────────────────────────────────────────── */
+function updateProgress(idx, total) {
+  const pct = total > 1 ? (idx / (total - 1)) * 100 : 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('q-counter').textContent = total ? `${idx + 1} / ${total}` : '';
+}
+
+/* ── TIMER ───────────────────────────────────────────────────────── */
+function startTimer(seconds) {
+  let remaining = seconds;
+  const timerEl = document.getElementById('mh-timer');
+  const valEl   = document.getElementById('timer-val');
+
+  const update = () => {
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    valEl.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    timerEl.classList.toggle('warning', remaining <= 30 && remaining > 10);
+    timerEl.classList.toggle('danger',  remaining <= 10);
+  };
+
+  update();
+  timerInterval = setInterval(() => {
+    remaining--;
+    update();
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      valEl.textContent = "TIME'S UP";
+      finishGame();
+    }
+  }, 1000);
+}
+
+/* ── FINISH GAME ─────────────────────────────────────────────────── */
+async function finishGame() {
+  clearInterval(timerInterval);
+
+  const btnNext = document.getElementById('btn-next');
+  btnNext.disabled = true;
+  btnNext.innerHTML = '<i class="fas fa-spinner fa-spin"></i> SUBMITTING...';
+
+  try {
+    if (currentGame.mode === 'survey') {
+      await submitSurvey();
+      showFinal('survey');
+      toast('Responses submitted!', 'ok');
+    } else {
+      await postData({ operation: 'submitQnAScore', gameId, username, score });
+      showFinal('quiz');
+      toast('Score saved!', 'ok');
+    }
+
+    document.getElementById('question-wrap').style.display = 'none';
+    document.getElementById('nav-foot').style.display = 'none';
+    document.getElementById('final-screen').style.display = 'block';
+
+  } catch (err) {
+    console.error(err);
+    const alreadyDone = err.message?.toLowerCase().includes('already');
+    if (alreadyDone) {
+      hasSubmitted = true;
+      showFinal('survey', true);
+      document.getElementById('question-wrap').style.display = 'none';
+      document.getElementById('nav-foot').style.display = 'none';
+      document.getElementById('final-screen').style.display = 'block';
+      toast('You already submitted this survey', 'info');
+    } else {
+      toast('Submission failed — try again', 'err');
+      btnNext.disabled = false;
+      updateNavButtons(currentIdx, currentGame.questions.length);
+    }
+  }
+}
+
+function showFinal(mode, alreadyDone = false) {
+  const total = currentGame.questions.length;
+  const card = document.getElementById('final-card');
+
+  if (mode === 'quiz') {
+    const pct = Math.round((score / total) * 100);
+    const icon = pct >= 80 ? '🏆' : pct >= 50 ? '👍' : '📚';
+    card.innerHTML = `
+      <span class="final-icon">${icon}</span>
+      <div class="final-title">Game Complete</div>
+      <div class="final-score">${score}<span style="font-size:1.4rem;color:var(--steel);">/${total}</span></div>
+      <div class="final-score-label">CORRECT ANSWERS</div>
+      <div class="final-sub">
+        You scored ${pct}%<br>
+        <a href="Q&A.html">← Back to games</a>
+      </div>
+    `;
+  } else {
+    card.innerHTML = `
+      <span class="final-icon">${alreadyDone ? '✅' : '🙏'}</span>
+      <div class="final-title">${alreadyDone ? 'Already Submitted' : 'Thank You!'}</div>
+      <div class="final-sub" style="margin-top:12px;">
+        ${alreadyDone ? 'You completed this survey earlier.' : 'Your responses have been recorded.'}<br>
+        <a href="Q&A.html">← Back to games</a>
+      </div>
+    `;
+  }
+}
+
+/* ── SUBMIT SURVEY ───────────────────────────────────────────────── */
+async function submitSurvey() {
+  for (const [qIdxStr, cIdx] of Object.entries(surveyResponses)) {
+    const qIndex   = Number(qIdxStr);
+    const question = currentGame.questions[qIndex];
+    const questionId = question.questionId || `${gameId}-q${qIndex + 1}`;
+    const choiceText = (question.choices[Number(cIdx)]?.text || '').trim();
+
+    const data = await postData({
+      operation: 'recordSurveyResponses',
+      gameId, username, questionId,
+      choiceIndex: Number(cIdx),
+      choiceText
+    });
+
+    if (data.status !== 'success') {
+      const msg = data.message?.toLowerCase() || '';
+      if (msg.includes('already') || msg.includes('duplicate')) {
+        throw new Error('already_submitted');
+      }
+      throw new Error(data.message || 'Backend error');
+    }
+  }
+}
+
+/* ── BOARD ───────────────────────────────────────────────────────── */
+function openBoard() {
+  const overlay = document.getElementById('board-overlay');
+  const body    = document.getElementById('board-body');
+  const dots    = document.getElementById('carousel-dots');
+  const title   = document.getElementById('board-title');
+
+  if (currentGame.mode === 'survey') {
+    title.textContent = 'SURVEY RESULTS';
+    dots.style.display = 'flex';
+    body.innerHTML = `
+      <div class="state-view" style="padding:40px;">
+        <div class="state-spinner"></div>
+        <div class="state-label">Loading results...</div>
+      </div>`;
+    overlay.classList.add('open');
+    loadSurveyResults();
+  } else {
+    title.textContent = 'LEADERBOARD';
+    dots.style.display = 'none';
+    body.innerHTML = `
+      <div class="state-view" style="padding:40px;">
+        <div class="state-spinner"></div>
+        <div class="state-label">Loading...</div>
+      </div>`;
+    overlay.classList.add('open');
+    loadLeaderboard();
+  }
+}
+
+document.getElementById('board-close').addEventListener('click', () => {
+  document.getElementById('board-overlay').classList.remove('open');
+});
+document.getElementById('board-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('board-overlay'))
+    document.getElementById('board-overlay').classList.remove('open');
+});
+
+async function loadLeaderboard() {
+  const body = document.getElementById('board-body');
+  try {
+    const data = await api({ operation: 'getQnALeaderboard', gameId });
+    const leaders = data.leaders || [];
+    if (leaders.length === 0) {
+      body.innerHTML = '<div class="state-view" style="padding:40px;"><div class="state-label">NO SCORES YET</div></div>';
+      return;
+    }
+    body.innerHTML = '';
+    const colors = ['r1', 'r2', 'r3'];
+    leaders.forEach((l, i) => {
+      const row = document.createElement('div');
+      row.className = 'leader-row';
+      row.innerHTML = `
+        <div class="leader-rank ${colors[i] || ''}">${i + 1}</div>
+        <div class="leader-name">${l.username}</div>
+        <div class="leader-score">${l.score}</div>
+      `;
+      body.appendChild(row);
+    });
+  } catch {
+    body.innerHTML = '<div class="state-view" style="padding:40px;"><div class="state-label">FAILED TO LOAD</div></div>';
+  }
+}
+
+async function loadSurveyResults() {
+  const body  = document.getElementById('board-body');
+  const dots  = document.getElementById('carousel-dots');
+
+  try {
+    const [rRes, pRes] = await Promise.all([
+      api({ operation: 'getSurveyResults', gameId }),
+      api({ operation: 'getSurveyParticipants', gameId })
+    ]);
+
+    const results      = rRes.results || [];
+    const participants = pRes.participants || [];
+
+    if (!results.length) {
+      body.innerHTML = '<div class="state-view" style="padding:40px;"><div class="state-label">NO RESPONSES YET</div></div>';
+      dots.style.display = 'none';
+      return;
+    }
+
+    // Build slides
+    surveySlides = [];
+    surveySlideIdx = 0;
+
+    // Question slides
+    results.forEach(q => {
+      const slide = document.createElement('div');
+      slide.className = 'survey-slide';
+      let barsHtml = q.choices.map(c => `
+        <div class="survey-bar-row">
+          <div class="survey-bar-label">
+            <span>${c.text}</span>
+            <span>${Math.round(c.percent || 0)}% (${c.count})</span>
+          </div>
+          <div class="survey-bar-track">
+            <div class="survey-bar-fill" style="width:${Math.round(c.percent || 0)}%"></div>
+          </div>
+        </div>`).join('');
+
+      slide.innerHTML = `
+        <div class="survey-q-title">${q.questionText}</div>
+        <div class="survey-q-meta">${q.totalResponses} RESPONSE${q.totalResponses !== 1 ? 'S' : ''}</div>
+        ${q.questionImage ? `<img class="survey-q-image" src="${lh3(q.questionImage)}" loading="lazy" onerror="this.style.display='none'" alt="">` : ''}
+        ${barsHtml}
+      `;
+      surveySlides.push(slide);
+    });
+
+    // Participants slide
+    const pSlide = document.createElement('div');
+    pSlide.className = 'survey-slide participants-section';
+    pSlide.innerHTML = `<div class="participants-title">PARTICIPANTS (${participants.length})</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'participants-grid';
+    if (!participants.length) {
+      grid.innerHTML = '<span style="font-size:0.8rem;color:var(--steel);letter-spacing:0.06em;">NONE YET</span>';
+    } else {
+      participants.forEach(p => {
+        const av = p.picLink ? lh3(p.picLink) : fallbackAvatar(p.username);
+        const chip = document.createElement('div');
+        chip.className = 'participant-chip';
+        chip.innerHTML = `<img src="${av}" onerror="this.src='${fallbackAvatar(p.username)}'" alt=""><span>${p.username}</span>`;
+        grid.appendChild(chip);
+      });
+    }
+    pSlide.appendChild(grid);
+    surveySlides.push(pSlide);
+
+    // Build carousel
+    const slidesWrap = document.createElement('div');
+    slidesWrap.className = 'survey-slides';
+    slidesWrap.id = 'survey-slides';
+    surveySlides.forEach(s => slidesWrap.appendChild(s));
+
+    const carousel = document.createElement('div');
+    carousel.className = 'survey-carousel';
+    carousel.appendChild(slidesWrap);
+
+    body.innerHTML = '';
+    body.appendChild(carousel);
+
+    // Dots
+    dots.innerHTML = '';
+    surveySlides.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+      dot.addEventListener('click', () => goToSlide(i));
+      dots.appendChild(dot);
+    });
+
+    // Touch / swipe
+    let startX = 0, isDragging = false;
+    const track = slidesWrap;
+
+    carousel.addEventListener('touchstart',  e => { isDragging = true;  startX = e.touches[0].clientX; }, { passive: true });
+    carousel.addEventListener('touchend',    e => {
+      if (!isDragging) return;
+      isDragging = false;
+      const diff = e.changedTouches[0].clientX - startX;
+      if (diff < -50 && surveySlideIdx < surveySlides.length - 1) goToSlide(surveySlideIdx + 1);
+      if (diff >  50 && surveySlideIdx > 0)                        goToSlide(surveySlideIdx - 1);
+    });
+
+  } catch {
+    body.innerHTML = '<div class="state-view" style="padding:40px;"><div class="state-label">FAILED TO LOAD</div></div>';
+  }
+}
+
+function goToSlide(idx) {
+  surveySlideIdx = idx;
+  const track = document.getElementById('survey-slides');
+  if (track) track.style.transform = `translateX(-${idx * 100}%)`;
+  document.querySelectorAll('.carousel-dot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+}
+
+/* ── INIT ─────────────────────────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', loadGame);
+</script>
+</body>
+</html>

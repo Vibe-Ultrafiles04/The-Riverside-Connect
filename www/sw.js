@@ -1,0 +1,342 @@
+// firebase-messaging-sw.js
+importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging-compat.js");
+
+firebase.initializeApp({
+  apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+  authDomain: "riverside-connect-a8458.firebaseapp.com",
+  projectId: "riverside-connect-a8458",
+  storageBucket: "riverside-connect-a8458.firebasestorage.app",
+  messagingSenderId: "938830806378",
+  appId: "1:938830806378:web:254ed56cba3dc02290f913"
+});
+
+const messaging = firebase.messaging();
+
+// Handle background messages
+messaging.onBackgroundMessage((payload) => {
+  console.log("Background message received:", payload);
+
+  const title = payload.data?.title || "Riverside Connect";
+  const body  = payload.data?.body  || "New activity";
+
+  const channelId = payload.data?.channelId || "";
+  const postId    = payload.data?.postId    || "";
+  const gameId    = payload.data?.gameId    || "";
+  const announcement = payload.data?.announcement || "";   // ← NEW for announcements
+  const callId = payload.data?.callId || "";
+  const songId = payload.data?.songId || "";
+  // ── SMART URL LOGIC ─────────────────────────────────────────────────────
+  let url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
+
+  if (callId) {
+  url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/call.html?callId=${encodeURIComponent(callId)}`;
+}
+
+  if (gameId) {
+    // Q&A Game
+    url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/Q&A.html?gameId=${encodeURIComponent(gameId)}`;
+  } 
+
+  else if (songId) {
+  url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/lyric.html?songId=${encodeURIComponent(songId)}`;
+}
+  else if (channelId) {
+    // Channel Post
+    url = `https://vibe-ultrafiles04.github.io/The-Riverside-Connect/channel.html?channelId=${encodeURIComponent(channelId)}`;
+    if (postId) {
+      url += `&postId=${encodeURIComponent(postId)}`;
+    }
+  }
+  else if (announcement) {
+    // Announcement → opens announce.html (just like comments open home.html)
+    url = "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/announce.html";
+  }
+  // Default falls back to home.html (for normal comments)
+
+  const icon = payload.data?.icon || "./maskable_icon_x192.png";
+  const badge = "./badge.png";
+
+  const isCall = !!callId;
+
+self.registration.showNotification(title, {
+  body: body,
+  icon: icon,
+  badge: badge,
+  image: payload.data?.image || "",
+  vibrate: isCall ? [500, 200, 500, 200, 500] : [200, 100, 200],
+  requireInteraction: isCall, // keeps call notification on screen until tapped
+  tag: isCall ? `call-${callId}` : undefined, // prevents duplicate call notifications
+  data: {
+    url: url,
+    channelId: channelId,
+    postId: postId,
+    gameId: gameId,
+    announcement: announcement,
+    callId: callId,
+    songId: songId   
+  }
+});
+});
+
+// Handle notification click
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+
+  const urlToOpen = event.notification.data?.url || 
+                    "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/home.html";
+
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      // Try to focus existing window/tab
+      for (const client of clientList) {
+        if (client.url === urlToOpen || 
+          (event.notification.data?.callId && client.url.includes("call.html")) ||
+           (event.notification.data?.songId    && client.url.includes("lyric.html"))  || 
+            (event.notification.data?.gameId && client.url.includes("Q&A.html")) ||
+            (event.notification.data?.channelId && client.url.includes("channel.html")) ||
+            (event.notification.data?.announcement && client.url.includes("announce.html")) ||
+            "focus" in client) {
+          return client.focus();
+        }
+      }
+
+      // Open new window/tab with correct URL
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});
+// sw.js — Powerful offline-first PWA support for Riverside Connect (WhatsApp-style)
+
+const CACHE_NAME = 'Riverside-Connect-v8'; // bumped — fixes offline caching
+
+const STATIC_ASSETS = [
+  './',
+  './login.html',
+  './user.html',
+  './index.html',
+  './home.html',
+  './Q&A.html',
+  './play.html',
+  './split.html',
+  './announce.html',
+  './channel.html',
+  './live.html',
+  './studio.html',
+  './camera.html',
+  './lyric.html',
+  './manifest.json',
+  './maskable_icon_x192.png',
+  './maskable_icon_x512.png',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/webfonts/fa-solid-900.woff2',
+  // Caching is done file-by-file below (not cache.addAll()), so if any one
+  // of these is missing or renamed, it only skips itself — it can no longer
+  // wipe out caching for every other file in the list.
+];
+
+const API_CACHE_PATTERNS = [
+  '?operation=getUserStatus',
+  '?operation=getAllChannels',
+  '?operation=getAllQnAChannels',
+  '?operation=getUnseenAnnCount',
+  '?operation=getChannelPosts',
+  '?operation=getLiveChannels',
+  '?operation=getLiveBroadcasts',
+  '?operation=getQnAGames',
+  '?operation=getQnAQuestionsAndChoices',
+  '?operation=getQnALeaderboard',
+  '?operation=getSurveyResults',
+  '?operation=getSurveyParticipants',
+];
+
+const EXPECTED_CACHES = [CACHE_NAME];
+
+const API_BASE = 'https://script.google.com/macros/s/AKfycbzZ9VVt9A2LlehC6jMMwNMVSkWCBFnN86W7m3gQgAIqbRVPgDUhE1IzHmLtFzV6zbQE/exec';
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('[SW] Installing ' + CACHE_NAME + ' — caching core assets');
+        // IMPORTANT: cache each file independently instead of cache.addAll().
+        // addAll() is atomic — one missing/blocked URL fails the WHOLE
+        // install and leaves the cache completely empty, which means the
+        // app has nothing to serve at all when offline. Caching one-by-one
+        // means a single bad entry only skips itself.
+        return Promise.all(
+          STATIC_ASSETS.map(url =>
+            cache.add(url).catch(err => {
+              console.warn('[SW] Skipped (missing or blocked):', url, err.message);
+            })
+          )
+        );
+      })
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    Promise.all([
+      caches.keys().then(keys =>
+        Promise.all(
+          keys
+            .filter(key => !EXPECTED_CACHES.includes(key))
+            .map(key => {
+              console.log('[SW] Deleting old cache:', key);
+              return caches.delete(key);
+            })
+        )
+      ),
+      self.clients.claim()
+    ])
+  );
+});
+
+self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  if (url.href.startsWith(API_BASE)) {
+
+    if (event.request.method === 'GET') {
+
+      const isCacheableApiCall = API_CACHE_PATTERNS.some(pattern =>
+        event.request.url.includes(pattern)
+      );
+
+      if (!isCacheableApiCall) {
+        return;
+      }
+
+      event.respondWith(
+        caches.open(CACHE_NAME).then(cache => {
+          return cache.match(event.request).then(cachedResponse => {
+            const networkedFetch = fetch(event.request)
+              .then(freshResponse => {
+                if (freshResponse && freshResponse.status === 200 &&
+                    freshResponse.headers.get('content-type')?.includes('application/json')) {
+                  cache.put(event.request, freshResponse.clone());
+                }
+                return freshResponse;
+              })
+              .catch(() => {
+                return new Response(
+                  JSON.stringify({
+                    status: "offline",
+                    offline: true,
+                    userStatus: "pending",
+                    comments: [],
+                    announcements: [{
+                      id: "offline-notice-1",
+                      title: "Offline Mode",
+                      content: "You are currently offline.\n\nShowing last known data if previously loaded.\n\nConnect to see latest announcements, channels, games, etc.",
+                      created: new Date().toISOString(),
+                      creator: "System",
+                      pinned: true
+                    }],
+                    viewCounts: [],
+                    announcementsViewCounts: [],
+                    channels: [],
+                    broadcasts: [],
+                    games: [],
+                    questions: [],
+                    leaders: [],
+                    results: [],
+                    participants: [],
+                    posts: [],
+                    unseenCount: 0,
+                    message: "Offline — last known data or placeholder"
+                  }),
+                  { status: 200, headers: { 'Content-Type': 'application/json' } }
+                );
+              });
+
+            return cachedResponse || networkedFetch;
+          });
+        })
+      );
+      return;
+    }
+
+    // POST requests when offline
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        return new Response(
+          JSON.stringify({
+            status: "offline",
+            offline: true,
+            message: "Cannot create, delete, submit scores, post announcements or modify data while offline. Action will be retried when you reconnect."
+          }),
+          {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      })
+    );
+    return;
+  }
+
+  // ── Navigation & HTML pages → network-first, cache fallback,
+  //    with a guaranteed final fallback to index.html so respondWith()
+  //    never resolves to undefined (which itself throws a hard error).
+  if (event.request.mode === 'navigate' ||
+      url.pathname.endsWith('.html') ||
+      url.pathname === '/') {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match(event.request).then(cached => cached || caches.match('./index.html'))
+      )
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(event.request).then(cachedResponse => {
+      if (cachedResponse) {
+        fetch(event.request)
+          .then(freshResponse => {
+            if (freshResponse && freshResponse.status === 200 && event.request.method === 'GET') {
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(event.request, freshResponse.clone());
+              });
+            }
+          })
+          .catch(() => {});
+
+        return cachedResponse;
+      }
+
+      return fetch(event.request).then(networkResponse => {
+        if (!networkResponse || networkResponse.status !== 200 || event.request.method !== 'GET') {
+          return networkResponse;
+        }
+
+        const responseToCache = networkResponse.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseToCache);
+        });
+
+        return networkResponse;
+      }).catch(() => {
+        if (event.request.mode === 'navigate') {
+          return caches.match('./index.html');
+        }
+        return new Response('', { status: 503 });
+      });
+    })
+  );
+});
+
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-pending-messages') {
+    event.waitUntil(syncPendingMessages());
+  }
+});
+
+async function syncPendingMessages() {
+  console.log('[SW] Background sync triggered — attempting to send pending messages/announcements');
+}

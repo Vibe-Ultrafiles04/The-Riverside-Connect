@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "io.github.vibe_ultrafiles04.twa",
+    "sha256_cert_fingerprints": ["00:61:4F:DD:98:32:36:A4:53:12:50:9A:4C:78:8E:63:44:C1:A8:CF:23:ED:08:A6:EF:3E:FF:D0:5C:3D:AD:BD"]
+  }
+}]

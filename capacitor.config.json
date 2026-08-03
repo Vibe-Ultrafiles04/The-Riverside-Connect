@@ -1,0 +1,9 @@
+{
+  "appId": "com.riverside.connect",
+  "appName": "Riverside Connect",
+  "webDir": "www",
+  "server": {
+    "url": "https://vibe-ultrafiles04.github.io/The-Riverside-Connect/",
+    "cleartext": false
+  }
+}

@@ -1,0 +1,2905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Riverside Connect</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="manifest" href="./manifest.json">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Riverside Connect">
+  <link rel="apple-touch-icon" sizes="180x180" href="maskable_icon_x192.png">
+
+  <meta property="og:title" content="Riverside Connect">
+  <meta property="og:description" content="Join the conversation in Riverside Connect.">
+  <meta property="og:image" content="https://vibe-ultrafiles04.github.io/The-Riverside-Connect/maskable_icon_x192.png">
+  <meta property="og:url" content="https://vibe-ultrafiles04.github.io/The-Riverside-Connect/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <style>
+    :root {
+      --bg-deep:        #080d17;
+      --bg-mid:         #0d1525;
+      --bg-surface:     #111d30;
+      --bg-panel:       rgba(16, 26, 45, 0.72);
+      --bg-glass:       rgba(20, 32, 55, 0.65);
+      --border-subtle:  rgba(255,255,255,0.07);
+      --border-med:     rgba(255,255,255,0.12);
+      --border-blue:    rgba(80, 140, 240, 0.22);
+      --accent:         #e8a84c;
+      --accent-dim:     rgba(232, 168, 76, 0.18);
+      --accent-glow:    rgba(232, 168, 76, 0.08);
+      --blue-main:      #4a90e2;
+      --blue-bright:    #6babf5;
+      --blue-dim:       rgba(74, 144, 226, 0.18);
+      --text-primary:   #eef2f8;
+      --text-secondary: #8a9cbf;
+      --text-muted:     #4a5878;
+      --own-bg:         linear-gradient(135deg, #1c3a6e 0%, #1a4080 100%);
+      --own-border:     rgba(107, 171, 245, 0.25);
+      --radius-msg:     18px;
+      --font-ui:        'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-serif:     'Instrument Serif', Georgia, serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; overflow-x: hidden;
+      position: relative;
+    }
+
+    body {
+      height: 100dvh;
+      min-height: -webkit-fill-available;
+      font-family: var(--font-ui);
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 20% 10%, rgba(30, 60, 120, 0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 90%, rgba(15, 40, 90, 0.25) 0%, transparent 55%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ══════════════════════════════
+       HEADER
+    ══════════════════════════════ */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(8, 13, 23, 0.82);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 20px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+    }
+
+    .header-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-logo {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.25rem;
+      color: var(--text-primary);
+      letter-spacing: 0.01em;
+      flex: 1;
+    }
+
+    .header-logo span { color: var(--accent); }
+
+    .hbtn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--border-med);
+      background: var(--bg-glass);
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .hbtn:hover {
+      border-color: var(--border-blue);
+      color: var(--text-primary);
+      background: var(--blue-dim);
+    }
+
+    /* My Thread toggle — glows accent when active */
+    .hbtn.thread-active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-dim);
+    }
+
+    #user-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid var(--accent);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    #user-avatar:hover { box-shadow: 0 0 0 3px var(--accent-dim); }
+
+    .badge {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      background: #e05252;
+      color: white;
+      font-size: 0.6rem;
+      font-weight: 600;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      border: 1.5px solid var(--bg-deep);
+      display: none;
+    }
+
+    /* ══════════════════════════════
+       VIEW CONTEXT BAR  (date label + filter indicator)
+    ══════════════════════════════ */
+    #view-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 7px 20px;
+      background: rgba(8,13,23,0.6);
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+    }
+
+    #view-bar-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+    }
+
+    #view-bar-label i { font-size: 0.72rem; opacity: 0.7; }
+
+    #thread-pill {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(232,168,76,0.3);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 2px 10px 2px 7px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #thread-pill i { font-size: 0.65rem; }
+
+    /* ══════════════════════════════
+       CHAT CONTAINER
+    ══════════════════════════════ */
+    .chat-wrap {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chat-container {
+      flex: 1;
+      max-width: 860px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 24px 20px 100px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      scroll-behavior: smooth;
+    }
+
+    .chat-container::-webkit-scrollbar { width: 5px; }
+    .chat-container::-webkit-scrollbar-track { background: transparent; }
+    .chat-container::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+    /* ── Date Divider ── */
+    .date-group { display: flex; flex-direction: column; gap: 14px; margin-bottom: 8px; }
+
+    .date-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 22px 0 8px;
+    }
+
+    .date-divider::before, .date-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+    }
+
+    .date-divider-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      background: var(--bg-mid);
+      padding: 4px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+
+    /* ── Messages ── */
+    .message {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 78%;
+      animation: msgIn 0.3s cubic-bezier(.22,.68,0,1.2) both;
+    }
+
+    @keyframes msgIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .message.own { margin-left: auto; flex-direction: row-reverse; }
+    .message + .message { margin-top: 6px; }
+    .message.new-sender { margin-top: 16px; }
+
+    .avatar {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid var(--border-med);
+      flex-shrink: 0;
+      align-self: flex-end;
+      margin-bottom: 2px;
+    }
+
+    .avatar-placeholder { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; }
+
+    .message-content {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+      backdrop-filter: blur(10px);
+      padding: 10px 14px;
+      border-radius: var(--radius-msg);
+      border-bottom-left-radius: 5px;
+      max-width: calc(100% - 44px);
+      position: relative;
+    }
+
+    .message.own .message-content {
+      background: var(--own-bg);
+      border: 1px solid var(--own-border);
+      border-bottom-left-radius: var(--radius-msg);
+      border-bottom-right-radius: 5px;
+    }
+
+    .message.same-sender .avatar { visibility: hidden; }
+
+    .msg-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--blue-bright);
+      margin-bottom: 4px;
+      letter-spacing: 0.02em;
+    }
+
+    .message.own .msg-name { color: rgba(255,255,255,0.65); }
+    .message.same-sender .msg-name { display: none; }
+
+    .msg-text {
+      font-size: 0.93rem;
+      line-height: 1.5;
+      word-break: break-word;
+      color: var(--text-primary);
+    }
+
+    .msg-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 5px;
+      gap: 8px;
+    }
+
+    .msg-time { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; }
+    .message.own .msg-time { color: rgba(255,255,255,0.38); }
+
+    .msg-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+    .message:hover .msg-actions { opacity: 1; }
+
+    .action-btn {
+      font-size: 0.7rem;
+      font-weight: 500;
+      background: none;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      width: auto;
+      height: auto;
+      padding: 3px 8px;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .action-btn:hover {
+      background: var(--blue-dim);
+      border-color: var(--border-blue);
+      color: var(--blue-bright);
+    }
+
+    .action-btn.delete-btn:hover {
+      background: rgba(224,82,82,0.12);
+      border-color: rgba(224,82,82,0.25);
+      color: #e05252;
+    }
+
+    .quoted-msg {
+      background: rgba(0,0,0,0.2);
+      border-left: 2.5px solid var(--blue-bright);
+      padding: 6px 10px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .message.own .quoted-msg {
+      background: rgba(255,255,255,0.08);
+      border-left-color: rgba(255,255,255,0.4);
+      color: rgba(255,255,255,0.65);
+    }
+
+    .quoted-msg strong { color: var(--blue-bright); }
+    .message.own .quoted-msg strong { color: rgba(255,255,255,0.85); }
+
+    .media-content { margin: 8px 0; border-radius: 10px; overflow: hidden; }
+    .media-content img { max-width: 100%; max-height: 280px; display: block; border-radius: 10px; object-fit: cover; }
+
+    .video-container { background: #000; border-radius: 10px; overflow: hidden; margin: 8px 0; }
+    .video-container iframe { width: 100%; height: auto; min-height: 180px; aspect-ratio: 16/9; display: block; border: none; }
+    .audio-container iframe { width: 100%; height: 80px; border: none; }
+
+    .message:has(.video-container) { max-width: 90%; }
+    .message:has(.video-container) .message-content { max-width: 100%; min-width: 260px; width: 100%; }
+    .message:has(.audio-container) { max-width: 85%; }
+    .message:has(.audio-container) .message-content { max-width: 100%; min-width: 220px; }
+
+    .edit-input {
+      width: 100%;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--border-blue);
+      color: var(--text-primary);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      outline: none;
+      margin-bottom: 6px;
+      resize: none;
+    }
+
+    /* ══════════════════════════════
+       CALL CARD
+    ══════════════════════════════ */
+    .call-card {
+      background: rgba(24,80,48,0.15);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .call-card-icon {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      color: white;
+      flex-shrink: 0;
+      animation: callPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes callPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+      50%      { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+    }
+
+    .call-card-icon.ended { background: linear-gradient(135deg, #374151, #1f2937); animation: none; }
+    .call-card.ended-card { opacity: 0.5; filter: grayscale(60%); }
+    .call-card-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 2px; }
+    .call-card-sub { font-size: 0.76rem; color: var(--text-muted); }
+
+    .join-call-btn {
+      padding: 8px 16px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      border: none;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .join-call-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(34,197,94,0.35); }
+    .join-call-btn.ended { background: #374151; cursor: default; }
+    .join-call-btn.ended:hover { transform: none; box-shadow: none; }
+
+    /* ══════════════════════════════
+       TODAY EMPTY STATE
+    ══════════════════════════════ */
+    .today-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      gap: 16px;
+      text-align: center;
+      animation: msgIn 0.4s ease both;
+    }
+
+    .today-empty-icon {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      background: rgba(232,168,76,0.08);
+      border: 1px solid rgba(232,168,76,0.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .today-empty h3 {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.3rem;
+      color: var(--text-primary);
+    }
+
+    .today-empty p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      max-width: 260px;
+      line-height: 1.5;
+    }
+
+    .today-empty .open-cal-btn {
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(232,168,76,0.3);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .today-empty .open-cal-btn:hover {
+      background: rgba(232,168,76,0.26);
+      box-shadow: 0 4px 16px rgba(232,168,76,0.15);
+    }
+
+    /* ══════════════════════════════
+       CALENDAR MODAL
+    ══════════════════════════════ */
+    #cal-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4,8,16,0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 2500;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .cal-panel {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-med);
+      border-radius: 22px;
+      padding: 24px;
+      width: 100%;
+      max-width: 360px;
+      animation: panelIn 0.3s cubic-bezier(.22,.68,0,1.2) both;
+    }
+
+    @keyframes panelIn {
+      from { opacity: 0; transform: scale(0.94) translateY(20px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .cal-month-label {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+    }
+
+    .cal-nav {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border-subtle);
+      background: none;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+
+    .cal-nav:hover { border-color: var(--border-blue); color: var(--blue-bright); background: var(--blue-dim); }
+
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .cal-day-name {
+      text-align: center;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 4px 0 8px;
+    }
+
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      cursor: default;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    /* Has messages — becomes interactive */
+    .cal-day.has-msgs {
+      color: var(--text-primary);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .cal-day.has-msgs::after {
+      content: '';
+      position: absolute;
+      bottom: 3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .cal-day.has-msgs:hover {
+      background: var(--blue-dim);
+      color: var(--blue-bright);
+    }
+
+    .cal-day.has-msgs::after { bottom: 2px; }
+
+    /* Today ring */
+    .cal-day.is-today {
+      border: 1.5px solid var(--blue-bright);
+      color: var(--blue-bright) !important;
+    }
+
+    /* Selected */
+    .cal-day.selected {
+      background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+      color: white !important;
+    }
+
+    .cal-day.selected::after { background: white !important; }
+
+    .cal-day.empty { visibility: hidden; }
+
+    .cal-footer {
+      margin-top: 18px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .cal-today-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .cal-today-btn:hover { background: rgba(255,255,255,0.09); color: var(--text-primary); }
+
+    .cal-close-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      border: none;
+      color: white;
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .cal-close-btn:hover { box-shadow: 0 4px 14px rgba(37,99,235,0.38); }
+
+    /* ══════════════════════════════
+       INPUT AREA
+    ══════════════════════════════ */
+    #reply-preview {
+      display: none;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 8px 20px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      position: relative;
+      z-index: 2;
+    }
+
+    #reply-preview strong { color: var(--blue-bright); }
+
+    .reply-cancel-btn {
+      width: 22px; height: 22px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem;
+      transition: color 0.15s;
+      flex-shrink: 0;
+    }
+
+    .reply-cancel-btn:hover { color: #e05252; }
+
+    #preview-bar {
+      display: none;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 8px 20px;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 2;
+    }
+
+    #preview-bar img, #preview-bar video { height: 48px; border-radius: 6px; }
+
+    .input-area {
+      background: rgba(6,10,18,0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 14px 20px;
+      padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+      border-top: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 2;
+    }
+
+    .input-wrapper {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .input-icon-btn {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: none;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      text-decoration: none;
+    }
+
+    .input-icon-btn:hover {
+      border-color: var(--border-blue);
+      color: var(--blue-bright);
+      background: var(--blue-dim);
+    }
+
+    #callBtn { color: #4ade80; border-color: rgba(74,222,128,0.2); }
+    #callBtn:hover { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.4); color: #4ade80; }
+
+    #comment {
+      flex: 1;
+      min-width: 0;
+      padding: 11px 18px;
+      border-radius: 22px;
+      background: var(--bg-glass);
+      color: var(--text-primary);
+      font-size: 0.93rem;
+      font-family: var(--font-ui);
+      border: 1px solid var(--border-subtle);
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    #comment:focus { border-color: var(--border-blue); background: rgba(20,34,60,0.8); }
+    #comment::placeholder { color: var(--text-muted); }
+
+    #sendBtn {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      border: none;
+      color: white;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    #sendBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.45); }
+    #sendBtn:disabled { opacity: 0.5; transform: none; box-shadow: none; }
+
+    /* ══════════════════════════════
+       TOASTS
+    ══════════════════════════════ */
+    #toast-container {
+      position: fixed;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border-med);
+      border-left: 3px solid var(--blue-main);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: toastIn 0.25s ease both;
+      min-width: 200px;
+      white-space: nowrap;
+    }
+
+    .toast.error { border-left-color: #e05252; }
+    .toast.info  { border-left-color: var(--accent); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-12px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ══════════════════════════════
+       PROFILE MODAL
+    ══════════════════════════════ */
+    #profile-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4,8,16,0.8);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .modal-panel {
+      background: var(--bg-surface);
+      width: 100%;
+      max-width: 400px;
+      border-radius: 20px;
+      padding: 28px 24px;
+      border: 1px solid var(--border-med);
+      animation: panelIn 0.3s cubic-bezier(.22,.68,0,1.2) both;
+      max-height: 88vh;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 1.4rem;
+      color: var(--text-primary);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .avatar-ring {
+      position: relative;
+      width: 120px; height: 120px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 2px solid var(--accent);
+    }
+
+    .avatar-ring img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .avatar-ring label {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      font-size: 1.5rem;
+      color: white;
+    }
+
+    .avatar-ring:hover label { opacity: 1; }
+
+    .modal-field { margin-bottom: 20px; }
+
+    .modal-label {
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-med);
+      color: var(--text-primary);
+      font-size: 0.93rem;
+      font-family: var(--font-ui);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .modal-input:focus { border-color: var(--border-blue); }
+
+    .recovery-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+
+    .recovery-code {
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      color: var(--accent);
+      background: rgba(0,0,0,0.25);
+      padding: 8px 12px;
+      border-radius: 7px;
+      letter-spacing: 0.05em;
+      display: inline-block;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+
+    .modal-error { color: #e05252; font-size: 0.82rem; margin-top: 6px; min-height: 18px; }
+
+    .btn-row { display: flex; gap: 12px; }
+
+    .btn-cancel {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-med);
+      color: var(--text-secondary);
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-cancel:hover { background: rgba(255,255,255,0.09); color: var(--text-primary); }
+
+    .btn-save {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      border: none;
+      color: white;
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-save:hover { box-shadow: 0 4px 16px rgba(37,99,235,0.4); }
+    .btn-save:disabled { opacity: 0.55; }
+
+    /* ══════════════════════════════
+       CALL MODAL
+    ══════════════════════════════ */
+    #callModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4,8,16,0.82);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    #callModal .modal-panel { max-width: 420px; }
+
+    .call-type-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+
+    .call-tab {
+      flex: 1;
+      padding: 9px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: none;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .call-tab.active { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: #4ade80; font-weight: 600; }
+
+    #memberListContainer {
+      max-height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 14px;
+    }
+
+    .call-option-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .call-option-row:hover { background: rgba(255,255,255,0.05); }
+    .call-option-row input[type=checkbox] { accent-color: #22c55e; width: 16px; height: 16px; cursor: pointer; }
+    .call-option-row img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border-subtle); }
+    .call-option-label { font-size: 0.9rem; color: var(--text-primary); }
+
+    .placeholder-av {
+      width: 34px; height: 34px;
+      border-radius: 50%;
+      background: var(--bg-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .btn-start-call {
+      width: 100%;
+      padding: 13px;
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-family: var(--font-ui);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-start-call:hover { box-shadow: 0 4px 16px rgba(34,197,94,0.35); }
+    .btn-start-call:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-outline {
+      width: 100%;
+      margin-top: 8px;
+      padding: 11px;
+      background: none;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-outline:hover { border-color: var(--border-med); color: var(--text-secondary); }
+
+    /* ══════════════════════════════
+       INSTALL MODAL
+    ══════════════════════════════ */
+    #installModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4,8,16,0.8);
+      backdrop-filter: blur(10px);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ══════════════════════════════
+       PENDING / UNAPPROVED VIEW
+    ══════════════════════════════ */
+    .pending-wrap {
+      text-align: center;
+      padding: 40px 20px 80px;
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .pending-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 2rem;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+
+    .pending-subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 32px; }
+
+    .slider-track {
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      gap: 14px;
+      padding-bottom: 10px;
+      scroll-padding: 14px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-med) transparent;
+    }
+
+    .slide-card {
+      flex: 0 0 calc(min(280px, 85vw));
+      scroll-snap-align: start;
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .slide-card img { width: 100%; height: 180px; object-fit: cover; }
+    .slide-card .slide-body { padding: 16px; }
+    .slide-ref { font-weight: 600; color: var(--blue-bright); font-size: 0.9rem; margin-bottom: 8px; }
+    .slide-text { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.55; }
+
+    /* ══════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════ */
+    @media (max-width: 500px) {
+      .chat-container { padding: 16px 12px 90px; }
+      .message { max-width: 88%; }
+      .message.own { max-width: 88%; }
+      header { height: 56px; padding: 0 14px; }
+      .header-logo { font-size: 1.1rem; }
+    }
+
+    @supports (padding-top: env(safe-area-inset-top)) {
+      header { padding-top: env(safe-area-inset-top); height: calc(60px + env(safe-area-inset-top)); }
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      gap: 12px;
+    }
+
+    .empty-state i { font-size: 2.5rem; opacity: 0.3; }
+
+    /* ══════════════════════════════
+       SWIPE DAY NAVIGATION
+    ══════════════════════════════ */
+    .chat-container {
+      touch-action: pan-y; /* allow vertical scroll natively; horizontal handled by JS */
+      will-change: transform, opacity;
+    }
+
+    #offline-pill {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background: rgba(224,82,82,0.12);
+      border: 1px solid rgba(224,82,82,0.3);
+      color: #e8968f;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    #offline-pill i { font-size: 0.65rem; }
+
+    /* ══════════════════════════════
+       PENDING / FAILED MESSAGE STATE
+    ══════════════════════════════ */
+    .message.pending .message-content {
+      opacity: 0.55;
+    }
+
+    .message.pending .msg-text { font-style: italic; }
+
+    .message.failed .message-content {
+      border-color: rgba(224,82,82,0.45);
+    }
+
+    .msg-time.pending-time, .msg-time.failed-time {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .msg-time.failed-time { color: #e0827a; }
+
+    .pending-time i { animation: pendingSpin 1.6s linear infinite; }
+
+    @keyframes pendingSpin {
+      0%, 85%, 100% { opacity: 0.55; }
+      42% { opacity: 1; }
+    }
+
+    #swipe-hint {
+  position: fixed;
+  bottom: 92px;
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-med);
+  color: var(--text-secondary);
+  padding: 9px 16px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.35);
+  white-space: nowrap;
+}
+#swipe-hint.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#swipe-hint i { font-size: 0.7rem; color: var(--blue-bright); animation: hintNudge 1.4s ease-in-out infinite; }
+#swipe-hint i.fa-chevron-right { animation-direction: reverse; }
+@keyframes hintNudge {
+  0%,100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
+  </style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="header-inner">
+    <img id="user-avatar" src="" alt="Profile"
+         onerror="this.src='https://via.placeholder.com/38?text=@';">
+
+    <div class="header-logo">Riverside <span>Connect</span></div>
+
+    <!-- My Thread toggle -->
+    <button id="threadBtn" class="hbtn" title="My Thread">
+      <i class="fas fa-user-check"></i>
+    </button>
+
+    <!-- Calendar button -->
+    <button id="calBtn" class="hbtn" title="Browse by date">
+      <i class="fas fa-calendar-alt"></i>
+    </button>
+
+    <a href="index.html" class="hbtn" title="Home" style="text-decoration:none;">
+      <i class="fas fa-home"></i>
+    </a>
+
+    <div style="position:relative;">
+      <a href="announce.html" class="hbtn" title="Announcements" style="text-decoration:none;">
+        <i class="fas fa-bell"></i>
+        <span id="ann-badge" class="badge">0</span>
+      </a>
+    </div>
+
+    <button id="installAppBtn" class="hbtn" title="Install App" style="display:none;">
+      <i class="fas fa-download"></i>
+    </button>
+  </div>
+</header>
+
+<!-- ══ VIEW CONTEXT BAR ══ -->
+<div id="view-bar">
+  <span id="view-bar-label">
+    <i class="fas fa-circle" style="color:var(--accent);font-size:0.5rem;"></i>
+    <span id="view-bar-text">Today</span>
+  </span>
+  <span id="thread-pill" onclick="toggleThread()">
+    <i class="fas fa-times"></i> My Thread
+  </span>
+  <span id="offline-pill">
+    <i class="fas fa-wifi"></i> Offline — last synced
+  </span>
+</div>
+
+<!-- ══ CHAT ══ -->
+<div class="chat-wrap">
+  <div class="chat-container" id="comments">
+    <div class="empty-state">
+      <i class="fas fa-comments"></i>
+      <span>Loading messages…</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ REPLY PREVIEW ══ -->
+<div id="reply-preview">
+  <span style="display:flex;align-items:center;gap:8px;">
+    <i class="fas fa-reply" style="font-size:0.8rem;opacity:0.6;"></i>
+    <span id="reply-text">Replying to…</span>
+  </span>
+  <button class="reply-cancel-btn" onclick="cancelReply()"><i class="fas fa-times"></i></button>
+</div>
+
+<div id="swipe-hint">
+  <i class="fas fa-chevron-left"></i>
+  <span>Swipe to browse previous days</span>
+  <i class="fas fa-chevron-right"></i>
+</div>
+
+<!-- ══ FILE PREVIEW ══ -->
+<div id="preview-bar">
+  <div id="file-preview-container"></div>
+  <button id="removeFile" class="hbtn" style="border-color:rgba(224,82,82,0.3);color:#e05252;width:34px;height:34px;">
+    <i class="fas fa-times"></i>
+  </button>
+</div>
+
+<!-- ══ INPUT ══ -->
+<div class="input-area">
+  <div class="input-wrapper">
+    <input type="file" id="fileInput" accept="image/*,video/*,audio/*" style="display:none;">
+    <button id="callBtn" class="input-icon-btn" title="Start call"><i class="fas fa-video"></i></button>
+    <button id="addFileBtn" class="input-icon-btn" title="Attach file"><i class="fas fa-paperclip"></i></button>
+    <input type="text" id="comment" placeholder="Write a message…" autocomplete="off">
+    <button id="sendBtn"><i class="fas fa-paper-plane" style="margin-left:2px;"></i></button>
+  </div>
+</div>
+
+<!-- ══ PROFILE MODAL ══ -->
+<div id="profile-modal">
+  <div class="modal-panel">
+    <h2 class="modal-title">Your Profile</h2>
+    <div class="avatar-ring">
+      <img id="modal-avatar" src="" alt="Avatar">
+      <label for="modal-avatar-input"><i class="fas fa-camera"></i></label>
+      <input type="file" id="modal-avatar-input" accept="image/*" style="display:none;">
+    </div>
+    <div class="modal-field">
+      <span class="modal-label">Display Name</span>
+      <input type="text" id="modal-name-input" class="modal-input" placeholder="Your name">
+      <div id="modal-error" class="modal-error"></div>
+    </div>
+    <div class="recovery-box">
+      <span class="modal-label">Recovery Code</span>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;">
+        <code id="recovery-code-display" class="recovery-code">Loading…</code>
+        <button id="copy-recovery-btn" style="padding:6px 12px;background:var(--blue-dim);border:1px solid var(--border-blue);color:var(--blue-bright);border-radius:7px;font-size:0.8rem;font-weight:500;cursor:pointer;">Copy</button>
+      </div>
+      <p style="margin-top:10px;font-size:0.78rem;color:var(--text-muted);line-height:1.4;">Save this code to recover your account if you lose access.</p>
+    </div>
+    <div class="btn-row">
+      <button id="modal-cancel-btn" class="btn-cancel">Cancel</button>
+      <button id="modal-save-btn" class="btn-save">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CALL MODAL ══ -->
+<div id="callModal">
+  <div class="modal-panel">
+    <h2 class="modal-title" style="color:#4ade80;font-family:var(--font-ui);font-style:normal;font-size:1.2rem;">
+      <i class="fas fa-phone" style="margin-right:8px;"></i>Start a Call
+    </h2>
+    <input type="text" id="callTitleInput" class="modal-input"
+           placeholder="Call title (optional)…" style="margin-bottom:14px;">
+    <div class="call-type-tabs">
+      <button class="call-tab active" id="tabAll" onclick="setCallType('all')">
+        <i class="fas fa-users"></i> All Members
+      </button>
+      <button class="call-tab" id="tabSelect" onclick="setCallType('select')">
+        <i class="fas fa-user-check"></i> Select People
+      </button>
+    </div>
+    <div id="memberListContainer" style="display:none;">
+      <div id="memberList"></div>
+    </div>
+    <button id="startCallBtn" class="btn-start-call">
+      <i class="fas fa-phone"></i> Start Call
+    </button>
+    <button class="btn-outline"
+            onclick="document.getElementById('callModal').style.display='none'">Cancel</button>
+  </div>
+</div>
+
+<!-- ══ CALENDAR MODAL ══ -->
+<div id="cal-modal">
+  <div class="cal-panel">
+    <div class="cal-header">
+      <button class="cal-nav" id="calPrev"><i class="fas fa-chevron-left"></i></button>
+      <span class="cal-month-label" id="calMonthLabel">Month Year</span>
+      <button class="cal-nav" id="calNext"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-footer">
+      <button class="cal-today-btn" id="calGoToday">Today</button>
+      <button class="cal-close-btn" id="calClose">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ INSTALL MODAL ══ -->
+<div id="installModal">
+  <div class="modal-panel" style="max-width:320px;text-align:center;">
+    <i class="fas fa-mobile-alt" style="font-size:2rem;color:var(--accent);margin-bottom:16px;display:block;"></i>
+    <h2 style="font-family:var(--font-serif);font-style:italic;margin-bottom:10px;">Install App</h2>
+    <p style="font-size:0.88rem;color:var(--text-secondary);margin-bottom:24px;">
+      Install Riverside Connect for faster access right from your home screen.
+    </p>
+    <div style="display:flex;gap:10px;">
+      <button id="installYes" class="btn-save">Install</button>
+      <button id="installNo" class="btn-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<canvas id="cropCanvas" style="display:none;"></canvas>
+
+<script>
+const scriptUrl = 'https://script.google.com/macros/s/AKfycby66wu5ZpiiBdZ3WT3pyJkhqrAVeWgx4V7KeUPqmglvCArhfa318zbgvY5zWV1jfx-5/exec';
+
+let userName = localStorage.getItem('userName');
+let callType = 'all';
+let allMembersCache = [];
+let isApproved = false;
+let lastCommentCount = 0;
+let pollingInterval = null;
+let selectedFileData = null;
+let replyingTo = null;
+let memberMap = {};
+
+/* ── View state ── */
+let allComments = [];         // all raw comments from server (reversed = oldest first)
+let activeDateStr = null;     // 'YYYY-MM-DD' of the currently shown date; null = "today"
+let threadMode = false;       // true = My Thread filter active
+let isOnline = navigator.onLine;
+let swipePreviewActive = false; // true while a live swipe-preview label is shown
+let initialDateSet = false;
+
+/* ── Local persistence keys ── */
+const CACHE_KEY   = 'rc_cached_comments_v1';
+const PENDING_KEY = 'rc_pending_drafts_v1';
+
+if (!userName) window.location.href = 'login.html';
+
+/* ── Load own avatar ── */
+const userAvatarImg = document.getElementById('user-avatar');
+const storedPicLink = localStorage.getItem('userPicLink');
+if (storedPicLink) {
+  const id = extractFileId(storedPicLink);
+  userAvatarImg.src = id ? `https://lh3.googleusercontent.com/d/${id}` : storedPicLink;
+} else {
+  userAvatarImg.src = 'https://via.placeholder.com/38?text=@';
+}
+
+const commentsDiv      = document.getElementById('comments');
+const commentInput     = document.getElementById('comment');
+const sendBtn          = document.getElementById('sendBtn');
+const fileInput        = document.getElementById('fileInput');
+const addFileBtn       = document.getElementById('addFileBtn');
+const previewBar       = document.getElementById('preview-bar');
+const previewContainer = document.getElementById('file-preview-container');
+const removeFileBtn    = document.getElementById('removeFile');
+
+addFileBtn.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    selectedFileData = { base64: e.target.result.split(',')[1], type: file.type, name: file.name };
+    let html = '';
+    if (file.type.startsWith('video'))      html = `<video src="${e.target.result}" style="height:48px;border-radius:6px;" muted></video>`;
+    else if (file.type.startsWith('audio')) html = `<audio src="${e.target.result}" style="height:36px;width:140px;" controls></audio>`;
+    else                                    html = `<img src="${e.target.result}" style="height:48px;border-radius:6px;">`;
+    previewContainer.innerHTML = html;
+    previewBar.style.display = 'flex';
+  };
+  reader.readAsDataURL(file);
+});
+
+removeFileBtn.addEventListener('click', () => {
+  selectedFileData = null;
+  fileInput.value = '';
+  previewBar.style.display = 'none';
+});
+
+/* ════════════════════════════════
+   HELPERS
+════════════════════════════════ */
+function extractFileId(url) {
+  if (!url) return '';
+  const m = url.match(/[-\w]{25,}/);
+  return m ? m[0] : '';
+}
+function maybeFlushPending() {
+  if (!isFlushingDrafts && getPendingDrafts().length) flushPendingDrafts();
+}
+
+function maybeShowSwipeHint() {
+  if (localStorage.getItem('rc_swipe_hint_seen')) return;
+  const dates = getSortedActiveDates();
+  if (dates.length < 2) return; // nothing to swipe to yet — don't tease a feature with no history
+  const hint = document.getElementById('swipe-hint');
+  if (!hint) return;
+  setTimeout(() => {
+    hint.classList.add('show');
+    setTimeout(() => {
+      hint.classList.remove('show');
+      localStorage.setItem('rc_swipe_hint_seen', '1');
+    }, 3200);
+  }, 700);
+}
+
+function getLh3Link(url) {
+  const id = extractFileId(url);
+  return id ? `https://lh3.googleusercontent.com/d/${id}` : '';
+}
+
+function toDateStr(timestamp) {
+  // Returns 'YYYY-MM-DD' in local time
+  const d = new Date(timestamp);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function todayStr() {
+  return toDateStr(Date.now());
+}
+
+function formatDateLabel(dateStr) {
+  // dateStr is 'YYYY-MM-DD'
+  const today = todayStr();
+  const yd = new Date(Date.now() - 86400000);
+  const yStr = `${yd.getFullYear()}-${String(yd.getMonth()+1).padStart(2,'0')}-${String(yd.getDate()).padStart(2,'0')}`;
+  if (dateStr === today) return 'Today';
+  if (dateStr === yStr)  return 'Yesterday';
+  const parts = dateStr.split('-');
+  const d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+  return d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+function formatTime(timestamp) {
+  return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function showToast(message, type='success') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<i class="fas fa-${type==='error'?'exclamation-circle':type==='info'?'info-circle':'check-circle'}"></i> <span>${message}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateY(-8px)'; t.style.transition='all 0.3s'; setTimeout(()=>t.remove(),300); }, 3000);
+}
+
+function scrollToBottom(force = false) {
+  const near = Math.abs(commentsDiv.scrollHeight - commentsDiv.clientHeight - commentsDiv.scrollTop) < 150;
+  if (force || near) commentsDiv.scrollTop = commentsDiv.scrollHeight;
+}
+
+/* ════════════════════════════════
+   VIEW BAR UPDATE
+════════════════════════════════ */
+function updateViewBar() {
+  const label = document.getElementById('view-bar-text');
+  const pill  = document.getElementById('thread-pill');
+  const offlinePill = document.getElementById('offline-pill');
+
+  if (!swipePreviewActive) {
+    if (activeDateStr === null || activeDateStr === todayStr()) {
+      label.textContent = 'Today';
+    } else {
+      label.textContent = formatDateLabel(activeDateStr);
+    }
+  }
+
+  pill.style.display = threadMode ? 'inline-flex' : 'none';
+  const threadBtn = document.getElementById('threadBtn');
+  threadBtn.classList.toggle('thread-active', threadMode);
+
+  if (offlinePill) offlinePill.style.display = isOnline ? 'none' : 'inline-flex';
+}
+
+/* ════════════════════════════════
+   RENDER — shared by all views
+════════════════════════════════ */
+function renderComments(commentsForDate, silent = false) {
+  const wasAtBottom = Math.abs(commentsDiv.scrollHeight - commentsDiv.clientHeight - commentsDiv.scrollTop) < 150;
+
+  /* Apply My Thread filter on top of date filter */
+  let msgs = commentsForDate;
+  if (threadMode) {
+    msgs = msgs.filter(c => {
+      if (c.name === userName) return true;
+      if (c.replyTo && c.replyTo.name === userName) return true;
+      // Check if it's a call card mentioning user
+      if (c.comment && c.comment.startsWith('{"type":"call"')) {
+        try {
+          const cd = JSON.parse(c.comment);
+          if (cd.isAllUsers || (cd.invitees||[]).some(i=>i.username===userName)) return true;
+        } catch(e) {}
+      }
+      return false;
+    });
+  }
+
+  commentsDiv.innerHTML = '';
+
+  if (msgs.length === 0) {
+    const tStr = activeDateStr || todayStr();
+    const isToday = (tStr === todayStr());
+    commentsDiv.innerHTML = `
+      <div class="today-empty">
+        <div class="today-empty-icon">
+          <i class="fas fa-${threadMode ? 'user-check' : (isToday ? 'moon' : 'calendar-times')}"></i>
+        </div>
+        <h3>${threadMode ? 'No messages here yet' : (isToday ? 'Quiet today' : 'Nothing on this day')}</h3>
+        <p>${threadMode
+          ? 'Messages you sent or conversations you were mentioned in will show here.'
+          : (isToday
+              ? 'No messages have been sent today. Be the first to say something!'
+              : 'No messages were sent on this day.')
+        }</p>
+        ${!threadMode ? `<button class="open-cal-btn" onclick="openCalModal()">
+          <i class="fas fa-calendar-alt"></i> Browse past dates
+        </button>` : ''}
+      </div>`;
+    updateViewBar();
+    return;
+  }
+
+  /* Group messages within the same "date bucket" by date (for thread mode spanning multiple days) */
+  const grouped = {};
+  msgs.forEach(c => {
+    const ds = toDateStr(c.timestamp);
+    if (!grouped[ds]) grouped[ds] = [];
+    grouped[ds].push(c);
+  });
+
+  Object.keys(grouped).sort().forEach(ds => {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'date-group';
+
+    const divider = document.createElement('div');
+    divider.className = 'date-divider';
+    divider.innerHTML = `<span class="date-divider-label">${formatDateLabel(ds)}</span>`;
+    groupDiv.appendChild(divider);
+
+    let prevSender = null;
+
+    grouped[ds].forEach(c => {
+      /* ── Call card ── */
+      if (c.comment && c.comment.startsWith('{"type":"call"')) {
+        try {
+          const callData = JSON.parse(c.comment);
+          if (callData.type === 'call') {
+            const isOwn = c.name === userName;
+            const isInvited = callData.isAllUsers || (callData.invitees||[]).some(i => i.username === userName);
+            if (!isInvited && !isOwn) return;
+
+            const msg = document.createElement('div');
+            msg.className = `message ${isOwn ? 'own' : ''} new-sender`;
+            msg.innerHTML = buildCallCard(c, callData);
+
+            if (isOwn) {
+              const acts = document.createElement('div');
+              acts.className = 'msg-actions';
+              acts.style.opacity = '0';
+              acts.innerHTML = `<button class="action-btn delete-btn" onclick="deleteMsg('${c.timestamp}')"><i class="fas fa-trash"></i> Delete</button>`;
+              const mc = msg.querySelector('.message-content');
+              if (mc) mc.appendChild(acts);
+              msg.addEventListener('mouseenter', () => acts.style.opacity = '1');
+              msg.addEventListener('mouseleave', () => acts.style.opacity = '0');
+            }
+            groupDiv.appendChild(msg);
+            prevSender = null;
+            return;
+          }
+        } catch(e) {}
+      }
+
+      const isOwn     = c.name === userName;
+      const isSame    = (prevSender === c.name);
+      const mediaLink = getLh3Link(c.fileLink);
+
+      let mediaHtml = '';
+      if (mediaLink) {
+        const ext = (c.fileLink||'').toLowerCase();
+        if (ext.match(/\.(mp4|mov|webm|m4v)$/i) || (c.fileType&&c.fileType.includes('video'))) {
+          mediaHtml = `<div class="video-container"><iframe src="${c.fileLink}" allowfullscreen allow="autoplay;fullscreen;picture-in-picture" loading="lazy"></iframe></div>`;
+        } else if (ext.match(/\.(mp3|wav|ogg|aac|m4a)$/i) || (c.fileType&&c.fileType.includes('audio'))) {
+          mediaHtml = `<div class="audio-container"><iframe src="${c.fileLink}" allow="autoplay" loading="lazy" style="height:80px;"></iframe></div>`;
+        } else {
+          mediaHtml = `<div class="media-content"><img src="${mediaLink}" loading="lazy"></div>`;
+        }
+      }
+
+      const replyHtml = c.replyTo ? `
+        <div class="quoted-msg">
+          <strong>@${c.replyTo.name}</strong>: ${c.replyTo.text.substring(0,60)}${c.replyTo.text.length>60?'…':''}
+        </div>` : '';
+
+      const isPending = !!c.pending;
+      const isFailed  = !!c.failed;
+
+      const actionsHtml = isPending ? '' : `
+        <div class="msg-actions">
+          <button class="action-btn" onclick="setReply('${c.name}','${c.comment.replace(/'/g,"\\'")}')"><i class="fas fa-reply"></i> Reply</button>
+          ${isOwn ? `
+            <button class="action-btn" onclick="startEdit('${c.timestamp}','${c.comment.replace(/'/g,"\\'")}')"><i class="fas fa-edit"></i> Edit</button>
+            <button class="action-btn delete-btn" onclick="deleteMsg('${c.timestamp}')"><i class="fas fa-trash"></i></button>
+          ` : ''}
+        </div>`;
+
+      const timeHtml = isFailed
+        ? `<span class="msg-time failed-time"><i class="fas fa-exclamation-circle"></i> Failed — will retry</span>`
+        : isPending
+          ? `<span class="msg-time pending-time"><i class="fas fa-clock"></i> Sending…</span>`
+          : `<span class="msg-time">${formatTime(c.timestamp)}</span>`;
+
+      const avatarSrc = `https://lh3.googleusercontent.com/d/${extractFileId(c.picLink)}`;
+
+      const msg = document.createElement('div');
+      msg.className = `message ${isOwn ? 'own' : ''} ${!isSame ? 'new-sender' : 'same-sender'} ${isPending ? 'pending' : ''} ${isFailed ? 'failed' : ''}`;
+
+      msg.innerHTML = `
+        ${!isOwn ? `<img src="${avatarSrc}" class="avatar" onerror="this.style.visibility='hidden'">` : ''}
+        <div class="message-content">
+          ${!isSame ? `<div class="msg-name">
+            ${c.name}
+            <img src="${(memberMap[c.name]?.isAdmin) ? 'admin-icon.svg' : 'member-icon.svg'}"
+                 style="width:16px;height:16px;vertical-align:middle;margin-left:4px;opacity:0.85;position:relative;top:-1px;">
+          </div>` : ''}
+          ${replyHtml}
+          ${mediaHtml}
+          <div class="msg-text" id="text-${c.timestamp}">${c.comment}</div>
+          <div class="msg-footer">
+            ${timeHtml}
+            ${actionsHtml}
+          </div>
+        </div>
+        ${isOwn ? `<img src="${avatarSrc}" class="avatar ${isSame ? 'same-sender' : ''}" onerror="this.style.visibility='hidden'">` : ''}
+      `;
+
+      groupDiv.appendChild(msg);
+      prevSender = c.name;
+    });
+
+    commentsDiv.appendChild(groupDiv);
+  });
+
+  updateViewBar();
+  if (!silent || wasAtBottom) scrollToBottom(true);
+}
+
+/* ════════════════════════════════
+   FILTER FOR ACTIVE DATE
+════════════════════════════════ */
+function getCommentsForActiveDate() {
+  const ds = activeDateStr || todayStr();
+  if (threadMode) {
+    // In thread mode: show ALL dates that match the thread, not just one day
+    return allComments;
+  }
+  return allComments.filter(c => toDateStr(c.timestamp) === ds);
+}
+
+/* ════════════════════════════════
+   DATE SETS (for calendar highlights)
+════════════════════════════════ */
+function getActiveDates() {
+  const set = new Set();
+  allComments.forEach(c => set.add(toDateStr(c.timestamp)));
+  return set;
+}
+
+/* ════════════════════════════════
+   LOAD COMMENTS FROM SERVER
+════════════════════════════════ */
+async function loadComments(silent = true) {
+  try {
+    const response = await fetch(`${scriptUrl}?operation=getData`);
+    const data = await response.json();
+
+    if (data.offline) throw new Error('offline-response');
+
+    if (silent && data.comments.length === lastCommentCount) {
+      setOnlineStatus(true);
+      maybeFlushPending();          
+      return;
+    }
+    lastCommentCount = data.comments.length;
+
+    if (data.announcements) updateAnnBadge(data.announcements.length);
+
+    allComments = [...data.comments].reverse(); // oldest first
+    cacheComments(allComments, data.announcements);
+    setOnlineStatus(true);
+    mergeInPendingDrafts();
+    maybeFlushPending();    
+
+    if (!initialDateSet) {
+  initialDateSet = true;
+  const dates = getSortedActiveDates();
+  if (dates.length && dates[dates.length - 1] !== todayStr()) {
+    activeDateStr = dates[dates.length - 1]; // jump to most recent day that actually has messages
+  }
+  maybeShowSwipeHint(); // added in step 2 below
+}
+
+    
+
+    const filtered = getCommentsForActiveDate();
+    renderComments(filtered, silent);
+  } catch(err) {
+    console.error('Failed to load messages:', err);
+    setOnlineStatus(false);
+    if (!silent) loadFromCache();
+  }
+}
+
+/* ════════════════════════════════
+   OFFLINE CACHE (view)
+════════════════════════════════ */
+function cacheComments(comments, announcements) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      comments, announcements: announcements || [], cachedAt: Date.now()
+    }));
+  } catch(e) { /* storage full/unavailable — fail quietly */ }
+}
+
+function loadFromCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) {
+      if (!allComments.length) {
+        commentsDiv.innerHTML = `<div class="empty-state"><i class="fas fa-wifi"></i><span>No cached messages yet. Connect once to sync.</span></div>`;
+      }
+      return;
+    }
+    const cached = JSON.parse(raw);
+    allComments = cached.comments || [];
+    mergeInPendingDrafts();
+    renderComments(getCommentsForActiveDate());
+    showToast('Offline — showing last synced messages', 'info');
+  } catch(e) { /* corrupted cache — ignore */ }
+}
+
+function setOnlineStatus(online) {
+  const wasOnline = isOnline;
+  isOnline = online;
+  updateViewBar();
+  if (!wasOnline && online) flushPendingDrafts();
+}
+
+/* ════════════════════════════════
+   OFFLINE DRAFTS (send)
+════════════════════════════════ */
+function getPendingDrafts() {
+  try { return JSON.parse(localStorage.getItem(PENDING_KEY) || '[]'); } catch(e) { return []; }
+}
+
+function savePendingDrafts(list) {
+  try { localStorage.setItem(PENDING_KEY, JSON.stringify(list)); } catch(e) {}
+}
+
+function mergeInPendingDrafts() {
+  const pending = getPendingDrafts();
+  if (!pending.length) return;
+  const existingIds = new Set(allComments.map(c => String(c.timestamp)));
+  pending.forEach(p => {
+    if (!existingIds.has(String(p.timestamp))) {
+      allComments.push({
+        name: userName,
+        comment: p.comment,
+        timestamp: p.timestamp,
+        picLink: localStorage.getItem('userPicLink') || '',
+        fileLink: '', fileType: '',
+        replyTo: p.replyTo || null,
+        pending: true,
+        failed: !!p.failed
+      });
+    }
+  });
+  allComments.sort((a, b) => a.timestamp - b.timestamp);
+}
+
+function queueDraft(text) {
+  const draft = {
+    localId: 'local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+    timestamp: Date.now(),
+    comment: text,
+    replyTo: replyingTo,
+    failed: false
+  };
+  const pending = getPendingDrafts();
+  pending.push(draft);
+  savePendingDrafts(pending);
+
+  if (activeDateStr && activeDateStr !== todayStr()) {
+    activeDateStr = todayStr();
+    threadMode = false;
+  }
+  mergeInPendingDrafts();
+  registerBackgroundSync();
+}
+
+let isFlushingDrafts = false;
+async function flushPendingDrafts() {
+  if (isFlushingDrafts) return;
+  isFlushingDrafts = true;
+  try {
+    let pending = getPendingDrafts();
+    if (!pending.length) return;
+
+    for (const draft of [...pending]) {
+      try {
+        const res = await fetch(scriptUrl, {
+          method: 'POST',
+          body: JSON.stringify({ operation: 'postComment', name: userName, comment: draft.comment, file: null, replyTo: draft.replyTo })
+        });
+        const r = await res.json();
+        if (r.status === 'success') {
+          pending = pending.filter(p => p.localId !== draft.localId);
+          savePendingDrafts(pending);
+        } else if (r.status === 'queued' || r.offline) {
+          break; // still offline per SW — stop trying this round
+        } else {
+          draft.failed = true;
+        }
+      } catch (e) {
+        break; // network still down — stop, will retry on next 'online' event
+      }
+    }
+    savePendingDrafts(pending);
+    await loadComments(false);
+  } finally {
+    isFlushingDrafts = false;
+  }
+}
+
+async function registerBackgroundSync() {
+  try {
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.sync.register('sync-pending-messages');
+    }
+  } catch(e) { /* background sync unsupported — 'online' listener still covers it */ }
+}
+
+window.addEventListener('online', () => {
+  showToast('Back online — syncing…', 'info');
+  setOnlineStatus(true);
+  if (isApproved) { loadComments(true); startPolling(); }
+});
+
+window.addEventListener('offline', () => {
+  setOnlineStatus(false);
+  if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'FLUSH_PENDING_MESSAGES') flushPendingDrafts();
+  });
+}
+
+/* ════════════════════════════════
+   THREAD MODE TOGGLE
+════════════════════════════════ */
+function toggleThread() {
+  threadMode = !threadMode;
+  if (threadMode) {
+    // Show all messages involving user across all time
+    renderComments(allComments);
+    showToast('Showing your thread', 'info');
+  } else {
+    renderComments(getCommentsForActiveDate());
+  }
+  updateViewBar();
+}
+
+document.getElementById('threadBtn').addEventListener('click', toggleThread);
+
+/* ════════════════════════════════
+   CALENDAR MODAL
+════════════════════════════════ */
+let calYear, calMonth;
+
+function openCalModal() {
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth(); // 0-indexed
+  renderCal();
+  document.getElementById('cal-modal').style.display = 'flex';
+}
+
+function renderCal() {
+  const activeDates = getActiveDates();
+  const today = todayStr();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonthLabel').textContent = `${monthNames[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('calGrid');
+  grid.innerHTML = '';
+
+  // Day names
+  ['S','M','T','W','T','F','S'].forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'cal-day-name';
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
+  }
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    el.textContent = d;
+
+    if (ds === today)           el.classList.add('is-today');
+    if (ds === activeDateStr)   el.classList.add('selected');
+    if (activeDates.has(ds))    el.classList.add('has-msgs');
+
+    if (activeDates.has(ds)) {
+      el.addEventListener('click', () => {
+        activeDateStr = ds;
+        threadMode = false;
+        renderCal(); // re-render to update selected state
+        renderComments(getCommentsForActiveDate());
+        updateViewBar();
+        document.getElementById('cal-modal').style.display = 'none';
+      });
+    }
+
+    grid.appendChild(el);
+  }
+}
+
+document.getElementById('calPrev').addEventListener('click', () => {
+  calMonth--;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCal();
+});
+
+document.getElementById('calNext').addEventListener('click', () => {
+  calMonth++;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCal();
+});
+
+document.getElementById('calGoToday').addEventListener('click', () => {
+  activeDateStr = todayStr();
+  threadMode = false;
+  renderComments(getCommentsForActiveDate());
+  updateViewBar();
+  document.getElementById('cal-modal').style.display = 'none';
+});
+
+document.getElementById('calClose').addEventListener('click', () => {
+  document.getElementById('cal-modal').style.display = 'none';
+});
+
+document.getElementById('cal-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('cal-modal'))
+    document.getElementById('cal-modal').style.display = 'none';
+});
+
+document.getElementById('calBtn').addEventListener('click', () => openCalModal());
+
+/* ════════════════════════════════
+   SWIPE DAY NAVIGATION
+   (shares activeDateStr with the calendar — jumping via calendar or
+    swiping both just move the same pointer)
+════════════════════════════════ */
+function getSortedActiveDates() {
+  return Array.from(getActiveDates()).sort();
+}
+
+function getEffectiveDate() {
+  return activeDateStr || todayStr();
+}
+
+/* direction: +1 = forward in time (toward today), -1 = backward (toward past) */
+function findAdjacentDate(direction) {
+  const dates = getSortedActiveDates();
+  if (!dates.length) return null;
+  const cur = getEffectiveDate();
+  const idx = dates.indexOf(cur);
+
+  if (idx === -1) {
+    // Current day (e.g. an empty "Today") has no messages of its own.
+    if (direction < 0) {
+      for (let i = dates.length - 1; i >= 0; i--) {
+        if (dates[i] < cur) return dates[i];
+      }
+    }
+    return null;
+  }
+
+  const newIdx = idx + direction;
+  if (newIdx < 0 || newIdx >= dates.length) return null;
+  return dates[newIdx];
+}
+
+function goToDay(dateStr, direction) {
+  if (!dateStr) { bounceComments(direction); return; }
+  threadMode = false;
+  animateDaySwitch(() => {
+    activeDateStr = dateStr;
+    renderComments(getCommentsForActiveDate());
+  }, direction);
+}
+
+/* Slide + fade transition (~220ms) so day changes never feel like an abrupt swap */
+function animateDaySwitch(applyFn, direction) {
+  const el = commentsDiv;
+  el.style.transition = 'transform 220ms ease, opacity 220ms ease';
+  el.style.transform = direction > 0 ? 'translateX(-24px)' : 'translateX(24px)';
+  el.style.opacity = '0';
+  setTimeout(() => {
+    applyFn();
+    el.style.transition = 'none';
+    el.style.transform = direction > 0 ? 'translateX(24px)' : 'translateX(-24px)';
+    void el.offsetWidth; // force reflow before re-enabling transition
+    el.style.transition = 'transform 220ms ease, opacity 220ms ease';
+    el.style.transform = 'translateX(0)';
+    el.style.opacity = '1';
+  }, 220);
+}
+
+/* Small bounce when there's no more day to swipe to in that direction */
+function bounceComments(direction) {
+  const el = commentsDiv;
+  el.style.transition = 'transform 120ms ease';
+  el.style.transform = direction > 0 ? 'translateX(-14px)' : 'translateX(14px)';
+  setTimeout(() => { el.style.transition = 'transform 160ms ease'; el.style.transform = 'translateX(0)'; }, 120);
+  updateViewBar();
+}
+
+/* Touch handling — only hijacks the gesture once it's clearly horizontal,
+   so vertical message scrolling is never interrupted. */
+let swipeStartX = 0, swipeStartY = 0, swipeAxis = null, swipePreviewShown = false;
+const SWIPE_THRESHOLD = 50;
+
+function onSwipeStart(e) {
+  const t = e.touches[0];
+  swipeStartX = t.clientX; swipeStartY = t.clientY;
+  swipeAxis = null; swipePreviewShown = false;
+}
+
+function onSwipeMove(e) {
+  const t = e.touches[0];
+  const dx = t.clientX - swipeStartX;
+  const dy = t.clientY - swipeStartY;
+
+  if (swipeAxis === null) {
+    if (Math.abs(dx) > 12 || Math.abs(dy) > 12) {
+      swipeAxis = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+    } else {
+      return;
+    }
+  }
+  if (swipeAxis !== 'h') return; // vertical drag — let normal scrolling happen
+
+  e.preventDefault(); // stop the page from also trying to scroll while swiping days
+
+  const pastThreshold = Math.abs(dx) > SWIPE_THRESHOLD;
+  if (pastThreshold && !swipePreviewShown) {
+    swipePreviewShown = true;
+    const direction = dx < 0 ? 1 : -1; // swipe left -> forward, swipe right -> backward
+    const target = findAdjacentDate(direction);
+    if (target) {
+      swipePreviewActive = true;
+      document.getElementById('view-bar-text').textContent = formatDateLabel(target);
+    }
+  } else if (!pastThreshold && swipePreviewShown) {
+    swipePreviewShown = false;
+    swipePreviewActive = false;
+    updateViewBar();
+  }
+}
+
+function onSwipeEnd(e) {
+  if (swipeAxis === 'h') {
+    const dx = (e.changedTouches[0].clientX - swipeStartX);
+    swipePreviewActive = false;
+    if (Math.abs(dx) > SWIPE_THRESHOLD) {
+      const direction = dx < 0 ? 1 : -1;
+      goToDay(findAdjacentDate(direction), direction);
+    } else {
+      updateViewBar();
+    }
+  }
+  swipeAxis = null; swipePreviewShown = false;
+}
+
+function attachSwipeHandlers() {
+  const zone = commentsDiv;
+  zone.addEventListener('touchstart', onSwipeStart, { passive: true });
+  zone.addEventListener('touchmove', onSwipeMove, { passive: false });
+  zone.addEventListener('touchend', onSwipeEnd, { passive: true });
+}
+attachSwipeHandlers();
+
+/* ════════════════════════════════
+   STATUS CHECK
+════════════════════════════════ */
+async function checkUserStatus() {
+  try {
+    const res  = await fetch(`${scriptUrl}?operation=getUserStatus&name=${encodeURIComponent(userName)}`);
+    const data = await res.json();
+    if (data.status !== 'success') { showToast('Cannot verify account', 'error'); return; }
+
+    const status = data.userStatus.toLowerCase();
+    isApproved = (status === 'approved');
+    localStorage.setItem('rc_last_approved', isApproved ? '1' : '0');
+    setOnlineStatus(true);
+
+    memberMap[userName] = { isAdmin: data.isAdmin, role: data.role };
+    fetch(`${scriptUrl}?operation=getMembers`)
+      .then(r => r.json())
+      .then(d => {
+        (d.users || []).forEach(u => {
+          memberMap[u.name] = { isAdmin: u.isAdmin, role: u.role };
+        });
+      }).catch(() => {});
+
+    if (isApproved) {
+      loadComments(false);
+      startPolling();
+      commentInput.focus();
+    } else {
+      commentsDiv.innerHTML = buildPendingView(userName, status);
+      commentInput.disabled = true;
+      commentInput.placeholder = 'Account awaiting approval…';
+      commentInput.style.opacity = '0.5';
+      sendBtn.disabled = true;
+      sendBtn.style.opacity = '0.4';
+      addFileBtn.disabled = true;
+      addFileBtn.style.opacity = '0.4';
+      if (pollingInterval) { clearInterval(pollingInterval); pollingInterval = null; }
+      showToast('Your account is awaiting approval', 'info');
+    }
+  } catch(err) {
+    console.error(err);
+    setOnlineStatus(false);
+    const lastApproved = localStorage.getItem('rc_last_approved') === '1';
+    if (lastApproved) {
+      // Fully offline: fall back to last-known approved state and cached messages
+      isApproved = true;
+      loadFromCache();
+      commentInput.focus();
+      startPolling();
+    } else {
+      commentsDiv.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><span>Could not verify account. Please try again.</span></div>`;
+    }
+  }
+}
+
+function buildPendingView(name, status) {
+  return `
+    <div class="pending-wrap">
+      <div class="pending-title">Welcome to Riverside</div>
+      <p class="pending-subtitle">Hello <strong>${name}</strong> — your account is <strong style="color:${status==='pending'?'#e8a84c':'#e05252'}">${status==='pending'?'awaiting approval':'not yet active'}</strong>.</p>
+      <div style="background:var(--bg-glass);border:1px solid var(--border-subtle);border-radius:16px;padding:20px;text-align:left;">
+        <h3 style="font-family:var(--font-serif);font-style:italic;font-size:1.3rem;margin-bottom:16px;color:var(--blue-bright);">Guide to Salvation</h3>
+        <div class="slider-track">
+          <div class="slide-card"><img src="free.png" alt="Romans 3:23"><div class="slide-body"><div class="slide-ref">Romans 3:23</div><p class="slide-text">"For all have sinned and fall short of the glory of God." We are separated from God by sin.</p></div></div>
+          <div class="slide-card"><img src="Christ.png" alt="Romans 5:8"><div class="slide-body"><div class="slide-ref">Romans 5:8</div><p class="slide-text">"While we were still sinners, Christ died for us." Jesus paid our penalty.</p></div></div>
+          <div class="slide-card"><img src="life.png" alt="John 3:16"><div class="slide-body"><div class="slide-ref">John 3:16</div><p class="slide-text">"God so loved the world that he gave his only Son." Believe and receive eternal life.</p></div></div>
+          <div class="slide-card"><img src="declare.png" alt="Romans 10:9"><div class="slide-body"><div class="slide-ref">Romans 10:9</div><p class="slide-text">"Declare with your mouth, Jesus is Lord, and believe in your heart — you will be saved."</p></div></div>
+        </div>
+        <p style="margin-top:20px;font-size:0.85rem;color:var(--text-muted);text-align:center;font-style:italic;">"Everyone who calls on the name of the Lord will be saved." — Romans 10:13</p>
+      </div>
+    </div>`;
+}
+
+/* ════════════════════════════════
+   REPLY / EDIT / DELETE
+════════════════════════════════ */
+function setReply(name, text) {
+  replyingTo = { name, text };
+  document.getElementById('reply-text').innerHTML = `Replying to <strong>${name}</strong>: <em style="opacity:.7;">${text.substring(0,35)}${text.length>35?'…':''}</em>`;
+  document.getElementById('reply-preview').style.display = 'flex';
+  commentInput.focus();
+}
+
+function cancelReply() {
+  replyingTo = null;
+  document.getElementById('reply-preview').style.display = 'none';
+}
+
+async function deleteMsg(timestamp) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(4,8,16,0.82);backdrop-filter:blur(10px);z-index:4000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.innerHTML = `
+    <div style="background:var(--bg-surface);padding:24px;border-radius:16px;border:1px solid var(--border-med);text-align:center;max-width:300px;width:100%;">
+      <i class="fas fa-trash" style="font-size:1.8rem;color:#e05252;margin-bottom:14px;display:block;"></i>
+      <p style="font-weight:600;margin-bottom:6px;">Delete message?</p>
+      <p style="font-size:0.83rem;color:var(--text-muted);margin-bottom:22px;">This action cannot be undone.</p>
+      <div style="display:flex;gap:10px;">
+        <button id="cxDel" class="btn-cancel">Cancel</button>
+        <button id="cfDel" style="flex:1;padding:12px;background:#e05252;border:none;border-radius:10px;color:white;font-weight:600;cursor:pointer;font-family:var(--font-ui);">Delete</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cxDel').onclick = () => overlay.remove();
+  overlay.querySelector('#cfDel').onclick = async () => {
+    overlay.remove();
+    try {
+      const res = await fetch(scriptUrl, { method:'POST', body: JSON.stringify({ operation:'deleteComment', name:userName, timestamp }) });
+      const r = await res.json();
+      if (r.status==='success') { showToast('Message deleted'); loadComments(false); }
+      else showToast(r.message||'Delete failed','error');
+    } catch { showToast('Connection error','error'); }
+  };
+}
+
+function startEdit(timestamp, originalText) {
+  const el = document.getElementById(`text-${timestamp}`);
+  el.innerHTML = `
+    <textarea class="edit-input" id="ef-${timestamp}">${originalText}</textarea>
+    <div style="display:flex;gap:6px;">
+      <button class="action-btn" style="background:rgba(34,197,94,0.15);border-color:rgba(34,197,94,0.3);color:#4ade80;" onclick="saveEdit('${timestamp}')">Save</button>
+      <button class="action-btn" onclick="loadComments(false)">Cancel</button>
+    </div>`;
+  const input = document.getElementById(`ef-${timestamp}`);
+  if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+}
+
+async function saveEdit(timestamp) {
+  const newText = (document.getElementById(`ef-${timestamp}`)?.value||'').trim();
+  if (!newText) return;
+  try {
+    const res = await fetch(scriptUrl, { method:'POST', body: JSON.stringify({ operation:'editComment', name:userName, timestamp, newText }) });
+    const r = await res.json();
+    if (r.status==='success') { showToast('Message updated'); loadComments(false); }
+    else showToast(r.message||'Update failed','error');
+  } catch { showToast('Connection error','error'); }
+}
+
+/* ════════════════════════════════
+   SEND MESSAGE
+════════════════════════════════ */
+async function sendMessage() {
+  const text = commentInput.value.trim();
+  if (!text && !selectedFileData) return;
+
+  // Offline (and no attachment, which we can't queue reliably): draft locally
+  if (!isOnline && !selectedFileData) {
+    queueDraft(text);
+    commentInput.value = '';
+    cancelReply();
+    updateViewBar();
+    renderComments(getCommentsForActiveDate());
+    showToast('No connection — message will send automatically once you\'re back online', 'info');
+    return;
+  }
+
+  sendBtn.disabled = true;
+  try {
+    const res = await fetch(scriptUrl, {
+      method: 'POST',
+      body: JSON.stringify({ operation:'postComment', name:userName, comment:text, file:selectedFileData, replyTo:replyingTo })
+    });
+    const r = await res.json();
+    if (r.status==='success') {
+      commentInput.value = '';
+      cancelReply();
+      if (selectedFileData) removeFileBtn.click();
+      // After sending: jump to today if we're on a different date
+      if (activeDateStr && activeDateStr !== todayStr()) {
+        activeDateStr = todayStr();
+        threadMode = false;
+        updateViewBar();
+      }
+      setOnlineStatus(true);
+      await loadComments(false);
+    } else if (r.status === 'queued' || r.offline) {
+      setOnlineStatus(false);
+      queueDraft(text);
+      commentInput.value = '';
+      cancelReply();
+      updateViewBar();
+      renderComments(getCommentsForActiveDate());
+      showToast('No connection — message queued to send', 'info');
+    } else showToast(r.message||'Failed to send','error');
+  } catch {
+    // Network genuinely unreachable — queue instead of showing a hard error
+    setOnlineStatus(false);
+    queueDraft(text);
+    commentInput.value = '';
+    cancelReply();
+    updateViewBar();
+    renderComments(getCommentsForActiveDate());
+    showToast('Connection lost — message queued to send', 'info');
+  }
+  finally { sendBtn.disabled = false; }
+}
+
+sendBtn.addEventListener('click', sendMessage);
+commentInput.addEventListener('keypress', e => {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+function startPolling() {
+  if (pollingInterval) clearInterval(pollingInterval);
+  pollingInterval = setInterval(() => loadComments(true), 8000);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { if (pollingInterval) clearInterval(pollingInterval); }
+  else if (isApproved) { loadComments(true); startPolling(); }
+});
+
+/* ── Ann Badge ── */
+async function updateAnnBadge() {
+  const badge = document.getElementById('ann-badge');
+  try {
+    const res  = await fetch(`${scriptUrl}?operation=getUnseenAnnCount&name=${encodeURIComponent(userName)}`);
+    const data = await res.json();
+    if (data.status !== 'success') throw new Error();
+    const n = data.unseenCount || 0;
+    badge.textContent = n > 99 ? '99+' : n;
+    badge.style.display = n > 0 ? 'flex' : 'none';
+    localStorage.setItem('lastSeenAnnCount', data.seenUpTo || 0);
+  } catch {
+    badge.style.display = 'none';
+  }
+}
+
+/* ══════════════════════════════
+   PROFILE MODAL
+══════════════════════════════ */
+const profileModal     = document.getElementById('profile-modal');
+const modalAvatar      = document.getElementById('modal-avatar');
+const modalNameInput   = document.getElementById('modal-name-input');
+const modalError       = document.getElementById('modal-error');
+const modalSaveBtn     = document.getElementById('modal-save-btn');
+const modalCancelBtn   = document.getElementById('modal-cancel-btn');
+const modalAvatarInput = document.getElementById('modal-avatar-input');
+const canvas           = document.getElementById('cropCanvas');
+const ctx              = canvas.getContext('2d');
+let processedAvatarBase64 = '';
+
+function openProfileModal() {
+  modalNameInput.value = userName || '';
+  modalAvatar.src = userAvatarImg.src;
+  modalError.textContent = '';
+  processedAvatarBase64 = '';
+  profileModal.style.display = 'flex';
+  modalAvatarInput.value = '';
+  const code = localStorage.getItem('userIdCode') || '';
+  const el = document.getElementById('recovery-code-display');
+  el.textContent = code || 'No code found';
+  el.style.color = code ? 'var(--accent)' : '#e05252';
+}
+
+function closeProfileModal() {
+  profileModal.style.display = 'none';
+  processedAvatarBase64 = '';
+  modalAvatarInput.value = '';
+}
+
+userAvatarImg.addEventListener('click', openProfileModal);
+modalCancelBtn.addEventListener('click', closeProfileModal);
+profileModal.addEventListener('click', e => { if (e.target === profileModal) closeProfileModal(); });
+
+modalAvatarInput.addEventListener('change', e => {
+  const file = e.target.files?.[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 300;
+      canvas.width = canvas.height = size;
+      ctx.clearRect(0,0,size,size);
+      ctx.beginPath();
+      ctx.arc(size/2,size/2,size/2,0,Math.PI*2);
+      ctx.closePath();
+      ctx.clip();
+      let dw,dh,dx,dy;
+      if (img.width > img.height) { dh=size; dw=img.width*(size/img.height); dx=-(dw-size)/2; dy=0; }
+      else { dw=size; dh=img.height*(size/img.width); dx=0; dy=-(dh-size)/2; }
+      ctx.drawImage(img,dx,dy,dw,dh);
+      const dataUrl = canvas.toDataURL('image/png');
+      processedAvatarBase64 = dataUrl.split(',')[1];
+      modalAvatar.src = dataUrl;
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+modalSaveBtn.addEventListener('click', async () => {
+  const newName = (modalNameInput.value||'').trim();
+  const nameChanged   = newName && newName !== userName;
+  const avatarChanged = !!processedAvatarBase64;
+  if (!nameChanged && !avatarChanged) { closeProfileModal(); return; }
+  modalSaveBtn.disabled = true;
+  modalSaveBtn.textContent = 'Saving…';
+  try {
+    const payload = { operation:'updateProfile', oldName:userName, identityCode:localStorage.getItem('userIdCode') };
+    if (nameChanged) payload.newName = newName;
+    if (avatarChanged) { payload.imageData = processedAvatarBase64; payload.imageName = `${newName||userName}_avatar.png`; }
+    const res  = await fetch(scriptUrl, { method:'POST', body:JSON.stringify(payload) });
+    const result = await res.json();
+    if (result.status==='success') {
+      if (nameChanged) { localStorage.setItem('userName', result.newName||newName); userName = result.newName||newName; }
+      if (avatarChanged && result.picLink) {
+        localStorage.setItem('userPicLink', result.picLink);
+        userAvatarImg.src = result.picLink;
+      }
+      showToast('Profile updated');
+      processedAvatarBase64 = '';
+      closeProfileModal();
+      loadComments(false);
+    } else { modalError.textContent = result.message||'Update failed'; }
+  } catch { modalError.textContent = 'Connection error'; }
+  finally { modalSaveBtn.disabled = false; modalSaveBtn.textContent = 'Save Changes'; }
+});
+
+document.getElementById('copy-recovery-btn').addEventListener('click', () => {
+  const code = document.getElementById('recovery-code-display').textContent.trim();
+  if (!code || code === 'No code found') { showToast('No recovery code available','error'); return; }
+  navigator.clipboard.writeText(code).then(() => showToast('Recovery code copied!')).catch(() => showToast('Copy failed','error'));
+});
+
+/* ══════════════════════════════
+   CALL MODAL
+══════════════════════════════ */
+function setCallType(type) {
+  callType = type;
+  document.getElementById('tabAll').classList.toggle('active', type==='all');
+  document.getElementById('tabSelect').classList.toggle('active', type==='select');
+  document.getElementById('memberListContainer').style.display = type==='select' ? 'block' : 'none';
+}
+
+document.getElementById('callBtn').addEventListener('click', async () => {
+  if (!isApproved) { showToast('Account not yet approved','error'); return; }
+  document.getElementById('callModal').style.display = 'flex';
+  loadMembersForCall();
+});
+
+document.getElementById('callModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('callModal')) document.getElementById('callModal').style.display = 'none';
+});
+
+async function loadMembersForCall() {
+  if (allMembersCache.length > 0) { renderMemberList(); return; }
+  try {
+    const res  = await fetch(`${scriptUrl}?operation=getMembers`);
+    const data = await res.json();
+    allMembersCache = (data.users||[]).filter(u => u.status==='approved' && u.name!==userName);
+    renderMemberList();
+  } catch(e) { console.error('Members load failed',e); }
+}
+
+function renderMemberList() {
+  const container = document.getElementById('memberList');
+  container.innerHTML = '';
+  allMembersCache.forEach(u => {
+    const row = document.createElement('div');
+    row.className = 'call-option-row';
+    const chk = document.createElement('input');
+    chk.type='checkbox'; chk.value=u.name; chk.dataset.pic=u.picLink||''; chk.id='chk-'+u.name;
+    const src = u.picLink ? getLh3Link(u.picLink) : '';
+    let av;
+    if (src) { av=document.createElement('img'); av.src=src; av.onerror=()=>av.style.display='none'; }
+    else { av=document.createElement('div'); av.className='placeholder-av'; av.innerHTML='<i class="fas fa-user"></i>'; }
+    const lbl = document.createElement('label');
+    lbl.htmlFor='chk-'+u.name; lbl.className='call-option-label'; lbl.textContent=u.name;
+    row.appendChild(chk); row.appendChild(av); row.appendChild(lbl);
+    row.addEventListener('click', e => { if(e.target!==chk) chk.checked=!chk.checked; });
+    container.appendChild(row);
+  });
+}
+
+document.getElementById('startCallBtn').addEventListener('click', async () => {
+  const btn   = document.getElementById('startCallBtn');
+  const title = document.getElementById('callTitleInput').value.trim() || `${userName}'s Call`;
+  let invitees = [];
+  if (callType==='select') {
+    const checked = document.querySelectorAll('#memberList input[type=checkbox]:checked');
+    if (!checked.length) { showToast('Select at least one person','error'); return; }
+    invitees = Array.from(checked).map(c => ({ username:c.value, picLink:c.dataset.pic }));
+  }
+  btn.disabled=true; btn.innerHTML='<i class="fas fa-spinner fa-spin"></i> Starting…';
+  try {
+    const res = await fetch(scriptUrl, { method:'POST', body:JSON.stringify({ operation:'initiateCall', username:userName, picLink:localStorage.getItem('userPicLink')||'', title, invitees, isAllUsers:callType==='all' }) });
+    const data = await res.json();
+    if (data.status==='success') {
+      document.getElementById('callModal').style.display='none';
+      window.location.href = `call.html?callId=${data.callId}&host=1`;
+      loadComments(false);
+    } else showToast(data.message||'Failed to start call','error');
+  } catch { showToast('Network error','error'); }
+  finally { btn.disabled=false; btn.innerHTML='<i class="fas fa-phone"></i> Start Call'; }
+});
+
+/* ── Call card builder ── */
+function buildCallCard(c, callData) {
+  const isEnded = callData.status==='ended';
+  const isOwn   = c.name===userName;
+  const canJoin = !isEnded && (callData.isAllUsers || (callData.invitees||[]).some(i=>i.username===userName) || isOwn);
+  const callUrl = `call.html?callId=${encodeURIComponent(callData.callId)}`;
+  const invText = callData.isAllUsers ? 'Everyone' : (callData.invitees||[]).map(i=>i.username).slice(0,3).join(', ') + ((callData.invitees||[]).length>3?` +${callData.invitees.length-3}`:'');
+  const picId   = extractFileId(c.picLink);
+  const btnHtml = canJoin
+    ? `<a href="${callUrl}" class="join-call-btn"><i class="fas fa-phone"></i> Join</a>`
+    : `<span class="join-call-btn ended"><i class="fas fa-phone-slash"></i> Ended</span>`;
+
+  return `
+    ${picId ? `<img src="https://lh3.googleusercontent.com/d/${picId}" class="avatar">` : '<div class="avatar-placeholder"></div>'}
+    <div class="message-content" style="background:transparent;border:none;padding:8px 0;">
+      <div class="msg-name">${c.name}</div>
+      <div class="call-card ${isEnded?'ended-card':''}">
+        <div class="call-card-icon ${isEnded?'ended':''}">
+          <i class="fas fa-${isEnded?'phone-slash':'phone-volume'}"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div class="call-card-title">${callData.title||'Call'}</div>
+          <div class="call-card-sub"><i class="fas fa-users" style="font-size:0.7rem;margin-right:4px;"></i>${invText}</div>
+        </div>
+        ${btnHtml}
+      </div>
+      <span class="msg-time">${formatTime(c.timestamp)}</span>
+    </div>`;
+}
+
+/* ══════════════════════════════
+   INSTALL PWA
+══════════════════════════════ */
+let deferredPrompt;
+const installBtn   = document.getElementById('installAppBtn');
+const installModal = document.getElementById('installModal');
+
+if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true) {
+  if (installBtn) installBtn.style.display='none';
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (installBtn) installBtn.style.display='flex';
+});
+
+installBtn?.addEventListener('click', () => { installModal.style.display='flex'; });
+document.getElementById('installNo').addEventListener('click',  () => { installModal.style.display='none'; });
+document.getElementById('installYes').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome==='accepted' && installBtn) installBtn.style.display='none';
+  deferredPrompt=null;
+  installModal.style.display='none';
+});
+
+window.addEventListener('appinstalled', () => {
+  if (installBtn) installBtn.style.display='none';
+  installModal.style.display='none';
+  deferredPrompt=null;
+});
+
+/* ── Kick off ── */
+setOnlineStatus(navigator.onLine);
+checkUserStatus();
+updateAnnBadge();
+</script>
+
+<!-- ══ SERVICE WORKER ══ -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js', { scope: './' })
+    .then(reg => console.log('SW registered'))
+    .catch(err => console.error('SW failed:', err));
+}
+</script>
+
+<!-- ══ FCM PUSH ══ -->
+<!-- ══ FCM PUSH ══ -->
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby66wu5ZpiiBdZ3WT3pyJkhqrAVeWgx4V7KeUPqmglvCArhfa318zbgvY5zWV1jfx-5/exec';
+
+function showCallBanner(title, body, callId) {
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+      <i class="fas fa-phone-volume" style="font-size:1.3rem;flex-shrink:0;"></i>
+      <div style="min-width:0;"><div style="font-weight:700;font-size:0.95rem;">${title}</div><div style="font-size:0.8rem;opacity:.85;">${body}</div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
+      <button onclick="window.location.href='call.html?callId=${callId}'" style="padding:7px 16px;background:white;color:#16a34a;border:none;border-radius:999px;font-weight:700;cursor:pointer;font-size:0.83rem;">Join</button>
+      <button onclick="this.closest('div[style]').remove()" style="padding:7px 12px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:999px;cursor:pointer;font-size:0.83rem;">×</button>
+    </div>`;
+  document.body.appendChild(banner);
+  setTimeout(() => banner.remove(), 30000);
+}
+
+async function initPush() {
+  // ── Native path (inside the Android app) ──
+  if (window.Capacitor?.isNativePlatform?.()) {
+    try {
+      const { PushNotifications } = await import('@capacitor/push-notifications');
+
+      const perm = await PushNotifications.checkPermissions();
+      let status = perm.receive;
+      if (status === 'prompt') {
+        const req = await PushNotifications.requestPermissions();
+        status = req.receive;
+      }
+      if (status !== 'granted') return;
+
+      await PushNotifications.register();
+
+      PushNotifications.addListener('registration', async token => {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ operation: 'saveFcmToken', username: userName, fcmToken: token.value })
+        });
+      });
+
+      PushNotifications.addListener('registrationError', err => {
+        console.error('Push registration error:', err);
+      });
+
+      // Foreground push arrives here while the app is open
+      PushNotifications.addListener('pushNotificationReceived', notification => {
+        const data  = notification.data || {};
+        const title = notification.title || 'Riverside Connect';
+        const body  = notification.body  || 'New message';
+        if (data.callId) {
+          showCallBanner(title, body, data.callId);
+        } else {
+          showToast(`${title}: ${body}`, 'info');
+          if (isApproved) loadComments(false);
+        }
+      });
+
+      // Tap on a notification (background/killed state)
+      PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+        const data = notification.notification.data || {};
+        if (data.callId) location.href = `call.html?callId=${data.callId}`;
+        else if (data.channelId) location.href = `channel.html?channelId=${data.channelId}&postId=${data.postId || ''}`;
+        else if (data.gameId) location.href = `Q&A.html?gameId=${data.gameId}`;
+        else if (data.announcement) location.href = 'announce.html';
+      });
+
+    } catch (err) {
+      console.error('Native push setup failed:', err);
+    }
+    return;
+  }
+
+  // ── Browser fallback (web push, unchanged) ──
+  if (!('serviceWorker' in navigator)) return;
+
+  try {
+    const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    const { initializeApp }               = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
+    const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
+
+    const app = initializeApp({
+      apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+      authDomain: "riverside-connect-a8458.firebaseapp.com",
+      projectId: "riverside-connect-a8458",
+      storageBucket: "riverside-connect-a8458.firebasestorage.app",
+      messagingSenderId: "938830806378",
+      appId: "1:938830806378:web:254ed56cba3dc02290f913"
+    });
+
+    const messaging = getMessaging(app);
+    const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (token) {
+      const res = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'saveFcmToken', username: userName, fcmToken: token }) });
+      const r   = await res.json();
+      if (r.status==='success') localStorage.setItem('fcmTokenSaved','true');
+    }
+
+    onMessage(messaging, payload => {
+      const title  = payload.data?.title || 'Riverside Connect';
+      const body   = payload.data?.body  || 'New message';
+      const callId = payload.data?.callId || '';
+
+      if (callId) {
+        showCallBanner(title, body, callId);
+      } else {
+        showToast(`${title}: ${body}`, 'info');
+        if (isApproved) loadComments(false);
+      }
+    });
+  } catch(err) {
+    console.error('FCM error:', err);
+  }
+}
+
+window.addEventListener('load', initPush);
+</script>
+</body>
+</html>

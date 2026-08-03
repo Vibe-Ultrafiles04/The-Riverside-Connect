@@ -674,9 +674,14 @@ function updateNotifRowUI() {
 updateNotifRowUI();
 
 async function toggleNotifications() {
-  if (!('serviceWorker' in navigator) || !('Notification' in window)) {
-    toast('Notifications not supported', 'err'); return;
+  const isNative = window.Capacitor?.isNativePlatform?.();
+  const browserSupported = ('serviceWorker' in navigator) && ('Notification' in window);
+
+  if (!isNative && !browserSupported) {
+    toast('Notifications not supported', 'err');
+    return;
   }
+
   isNotificationEnabled = !isNotificationEnabled;
   localStorage.setItem('notificationsEnabled', isNotificationEnabled.toString());
   updateNotifRowUI();
@@ -698,8 +703,46 @@ async function toggleNotifications() {
 }
 document.getElementById('notif-row').addEventListener('click', toggleNotifications);
 
-/* ── FCM TOKEN ────────────────────────────────────────────────────── */
 async function registerFcmToken(forcePermissionPrompt) {
+  if (window.Capacitor?.isNativePlatform?.()) {
+    try {
+      const { PushNotifications } = window.Capacitor.Plugins;
+
+      const perm = await PushNotifications.checkPermissions();
+      let status = perm.receive;
+      if (status === 'prompt' || forcePermissionPrompt) {
+        const req = await PushNotifications.requestPermissions();
+        status = req.receive;
+      }
+      if (status !== 'granted') return;
+
+      await PushNotifications.register();
+
+      PushNotifications.addListener('registration', async token => {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({ operation: 'saveFcmToken', username: userName, fcmToken: token.value })
+        });
+      });
+
+      PushNotifications.addListener('registrationError', err => {
+        console.error('Push registration error:', err);
+      });
+
+      PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+        const data = notification.notification.data || {};
+        if (data.channelId) location.href = `channel.html?channelId=${data.channelId}&postId=${data.postId || ''}`;
+        else if (data.gameId) location.href = `Q&A.html?gameId=${data.gameId}`;
+        else if (data.announcement) location.href = 'announce.html';
+        else location.href = 'home.html';
+      });
+
+    } catch (err) {
+      console.error('Native push setup failed:', err);
+    }
+    return;
+  }
+
   if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   if (Notification.permission === 'denied' && !forcePermissionPrompt) return;
 
@@ -731,7 +774,6 @@ async function registerFcmToken(forcePermissionPrompt) {
     body: JSON.stringify({ operation: 'saveFcmToken', username: userName, fcmToken: token })
   });
 }
-
 /* ── INSTALL ─────────────────────────────────────────────────────── */
 let deferredPrompt = null;
 const installBar = document.getElementById('install-bar');

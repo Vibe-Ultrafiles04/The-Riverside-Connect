@@ -703,7 +703,9 @@ async function toggleNotifications() {
 }
 document.getElementById('notif-row').addEventListener('click', toggleNotifications);
 
+/* ── FCM TOKEN ────────────────────────────────────────────────────── */
 async function registerFcmToken(forcePermissionPrompt) {
+  // Native path (inside the Android app)
   if (window.Capacitor?.isNativePlatform?.()) {
     try {
       const { PushNotifications } = window.Capacitor.Plugins;
@@ -743,6 +745,7 @@ async function registerFcmToken(forcePermissionPrompt) {
     return;
   }
 
+  // Browser fallback (web push, unchanged)
   if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
   if (Notification.permission === 'denied' && !forcePermissionPrompt) return;
 

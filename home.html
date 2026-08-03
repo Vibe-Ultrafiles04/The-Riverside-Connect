@@ -1503,7 +1503,7 @@
 <canvas id="cropCanvas" style="display:none;"></canvas>
 
 <script>
-const scriptUrl = 'https://script.google.com/macros/s/AKfycbztGcPfIe_AWXSKMcYNvhtAuL5O315bo5hgcicw5Xe4sBEyDb8dreEBi42ALnZY64l2/exec';
+const scriptUrl = 'https://script.google.com/macros/s/AKfycbykwyE727z13TqaYx8uE-Xedm17rYiztjK_nK-HLlQTp_1RQvDeXiGhYyiXBKo9Dgdv/exec';
 
 let userName = localStorage.getItem('userName');
 let callType = 'all';
@@ -2778,66 +2778,122 @@ if ('serviceWorker' in navigator) {
 
 <!-- ══ FCM PUSH ══ -->
 <script>
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztGcPfIe_AWXSKMcYNvhtAuL5O315bo5hgcicw5Xe4sBEyDb8dreEBi42ALnZY64l2/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykwyE727z13TqaYx8uE-Xedm17rYiztjK_nK-HLlQTp_1RQvDeXiGhYyiXBKo9Dgdv/exec';
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', async () => {
+async function registerFcmForChat() {
+  // ── Native path: use Capacitor's push plugin, NOT Firebase JS SDK ──
+  if (window.Capacitor?.isNativePlatform?.()) {
     try {
-      const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
-      const { initializeApp }               = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
-      const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
-
-      const app = initializeApp({
-        apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
-        authDomain: "riverside-connect-a8458.firebaseapp.com",
-        projectId: "riverside-connect-a8458",
-        storageBucket: "riverside-connect-a8458.firebasestorage.app",
-        messagingSenderId: "938830806378",
-        appId: "1:938830806378:web:254ed56cba3dc02290f913"
-      });
-
-      const messaging = getMessaging(app);
-      const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
-
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') return;
-
-      const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-      if (token) {
-        const res = await fetch(SCRIPT_URL, { method:'POST', body: JSON.stringify({ operation:'saveFcmToken', username: userName, fcmToken: token }) });
-        const r   = await res.json();
-        if (r.status==='success') localStorage.setItem('fcmTokenSaved','true');
+      const { PushNotifications } = window.Capacitor.Plugins;
+      const perm = await PushNotifications.checkPermissions();
+      let status = perm.receive;
+      if (status === 'prompt') {
+        const req = await PushNotifications.requestPermissions();
+        status = req.receive;
       }
+      if (status !== 'granted') return;
 
-      onMessage(messaging, payload => {
-        const title  = payload.data?.title || 'Riverside Connect';
-        const body   = payload.data?.body  || 'New message';
-        const callId = payload.data?.callId || '';
+      await PushNotifications.register();
 
-        if (callId) {
-          const banner = document.createElement('div');
-          banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
-          banner.innerHTML = `
-            <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-              <i class="fas fa-phone-volume" style="font-size:1.3rem;flex-shrink:0;"></i>
-              <div style="min-width:0;"><div style="font-weight:700;font-size:0.95rem;">${title}</div><div style="font-size:0.8rem;opacity:.85;">${body}</div></div>
-            </div>
-            <div style="display:flex;gap:8px;flex-shrink:0;">
-              <button onclick="window.location.href='call.html?callId=${callId}'" style="padding:7px 16px;background:white;color:#16a34a;border:none;border-radius:999px;font-weight:700;cursor:pointer;font-size:0.83rem;">Join</button>
-              <button onclick="this.closest('div[style]').remove()" style="padding:7px 12px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:999px;cursor:pointer;font-size:0.83rem;">×</button>
-            </div>`;
-          document.body.appendChild(banner);
-          setTimeout(() => banner.remove(), 30000);
-        } else {
-          showToast(`${title}: ${body}`, 'info');
-          if (isApproved) loadComments(false);
-        }
+      PushNotifications.addListener('registration', async token => {
+        await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            operation: 'saveFcmToken',
+            username: userName,
+            fcmToken: token.value,
+            platform: 'android'
+          })
+        });
       });
-    } catch(err) {
-      console.error('FCM error:', err);
+
+      PushNotifications.addListener('registrationError', err => {
+        console.error('Native push registration error:', err);
+      });
+
+      // Optional: handle taps on a notification while app is backgrounded
+      PushNotifications.addListener('pushNotificationActionPerformed', notification => {
+        const data = notification.notification.data || {};
+        if (data.callId) window.location.href = `call.html?callId=${data.callId}`;
+        else if (data.channelId) window.location.href = `channel.html?channelId=${data.channelId}&postId=${data.postId||''}`;
+        else if (data.gameId) window.location.href = `Q&A.html?gameId=${data.gameId}`;
+        else if (data.announcement) window.location.href = 'announce.html';
+      });
+
+    } catch (err) {
+      console.error('Native push setup failed:', err);
     }
-  });
+    return; // ← IMPORTANT: never fall through to the web branch on native
+  }
+
+  // ── Browser path: Firebase JS SDK web push (unchanged, just tagged) ──
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) return;
+
+  try {
+    const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
+    const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
+
+    const app = initializeApp({
+      apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+      authDomain: "riverside-connect-a8458.firebaseapp.com",
+      projectId: "riverside-connect-a8458",
+      storageBucket: "riverside-connect-a8458.firebasestorage.app",
+      messagingSenderId: "938830806378",
+      appId: "1:938830806378:web:254ed56cba3dc02290f913"
+    });
+
+    const messaging = getMessaging(app);
+    const VAPID_KEY = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (token) {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          operation: 'saveFcmToken',
+          username: userName,
+          fcmToken: token,
+          platform: 'web'
+        })
+      });
+    }
+
+    onMessage(messaging, payload => {
+      const title  = payload.data?.title || 'Riverside Connect';
+      const body   = payload.data?.body  || 'New message';
+      const callId = payload.data?.callId || '';
+
+      if (callId) {
+        const banner = document.createElement('div');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 4px 20px rgba(0,0,0,0.4);';
+        banner.innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+            <i class="fas fa-phone-volume" style="font-size:1.3rem;flex-shrink:0;"></i>
+            <div style="min-width:0;"><div style="font-weight:700;font-size:0.95rem;">${title}</div><div style="font-size:0.8rem;opacity:.85;">${body}</div></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-shrink:0;">
+            <button onclick="window.location.href='call.html?callId=${callId}'" style="padding:7px 16px;background:white;color:#16a34a;border:none;border-radius:999px;font-weight:700;cursor:pointer;font-size:0.83rem;">Join</button>
+            <button onclick="this.closest('div[style]').remove()" style="padding:7px 12px;background:rgba(255,255,255,0.2);color:white;border:none;border-radius:999px;cursor:pointer;font-size:0.83rem;">×</button>
+          </div>`;
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 30000);
+      } else {
+        showToast(`${title}: ${body}`, 'info');
+        if (isApproved) loadComments(false);
+      }
+    });
+  } catch (err) {
+    console.error('Web FCM error:', err);
+  }
 }
+
+window.addEventListener('load', () => {
+  registerFcmForChat().catch(err => console.error('FCM registration failed:', err));
+});
 </script>
 
 </body>

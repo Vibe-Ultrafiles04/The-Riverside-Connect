@@ -595,8 +595,8 @@
 <script>
 'use strict';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzx8lTpAzof089hM6T37gSPOr3f4jW9ClXuM_n7AVWvw8an3_KRoNxhgvhv19ODGmNe/exec';
-const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbzx8lTpAzof089hM6T37gSPOr3f4jW9ClXuM_n7AVWvw8an3_KRoNxhgvhv19ODGmNe/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbykwyE727z13TqaYx8uE-Xedm17rYiztjK_nK-HLlQTp_1RQvDeXiGhYyiXBKo9Dgdv/exec';
+const DASHBOARD_URL = 'https://script.google.com/macros/s/AKfycbykwyE727z13TqaYx8uE-Xedm17rYiztjK_nK-HLlQTp_1RQvDeXiGhYyiXBKo9Dgdv/exec';
 
 const userName = localStorage.getItem('userName') || '';
 if (!userName) { window.location.href = 'login.html'; }
@@ -718,12 +718,17 @@ async function registerFcmToken(forcePermissionPrompt) {
 
       await PushNotifications.register();
 
-      PushNotifications.addListener('registration', async token => {
-        await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: JSON.stringify({ operation: 'saveFcmToken', username: userName, fcmToken: token.value })
-        });
-      });
+PushNotifications.addListener('registration', async token => {
+  await fetch(SCRIPT_URL, {
+    method: 'POST',
+    body: JSON.stringify({
+      operation: 'saveFcmToken',
+      username: userName,
+      fcmToken: token.value,
+      platform: 'android'          // ← add this
+    })
+  });
+});
 
       PushNotifications.addListener('registrationError', err => {
         console.error('Push registration error:', err);
@@ -769,10 +774,15 @@ async function registerFcmToken(forcePermissionPrompt) {
   });
   if (!token) return;
 
-  await fetch(SCRIPT_URL, {
-    method: 'POST',
-    body: JSON.stringify({ operation: 'saveFcmToken', username: userName, fcmToken: token })
-  });
+ await fetch(SCRIPT_URL, {
+  method: 'POST',
+  body: JSON.stringify({
+    operation: 'saveFcmToken',
+    username: userName,
+    fcmToken: token,
+    platform: 'web'                // ← add this
+  })
+});
 }
 /* ── INSTALL ─────────────────────────────────────────────────────── */
 let deferredPrompt = null;

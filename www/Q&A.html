@@ -2228,7 +2228,7 @@ async function initPush() {
   // ── Native path (inside the Android app) ──
   if (window.Capacitor?.isNativePlatform?.()) {
     try {
-      const { PushNotifications } = await import('@capacitor/push-notifications');
+      const { PushNotifications } = window.Capacitor.Plugins;
 
       const perm = await PushNotifications.checkPermissions();
       let status = perm.receive;

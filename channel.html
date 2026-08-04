@@ -3033,39 +3033,10 @@ window.addEventListener('DOMContentLoaded', () => { loadChannels(); });
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      // ── Native: use Capacitor's push plugin, never Firebase JS SDK ──
-      if (window.Capacitor?.isNativePlatform?.()) {
-        const { PushNotifications } = window.Capacitor.Plugins;
-        const perm = await PushNotifications.checkPermissions();
-        let status = perm.receive;
-        if (status === 'prompt') {
-          const req = await PushNotifications.requestPermissions();
-          status = req.receive;
-        }
-        if (status !== 'granted') return;
-
-        await PushNotifications.register();
-
-        PushNotifications.addListener('registration', async token => {
-          await post({
-            operation: 'saveFcmToken',
-            username: currentUser,
-            fcmToken: token.value,
-            platform: 'android'
-          });
-        });
-
-        PushNotifications.addListener('registrationError', err => {
-          console.error('Native push registration error:', err);
-        });
-
-        return; // never fall through to web branch on native
-      }
-
-      // ── Browser: Firebase JS SDK web push ──
       const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
+
       const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
-      const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
+      const { getMessaging, getToken, deleteToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
 
       const app = initializeApp({
         apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
@@ -3082,15 +3053,10 @@ if ('serviceWorker' in navigator) {
       const perm = await Notification.requestPermission();
       if (perm !== 'granted') return;
 
+      const oldToken = await getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: swReg });
+      if (oldToken) await deleteToken(messaging);
       const token = await getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: swReg });
-      if (token) {
-        await post({
-          operation: 'saveFcmToken',
-          username: currentUser,
-          fcmToken: token,
-          platform: 'web'
-        });
-      }
+      if (token) await post({ operation: 'saveFcmToken', username: currentUser, fcmToken: token });
 
       onMessage(messaging, payload => {
         const title = payload.data?.title || 'New activity';
@@ -3098,9 +3064,7 @@ if ('serviceWorker' in navigator) {
         toast(`${title} — ${body}`, 'ok', 5000);
         if (currentChannel) renderPosts(currentChannel.id);
       });
-    } catch (err) {
-      console.warn('FCM setup failed:', err);
-    }
+    } catch (err) { console.warn('FCM setup failed:', err); }
   });
 }
 navigator.serviceWorker?.addEventListener('message', event => {

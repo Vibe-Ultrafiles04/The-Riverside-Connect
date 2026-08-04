@@ -2216,101 +2216,41 @@ document.getElementById('btn-refresh').addEventListener('click', async () => {
 /* ── INIT ─────────────────────────────────────────────────────────── */
 window.addEventListener('DOMContentLoaded', loadChannels);
 
-/* ── SERVICE WORKER + FCM ─────────────────────────────────────────── */
-
-function handleNotificationOpen({ gameId }) {
-  if (gameId) {
-    window.location.href = `Q&A.html?gameId=${encodeURIComponent(gameId)}`;
-  }
-}
-
-async function initPush() {
-  // ── Native path (inside the Android app) ──
-  if (window.Capacitor?.isNativePlatform?.()) {
+/* ── SERVICE WORKER ───────────────────────────────────────────────── */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', async () => {
     try {
-      const { PushNotifications } = window.Capacitor.Plugins;
+      const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
 
-      const perm = await PushNotifications.checkPermissions();
-      let status = perm.receive;
-      if (status === 'prompt') {
-        const req = await PushNotifications.requestPermissions();
-        status = req.receive;
-      }
-      if (status !== 'granted') return;
+      const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
+      const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
 
-      await PushNotifications.register();
-
-      PushNotifications.addListener('registration', async token => {
-        await postData({ operation: 'saveFcmToken', username: currentUser, fcmToken: token.value });
+      const app = initializeApp({
+        apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
+        authDomain: "riverside-connect-a8458.firebaseapp.com",
+        projectId: "riverside-connect-a8458",
+        storageBucket: "riverside-connect-a8458.firebasestorage.app",
+        messagingSenderId: "938830806378",
+        appId: "1:938830806378:web:254ed56cba3dc02290f913"
       });
 
-      PushNotifications.addListener('registrationError', err => {
-        console.warn('Push registration error:', err);
-      });
+      const messaging = getMessaging(app);
+      const VAPID = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
 
-      // Foreground push — app is open
-      PushNotifications.addListener('pushNotificationReceived', notification => {
-        const data  = notification.data || {};
-        const title = notification.title || 'New activity';
-        const body  = notification.body || '';
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return;
+
+      const token = await getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: swReg });
+      if (token) await postData({ operation: 'saveFcmToken', username: currentUser, fcmToken: token });
+
+      onMessage(messaging, payload => {
+        const title = payload.data?.title || 'New activity';
+        const body  = payload.data?.body  || '';
         toast(`${title} — ${body}`, 'ok', 5000);
         if (currentChannel) loadGames(currentChannel.id);
       });
-
-      // Tap on a notification — app was backgrounded/closed
-      PushNotifications.addListener('pushNotificationActionPerformed', notification => {
-        const data = notification.notification.data || {};
-        handleNotificationOpen({ gameId: data.gameId });
-      });
-
-    } catch (err) {
-      console.warn('Native push setup failed:', err);
-    }
-    return;
-  }
-
-  // ── Browser fallback (web push, unchanged) ──
-  if (!('serviceWorker' in navigator)) return;
-
-  try {
-    const swReg = await navigator.serviceWorker.register('./sw.js', { scope: './' });
-
-    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js');
-    const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/12.11.0/firebase-messaging.js');
-
-    const app = initializeApp({
-      apiKey: "AIzaSyCuB56TTi5COJnuDmVf6PiGsOjTwvQ0PNo",
-      authDomain: "riverside-connect-a8458.firebaseapp.com",
-      projectId: "riverside-connect-a8458",
-      storageBucket: "riverside-connect-a8458.firebasestorage.app",
-      messagingSenderId: "938830806378",
-      appId: "1:938830806378:web:254ed56cba3dc02290f913"
-    });
-
-    const messaging = getMessaging(app);
-    const VAPID = "BLqQIS31O_tuw_UMdReBZHTmy_HNXEcwNaPsor8O8dCt-v0XFepSoGPJmw6P6dYBfh1PDtCaMCxLO4-j7KS4yO8";
-
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
-
-    const token = await getToken(messaging, { vapidKey: VAPID, serviceWorkerRegistration: swReg });
-    if (token) await postData({ operation: 'saveFcmToken', username: currentUser, fcmToken: token });
-
-    onMessage(messaging, payload => {
-      const title = payload.data?.title || 'New activity';
-      const body  = payload.data?.body  || '';
-      toast(`${title} — ${body}`, 'ok', 5000);
-      if (currentChannel) loadGames(currentChannel.id);
-    });
-  } catch (err) {
-    console.warn('FCM setup failed:', err);
-  }
-}
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', initPush);
-} else if (window.Capacitor?.isNativePlatform?.()) {
-  window.addEventListener('load', initPush);
+    } catch (err) { console.warn('FCM setup failed:', err); }
+  });
 }
 </script>
 </body>

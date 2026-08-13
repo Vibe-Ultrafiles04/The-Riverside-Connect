@@ -840,7 +840,7 @@ html, body {
 <script>
 'use strict';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbztGcPfIe_AWXSKMcYNvhtAuL5O315bo5hgcicw5Xe4sBEyDb8dreEBi42ALnZY64l2/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby88KE3U9uLu6pLASzXLvHE_YjhliJGZ0TcbiinfqGbidQ-DtK8S2n-ayFOUPYvIA7T/exec';
 
 const gameId  = new URLSearchParams(location.search).get('gameId');
 const username = localStorage.getItem('userName') || '';
@@ -1215,7 +1215,7 @@ async function submitSurvey() {
     const choiceText = (question.choices[Number(cIdx)]?.text || '').trim();
 
     const data = await postData({
-      operation: 'recordSurveyResponse',
+      operation: 'recordSurveyResponses',
       gameId, username, questionId,
       choiceIndex: Number(cIdx),
       choiceText

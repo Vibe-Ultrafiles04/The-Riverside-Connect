@@ -1215,7 +1215,7 @@ async function submitSurvey() {
     const choiceText = (question.choices[Number(cIdx)]?.text || '').trim();
 
     const data = await postData({
-      operation: 'recordSurveyResponses',
+      operation: 'recordSurveyResponse',
       gameId, username, questionId,
       choiceIndex: Number(cIdx),
       choiceText

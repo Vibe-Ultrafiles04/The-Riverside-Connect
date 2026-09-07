@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Riverside Connect — Locations</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS — matched to index.html's dark theme
+   ============================================================ */
+:root{
+  --ink:       #e2e8f0;
+  --paper:     #0a0f1e;
+  --surface:   #0f172a;
+  --lift:      #1a2540;
+  --wire:      rgba(96,165,250,0.18);
+  --steel:     #64748b;
+  --lead:      #94a3b8;
+  --accent:    #3b82f6;
+  --accent2:   #60a5fa;
+  --gold:      #facc15;
+  --danger:    #ef4444;
+  --green:     #10b981;
+  --radius:14px;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased;padding-bottom:90px;}
+h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif;letter-spacing:.03em;}
+.mono{font-family:'DM Mono',monospace;}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+
+/* Masthead */
+.masthead{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--wire);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;backdrop-filter:blur(16px);}
+.masthead h1{font-size:28px;margin:0;line-height:1;color:var(--ink);}
+.masthead .sub{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--lead);margin-top:2px;}
+.mode-btn{border:1px solid var(--wire);background:var(--lift);color:var(--ink);border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:inline-block;}
+.mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+main{max-width:640px;margin:0 auto;padding:14px 16px 40px;}
+.hidden{display:none !important;}
+
+/* Category chips */
+.chip-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0 14px;-ms-overflow-style:none;scrollbar-width:none;}
+.chip-row::-webkit-scrollbar{display:none;}
+.chip{flex:0 0 auto;border:1px solid var(--wire);background:var(--lift);color:var(--ink);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.chip.active{border-color:var(--accent);background:var(--accent);color:#fff;}
+
+/* Buttons */
+.btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:10px;padding:11px 16px;font-size:14px;font-weight:700;width:100%;text-align:center;}
+.btn.outline{background:var(--lift);color:var(--ink);border-color:var(--wire);}
+.btn.accent{background:var(--accent2);border-color:var(--accent2);color:#0a0f1e;}
+.btn.small{width:auto;padding:8px 12px;font-size:12px;border-radius:8px;}
+.btn:disabled{opacity:.5;}
+.btn-row{display:flex;gap:8px;}
+.btn-row .btn{flex:1;}
+
+/* Near-me banner */
+.nearme-card{border:1px solid var(--accent);border-radius:var(--radius);background:var(--lift);padding:14px;margin-bottom:16px;}
+.nearme-card .label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--lead);font-weight:700;}
+
+/* Location cards */
+.section-title{font-size:22px;margin:18px 0 8px;color:var(--ink);}
+.loc-card{border:1px solid var(--wire);border-radius:var(--radius);background:var(--surface);padding:12px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;}
+.loc-icon{width:42px;height:42px;border-radius:10px;background:var(--lift);display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto;}
+.loc-info{flex:1;min-width:0;}
+.loc-info .name{font-weight:700;font-size:15px;color:var(--ink);}
+.loc-info .meta{font-size:12px;color:var(--lead);margin-top:1px;}
+.loc-dist{font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--accent2);white-space:nowrap;}
+.star{color:var(--gold);}
+
+/* Saved / my locations */
+.mine-card{border:1px solid var(--green);border-radius:var(--radius);background:var(--surface);padding:12px 14px;margin-bottom:10px;}
+.mine-card .cat-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--green);font-weight:700;}
+.mine-card .name{font-weight:700;font-size:16px;margin:2px 0 6px;color:var(--ink);}
+.mine-card .change{font-size:12px;text-decoration:underline;color:var(--lead);}
+
+/* Bottom sheet */
+.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;}
+.bottom-sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:20px 20px 0 0;max-height:85vh;overflow-y:auto;padding:18px 18px 24px;box-shadow:0 -8px 30px rgba(0,0,0,.5);}
+.sheet-handle{width:40px;height:4px;background:var(--wire);border-radius:99px;margin:0 auto 14px;}
+.sheet-close{position:absolute;right:16px;top:14px;background:none;border:none;font-size:20px;color:var(--ink);}
+.mini-map{width:100%;height:160px;border-radius:12px;margin:12px 0;border:1px solid var(--wire);}
+.detail-row{display:flex;gap:10px;font-size:14px;padding:7px 0;border-bottom:1px solid var(--wire);color:var(--ink);}
+.detail-row .k{width:90px;flex:0 0 auto;color:var(--lead);font-size:12px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px;}
+
+/* Full map modal */
+.map-modal{position:fixed;inset:0;z-index:50;background:var(--paper);display:flex;flex-direction:column;}
+.map-modal .bar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--wire);color:var(--ink);}
+#fullMap,#pickMap{flex:1;width:100%;}
+
+/* Admin */
+.admin-block{border:1px solid var(--wire);border-radius:var(--radius);background:var(--surface);padding:14px;margin-bottom:16px;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--lead);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--wire);border-radius:8px;padding:10px 12px;font-size:14px;font-family:inherit;background:var(--lift);color:var(--ink);}
+.field textarea{resize:vertical;min-height:60px;}
+.coord-readout{font-family:'DM Mono',monospace;font-size:12px;background:var(--lift);border:1px solid var(--wire);border-radius:8px;padding:8px 10px;margin:8px 0;color:var(--lead);}
+.swatch-row{display:flex;gap:8px;}
+.swatch{width:32px;height:32px;border-radius:50%;border:2px solid transparent;}
+.swatch.selected{border-color:var(--ink);}
+.admin-list-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--wire);color:var(--ink);}
+.admin-list-item .grow{flex:1;font-size:14px;font-weight:600;}
+.admin-list-item .tag{font-size:11px;color:var(--lead);}
+.icon-input{font-size:20px;text-align:center;}
+
+/* Modal (confirm) */
+.confirm-modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:60;display:flex;align-items:flex-end;justify-content:center;}
+.confirm-box{background:var(--surface);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:640px;}
+.confirm-box h3{margin:0 0 8px;font-size:20px;color:var(--ink);}
+.confirm-box p{font-size:14px;color:var(--lead);margin:0 0 16px;}
+
+/* Toast */
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(120%);background:var(--lift);color:var(--ink);border:1px solid var(--wire);padding:11px 18px;border-radius:999px;font-size:13px;font-weight:600;z-index:100;transition:transform .25s ease;}
+#toast.show{transform:translateX(-50%) translateY(0);}
+
+/* Search box for admin geocoding */
+.geo-search{position:relative;}
+.geo-results{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--wire);border-radius:8px;max-height:180px;overflow-y:auto;z-index:5;}
+.geo-results div{padding:9px 12px;font-size:13px;border-bottom:1px solid var(--wire);color:var(--ink);}
+.geo-results div:last-child{border-bottom:none;}
+
+.empty-state{text-align:center;color:var(--steel);font-size:14px;padding:30px 10px;}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <a href="index.html" class="mode-btn" style="text-decoration:none;">← Back</a>
+  <div>
+    <h1>Locations</h1>
+    <div class="sub">Riverside Connect</div>
+  </div>
+  <button class="mode-btn" id="modeToggleBtn" onclick="toggleMode()">Admin</button>
+</header>
+
+<!-- ================= MEMBER VIEW ================= -->
+<main id="memberView">
+
+  <div class="chip-row" id="categoryChips"></div>
+
+  <div id="findNearWrap">
+    <button class="btn accent" id="findNearBtn" onclick="findNearMe()">📍 Find Locations Near Me</button>
+  </div>
+
+  <div id="myLocationsSection"></div>
+
+  <div id="recommendedSlot"></div>
+
+  <h2 class="section-title">All Locations</h2>
+  <div id="locationList"></div>
+
+</main>
+
+<!-- ================= ADMIN VIEW ================= -->
+<main id="adminView" class="hidden">
+
+  <div class="admin-block">
+    <h2 class="section-title" style="margin-top:0;">Categories</h2>
+    <div id="adminCategoryList"></div>
+    <button class="btn outline" style="margin-top:8px;" onclick="openCategoryForm()">＋ Add Category</button>
+  </div>
+
+  <div class="admin-block">
+    <h2 class="section-title" style="margin-top:0;">Locations</h2>
+    <div class="field">
+      <label>Filter by category</label>
+      <select id="adminCategoryFilter" onchange="renderAdminLocations()"></select>
+    </div>
+    <div id="adminLocationList"></div>
+    <button class="btn outline" style="margin-top:8px;" onclick="openLocationForm()">＋ Add Location</button>
+  </div>
+
+</main>
+
+<!-- ============ Category form (bottom sheet) ============ -->
+<div id="categorySheetBackdrop" class="sheet-backdrop hidden" onclick="closeCategoryForm()"></div>
+<div id="categorySheet" class="bottom-sheet hidden">
+  <button class="sheet-close" onclick="closeCategoryForm()">✕</button>
+  <div class="sheet-handle"></div>
+  <h2 class="section-title" style="margin-top:0;" id="categoryFormTitle">Add Category</h2>
+  <input type="hidden" id="catId">
+  <div class="field">
+    <label>Name</label>
+    <input type="text" id="catName" placeholder="e.g. Home Fellowships">
+  </div>
+  <div class="field">
+    <label>Icon (emoji)</label>
+    <input type="text" id="catIcon" class="icon-input" maxlength="4" placeholder="🏠">
+  </div>
+  <div class="field">
+    <label>Accent colour</label>
+    <div class="swatch-row" id="catSwatches"></div>
+  </div>
+  <div class="btn-row">
+    <button class="btn outline" onclick="closeCategoryForm()">Cancel</button>
+    <button class="btn" onclick="saveCategory()">Save</button>
+  </div>
+</div>
+
+<!-- ============ Location form (bottom sheet) ============ -->
+<div id="locationSheetBackdrop" class="sheet-backdrop hidden" onclick="closeLocationForm()"></div>
+<div id="locationSheet" class="bottom-sheet hidden">
+  <button class="sheet-close" onclick="closeLocationForm()">✕</button>
+  <div class="sheet-handle"></div>
+  <h2 class="section-title" style="margin-top:0;" id="locationFormTitle">Add Location</h2>
+  <input type="hidden" id="locId">
+  <div class="field">
+    <label>Category</label>
+    <select id="locCategory"></select>
+  </div>
+  <div class="field">
+    <label>Name</label>
+    <input type="text" id="locName" placeholder="e.g. Riverside Fellowship">
+  </div>
+  <div class="field">
+    <label>Description / details</label>
+    <textarea id="locDesc" placeholder="Anything members should know"></textarea>
+  </div>
+  <div class="field">
+    <label>Contact person</label>
+    <input type="text" id="locContactName" placeholder="e.g. John">
+  </div>
+  <div class="field">
+    <label>Contact info</label>
+    <input type="text" id="locContactInfo" placeholder="Phone / WhatsApp">
+  </div>
+  <div class="field">
+    <label>Schedule</label>
+    <input type="text" id="locSchedule" placeholder="e.g. Wednesday • 6:00 PM">
+  </div>
+  <div class="field">
+    <label>Address (optional label)</label>
+    <input type="text" id="locAddress" placeholder="e.g. Riverside Drive, Nairobi">
+  </div>
+  <div class="field">
+    <label>Set on map</label>
+    <div class="geo-search">
+      <input type="text" id="locGeoSearch" placeholder="Search a place to jump the map…" oninput="debouncedGeoSearch()">
+      <div id="geoResults" class="geo-results hidden"></div>
+    </div>
+    <div class="coord-readout" id="pickCoordReadout">Tap the map, or drag the pin, to set the exact spot.</div>
+    <div id="pickMap" style="height:220px;border-radius:12px;overflow:hidden;border:1px solid var(--wire);"></div>
+    <button class="btn outline small" style="margin-top:8px;" onclick="useMyLocationForPin()">Use my current location</button>
+  </div>
+  <div class="btn-row">
+    <button class="btn outline" onclick="closeLocationForm()">Cancel</button>
+    <button class="btn" onclick="saveLocation()">Save &amp; Publish</button>
+  </div>
+</div>
+
+<!-- ============ Member detail sheet ============ -->
+<div id="detailBackdrop" class="sheet-backdrop hidden" onclick="closeDetail()"></div>
+<div id="detailSheet" class="bottom-sheet hidden">
+  <button class="sheet-close" onclick="closeDetail()">✕</button>
+  <div class="sheet-handle"></div>
+  <div id="detailContent"></div>
+</div>
+
+<!-- ============ Full-screen map modal ============ -->
+<div id="mapModal" class="map-modal hidden">
+  <div class="bar">
+    <strong id="mapModalTitle">Map</strong>
+    <button class="btn small outline" onclick="closeFullMap()">Close</button>
+  </div>
+  <div id="fullMap"></div>
+</div>
+
+<!-- ============ Generic confirm modal ============ -->
+<div id="confirmModal" class="confirm-modal hidden">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">Are you sure?</h3>
+    <p id="confirmText"></p>
+    <div class="btn-row">
+      <button class="btn outline" onclick="closeConfirm()">Cancel</button>
+      <button class="btn accent" id="confirmYesBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ================================================================
+   CONFIG — point this at your Apps Script Web App deployment URL
+   ================================================================ */
+const API_URL = "https://script.google.com/macros/s/AKfycbyvaDmeH-JJb6t6afet4AbEU6ruqPXoawactlc1Vjeys_hi7wsjxNEWyxppvGxG0OzA/exec";
+const NAIROBI = {lat:-1.286389, lng:36.817223}; // fallback map centre
+
+const SWATCHES = ["#b3462c","#2c5f4f","#c99a3c","#3b5b8c","#7a4b9e","#555555"];
+
+/* ---------------- device id (for saving member selections) ---------------- */
+function getDeviceId(){
+  let id = localStorage.getItem("rc_geo_device_id");
+  if(!id){
+    id = "dev_" + Date.now() + "_" + Math.random().toString(36).slice(2,10);
+    localStorage.setItem("rc_geo_device_id", id);
+  }
+  return id;
+}
+
+/* ---------------- state ---------------- */
+let state = {
+  categories: [],
+  locations: [],
+  userPos: null,          // {lat,lng}
+  activeChip: "all",
+  mySelections: {},        // categoryId -> locationId
+  pickedLatLng: null,      // for admin form
+  pickMapObj: null,
+  pickMarker: null,
+  fullMapObj: null,
+  isAdmin: false
+};
+
+/* ---------------- API helper ----------------
+   Talks to your Apps Script Web App.
+   Expects the backend to accept POST { action, payload }
+   and GET ?action=... and respond with JSON { ok, data } or { ok:false, error }.
+------------------------------------------------ */
+async function api(action, payload){
+  if(!API_URL || API_URL.startsWith("REPLACE_")){
+    console.warn("API_URL not configured — running with local demo data only.");
+    return {ok:false, error:"no_backend"};
+  }
+  try{
+    const res = await fetch(API_URL, {
+      method:"POST",
+      headers:{"Content-Type":"text/plain;charset=utf-8"}, // avoids CORS preflight on Apps Script
+      body: JSON.stringify({action, payload})
+    });
+    return await res.json();
+  }catch(e){
+    console.error("API error", e);
+    return {ok:false, error:String(e)};
+  }
+}
+
+/* ---------------- utils ---------------- */
+function toast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+function haversineKm(a,b){
+  const R=6371, toRad=d=>d*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat), dLng=toRad(b.lng-a.lng);
+  const s = Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1-s));
+}
+function fmtDist(km){ return km < 1 ? Math.round(km*1000)+" m" : km.toFixed(1)+" km"; }
+
+function catById(id){ return state.categories.find(c=>c.id===id); }
+function locById(id){ return state.locations.find(l=>l.id===id); }
+
+/* ================================================================
+   DEMO / SEED DATA — used only when API_URL is not yet configured,
+   so the page is fully clickable out of the box. Safe to delete
+   once your backend is wired up (loadAll() will use real data then).
+   ================================================================ */
+function seedDemoData(){
+  state.categories = [
+    {id:"cat_fellowship", name:"Home Fellowships", icon:"🏠", color:"#b3462c", active:true},
+    {id:"cat_ministry", name:"Ministries", icon:"🙌", color:"#2c5f4f", active:true},
+    {id:"cat_service", name:"Service Points", icon:"📌", color:"#c99a3c", active:true}
+  ];
+  state.locations = [
+    {id:"loc_1", categoryId:"cat_fellowship", name:"Riverside Fellowship", description:"Warm, family-style fellowship near the river bridge.", contactName:"John", contactInfo:"+254 7xx xxx xxx", schedule:"Wednesday • 6:00 PM", address:"Riverside Drive", lat:-1.2762, lng:36.8100, active:true},
+    {id:"loc_2", categoryId:"cat_fellowship", name:"Westlands Fellowship", description:"Young professionals fellowship.", contactName:"Grace", contactInfo:"+254 7xx xxx xxx", schedule:"Wednesday • 6:30 PM", address:"Westlands", lat:-1.2648, lng:36.8027, active:true},
+    {id:"loc_3", categoryId:"cat_ministry", name:"Children's Ministry Office", description:"Weekday drop-in for Sunday School planning.", contactName:"Mary", contactInfo:"+254 7xx xxx xxx", schedule:"Mon–Fri • 9:00 AM–4:00 PM", address:"Main Church Campus", lat:-1.2833, lng:36.8172, active:true}
+  ];
+}
+
+/* ================================================================
+   LOAD DATA
+   ================================================================ */
+async function loadAll(){
+  const catRes = await api("getCategories", {});
+  const locRes = await api("getLocations", {});
+  if(catRes.ok && locRes.ok){
+    state.categories = catRes.data.filter(c=>c.active);
+    state.locations = locRes.data.filter(l=>l.active);
+  } else {
+    seedDemoData();
+  }
+  loadMySelectionsLocal();
+  renderCategoryChips();
+  renderLocationList();
+  renderMyLocations();
+  populateCategorySelects();
+}
+
+/* ================================================================
+   MODE TOGGLE
+   ================================================================ */
+function toggleMode(){
+  state.isAdmin = !state.isAdmin;
+  document.getElementById("memberView").classList.toggle("hidden", state.isAdmin);
+  document.getElementById("adminView").classList.toggle("hidden", !state.isAdmin);
+  document.getElementById("modeToggleBtn").classList.toggle("active", state.isAdmin);
+  document.getElementById("modeToggleBtn").textContent = state.isAdmin ? "Member view" : "Admin";
+  if(state.isAdmin){ renderAdminCategories(); renderAdminLocations(); }
+}
+
+/* ================================================================
+   MEMBER: category chips + list
+   ================================================================ */
+function renderCategoryChips(){
+  const wrap = document.getElementById("categoryChips");
+  const chips = [{id:"all", name:"All", icon:"📍"}, ...state.categories];
+  wrap.innerHTML = chips.map(c => `
+    <button class="chip ${state.activeChip===c.id?'active':''}" onclick="setActiveChip('${c.id}')">
+      <span>${c.icon||''}</span><span>${escapeHtml(c.name)}</span>
+    </button>`).join("");
+}
+function setActiveChip(id){
+  state.activeChip = id;
+  renderCategoryChips();
+  renderLocationList();
+}
+
+function visibleLocations(){
+  return state.locations.filter(l => state.activeChip==="all" || l.categoryId===state.activeChip);
+}
+
+function renderLocationList(){
+  const list = visibleLocations();
+  const wrap = document.getElementById("locationList");
+  if(!list.length){
+    wrap.innerHTML = `<div class="empty-state">No locations here yet.</div>`;
+    return;
+  }
+  const withDist = list.map(l => ({
+    ...l,
+    dist: state.userPos ? haversineKm(state.userPos, {lat:l.lat,lng:l.lng}) : null
+  }));
+  if(state.userPos) withDist.sort((a,b)=>a.dist-b.dist);
+
+  wrap.innerHTML = withDist.map((l,i) => {
+    const c = catById(l.categoryId) || {};
+    return `
+    <div class="loc-card" onclick="openDetail('${l.id}')">
+      <div class="loc-icon" style="background:${c.color?c.color+'22':'var(--cream)'}">${c.icon||'📍'}</div>
+      <div class="loc-info">
+        <div class="name">${state.userPos && i===0 ? '<span class=\"star\">⭐</span> ':''}${escapeHtml(l.name)}</div>
+        <div class="meta">${escapeHtml(c.name||'')}${l.schedule ? ' · '+escapeHtml(l.schedule) : ''}</div>
+      </div>
+      ${l.dist!=null ? `<div class="loc-dist">${fmtDist(l.dist)}</div>` : ''}
+    </div>`;
+  }).join("");
+}
+
+function findNearMe(){
+  const btn = document.getElementById("findNearBtn");
+  btn.disabled = true; btn.textContent = "Locating…";
+  if(!navigator.geolocation){
+    toast("Geolocation not supported on this device.");
+    btn.disabled = false; btn.textContent = "📍 Find Locations Near Me";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    state.userPos = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+    btn.textContent = "📍 Location found — refresh";
+    btn.disabled = false;
+    renderLocationList();
+    renderRecommended();
+    renderMyLocations();
+  }, err=>{
+    toast("Couldn't get your location. Check permissions.");
+    btn.disabled = false; btn.textContent = "📍 Find Locations Near Me";
+  }, {enableHighAccuracy:true, timeout:10000});
+}
+
+function renderRecommended(){
+  const slot = document.getElementById("recommendedSlot");
+  if(!state.userPos){ slot.innerHTML=""; return; }
+  const list = visibleLocations().map(l=>({...l, dist:haversineKm(state.userPos,{lat:l.lat,lng:l.lng})}));
+  if(!list.length){ slot.innerHTML=""; return; }
+  list.sort((a,b)=>a.dist-b.dist);
+  const near = list[0];
+  const c = catById(near.categoryId)||{};
+  slot.innerHTML = `
+    <div class="nearme-card">
+      <div class="label">⭐ Recommended for you</div>
+      <div class="loc-card" style="border:none;padding:10px 0 0 0;" onclick="openDetail('${near.id}')">
+        <div class="loc-icon" style="background:${c.color?c.color+'22':'var(--cream)'}">${c.icon||'📍'}</div>
+        <div class="loc-info">
+          <div class="name">${escapeHtml(near.name)}</div>
+          <div class="meta">${escapeHtml(c.name||'')}${near.schedule?' · '+escapeHtml(near.schedule):''}</div>
+        </div>
+        <div class="loc-dist">${fmtDist(near.dist)}</div>
+      </div>
+    </div>`;
+}
+
+/* ================================================================
+   MEMBER: "my locations" (saved per category)
+   ================================================================ */
+function loadMySelectionsLocal(){
+  try{ state.mySelections = JSON.parse(localStorage.getItem("rc_geo_my_selections")||"{}"); }
+  catch(e){ state.mySelections = {}; }
+}
+function saveMySelectionsLocal(){
+  localStorage.setItem("rc_geo_my_selections", JSON.stringify(state.mySelections));
+}
+
+async function selectAsMine(locationId){
+  const loc = locById(locationId);
+  if(!loc) return;
+  state.mySelections[loc.categoryId] = locationId;
+  saveMySelectionsLocal();
+  await api("saveMemberSelection", {deviceId:getDeviceId(), categoryId:loc.categoryId, locationId});
+  toast(`Saved ${loc.name} as yours`);
+  renderMyLocations();
+  closeDetail();
+}
+
+function renderMyLocations(){
+  const wrap = document.getElementById("myLocationsSection");
+  const entries = Object.entries(state.mySelections).filter(([catId,locId])=>locById(locId));
+  if(!entries.length){ wrap.innerHTML=""; return; }
+  wrap.innerHTML = `<h2 class="section-title">My Locations</h2>` + entries.map(([catId,locId])=>{
+    const l = locById(locId), c = catById(catId)||{};
+    const dist = state.userPos ? haversineKm(state.userPos,{lat:l.lat,lng:l.lng}) : null;
+    return `
+    <div class="mine-card">
+      <div class="cat-label">${c.icon||''} ${escapeHtml(c.name||'')}</div>
+      <div class="name">${escapeHtml(l.name)}${dist!=null?` · <span class="mono" style="font-size:12px;color:var(--accent)">${fmtDist(dist)}</span>`:''}</div>
+      <div class="btn-row">
+        <button class="btn small outline" onclick="openFullMap('${l.id}')">View Map</button>
+        <button class="btn small" onclick="getDirections('${l.id}')">Get Directions</button>
+        <button class="btn small outline" onclick="openDetail('${l.id}')">Change</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ================================================================
+   MEMBER: detail bottom sheet
+   ================================================================ */
+let detailMap = null;
+function openDetail(id){
+  const l = locById(id); if(!l) return;
+  const c = catById(l.categoryId) || {};
+  const dist = state.userPos ? haversineKm(state.userPos,{lat:l.lat,lng:l.lng}) : null;
+  document.getElementById("detailContent").innerHTML = `
+    <h2 class="section-title" style="margin-top:0;">${c.icon||'📍'} ${escapeHtml(l.name)}</h2>
+    <div id="detailMiniMap" class="mini-map"></div>
+    <div class="detail-row"><div class="k">Category</div><div>${escapeHtml(c.name||'')}</div></div>
+    ${l.schedule?`<div class="detail-row"><div class="k">Schedule</div><div>${escapeHtml(l.schedule)}</div></div>`:''}
+    ${l.contactName||l.contactInfo?`<div class="detail-row"><div class="k">Contact</div><div>${escapeHtml(l.contactName||'')}${l.contactInfo?' · '+escapeHtml(l.contactInfo):''}</div></div>`:''}
+    ${l.address?`<div class="detail-row"><div class="k">Address</div><div>${escapeHtml(l.address)}</div></div>`:''}
+    ${dist!=null?`<div class="detail-row"><div class="k">Distance</div><div>${fmtDist(dist)} away</div></div>`:''}
+    ${l.description?`<div class="detail-row"><div class="k">Details</div><div>${escapeHtml(l.description)}</div></div>`:''}
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn outline" onclick="openFullMap('${l.id}')">View on Map</button>
+      <button class="btn" onclick="getDirections('${l.id}')">🧭 Directions</button>
+    </div>
+    <button class="btn accent" style="margin-top:8px;" onclick="selectAsMine('${l.id}')">⭐ Save as mine</button>
+  `;
+  document.getElementById("detailBackdrop").classList.remove("hidden");
+  document.getElementById("detailSheet").classList.remove("hidden");
+  setTimeout(()=>{
+    if(detailMap){ detailMap.remove(); detailMap=null; }
+    detailMap = L.map("detailMiniMap", {zoomControl:false, dragging:false, scrollWheelZoom:false}).setView([l.lat,l.lng], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap contributors'}).addTo(detailMap);
+    L.marker([l.lat,l.lng]).addTo(detailMap);
+    if(state.userPos){
+      L.circleMarker([state.userPos.lat, state.userPos.lng], {radius:6, color:'#2c5f4f', fillColor:'#2c5f4f', fillOpacity:1}).addTo(detailMap);
+    }
+  }, 50);
+}
+function closeDetail(){
+  document.getElementById("detailBackdrop").classList.add("hidden");
+  document.getElementById("detailSheet").classList.add("hidden");
+}
+
+/* ================================================================
+   Full-screen interactive map
+   ================================================================ */
+function openFullMap(id){
+  const l = locById(id); if(!l) return;
+  document.getElementById("mapModalTitle").textContent = l.name;
+  document.getElementById("mapModal").classList.remove("hidden");
+  setTimeout(()=>{
+    if(state.fullMapObj){ state.fullMapObj.remove(); state.fullMapObj=null; }
+    state.fullMapObj = L.map("fullMap").setView([l.lat,l.lng], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap contributors'}).addTo(state.fullMapObj);
+    L.marker([l.lat,l.lng]).addTo(state.fullMapObj).bindPopup(l.name).openPopup();
+    if(state.userPos){
+      L.circleMarker([state.userPos.lat, state.userPos.lng], {radius:7, color:'#2c5f4f', fillColor:'#2c5f4f', fillOpacity:1}).addTo(state.fullMapObj).bindPopup("You");
+    }
+  }, 60);
+}
+function closeFullMap(){
+  document.getElementById("mapModal").classList.add("hidden");
+  if(state.fullMapObj){ state.fullMapObj.remove(); state.fullMapObj=null; }
+}
+
+function getDirections(id){
+  const l = locById(id); if(!l) return;
+  let url = `https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}`;
+  if(state.userPos) url += `&origin=${state.userPos.lat},${state.userPos.lng}`;
+  window.open(url, "_blank");
+}
+
+/* ================================================================
+   ADMIN: categories
+   ================================================================ */
+function renderAdminCategories(){
+  const wrap = document.getElementById("adminCategoryList");
+  if(!state.categories.length){ wrap.innerHTML = `<div class="empty-state">No categories yet.</div>`; return; }
+  wrap.innerHTML = state.categories.map(c => `
+    <div class="admin-list-item">
+      <span style="font-size:20px;">${c.icon||''}</span>
+      <span class="grow">${escapeHtml(c.name)}</span>
+      <span style="width:14px;height:14px;border-radius:50%;background:${c.color};display:inline-block;"></span>
+      <button class="btn small outline" onclick="openCategoryForm('${c.id}')">Edit</button>
+      <button class="btn small outline" onclick="confirmDeactivateCategory('${c.id}')">Deactivate</button>
+    </div>`).join("");
+}
+function openCategoryForm(id){
+  document.getElementById("catId").value = id || "";
+  document.getElementById("categoryFormTitle").textContent = id ? "Edit Category" : "Add Category";
+  const c = id ? catById(id) : null;
+  document.getElementById("catName").value = c ? c.name : "";
+  document.getElementById("catIcon").value = c ? c.icon : "";
+  renderSwatches(c ? c.color : SWATCHES[0]);
+  document.getElementById("categorySheetBackdrop").classList.remove("hidden");
+  document.getElementById("categorySheet").classList.remove("hidden");
+}
+function renderSwatches(selected){
+  document.getElementById("catSwatches").innerHTML = SWATCHES.map(s => `
+    <div class="swatch ${s===selected?'selected':''}" style="background:${s}" onclick="pickSwatch('${s}')"></div>`).join("");
+}
+function pickSwatch(s){ renderSwatches(s); }
+function closeCategoryForm(){
+  document.getElementById("categorySheetBackdrop").classList.add("hidden");
+  document.getElementById("categorySheet").classList.add("hidden");
+}
+async function saveCategory(){
+  const id = document.getElementById("catId").value || ("cat_" + Date.now());
+  const name = document.getElementById("catName").value.trim();
+  const icon = document.getElementById("catIcon").value.trim() || "📍";
+  const selectedSwatch = document.querySelector("#catSwatches .swatch.selected");
+  const color = selectedSwatch ? selectedSwatch.style.background : SWATCHES[0];
+  if(!name){ toast("Category needs a name."); return; }
+  const payload = {id, name, icon, color, active:true};
+  const existingIdx = state.categories.findIndex(c=>c.id===id);
+  if(existingIdx>-1) state.categories[existingIdx] = payload; else state.categories.push(payload);
+  await api("upsertCategory", payload);
+  closeCategoryForm();
+  renderAdminCategories();
+  renderCategoryChips();
+  populateCategorySelects();
+  toast("Category saved.");
+}
+function confirmDeactivateCategory(id){
+  const c = catById(id);
+  openConfirm(`Deactivate "${c.name}"?`, "Its locations will stop showing to members. This can be reversed from your Sheet.", async ()=>{
+    c.active = false;
+    state.categories = state.categories.filter(x=>x.id!==id);
+    await api("deactivateCategory", {id});
+    renderAdminCategories(); renderCategoryChips(); populateCategorySelects();
+    toast("Category deactivated.");
+  });
+}
+
+/* ================================================================
+   ADMIN: locations
+   ================================================================ */
+function populateCategorySelects(){
+  const opts = state.categories.map(c=>`<option value="${c.id}">${c.icon} ${escapeHtml(c.name)}</option>`).join("");
+  document.getElementById("locCategory").innerHTML = opts;
+  document.getElementById("adminCategoryFilter").innerHTML = `<option value="all">All categories</option>` + opts;
+}
+function renderAdminLocations(){
+  const filter = document.getElementById("adminCategoryFilter").value || "all";
+  const wrap = document.getElementById("adminLocationList");
+  const list = state.locations.filter(l => filter==="all" || l.categoryId===filter);
+  if(!list.length){ wrap.innerHTML = `<div class="empty-state">No locations here yet.</div>`; return; }
+  wrap.innerHTML = list.map(l => {
+    const c = catById(l.categoryId) || {};
+    return `
+    <div class="admin-list-item">
+      <span style="font-size:18px;">${c.icon||''}</span>
+      <span class="grow">${escapeHtml(l.name)}<br><span class="tag">${escapeHtml(c.name||'')}</span></span>
+      <button class="btn small outline" onclick="openLocationForm('${l.id}')">Edit</button>
+      <button class="btn small outline" onclick="confirmDeactivateLocation('${l.id}')">Deactivate</button>
+    </div>`;
+  }).join("");
+}
+
+function openLocationForm(id){
+  const l = id ? locById(id) : null;
+  document.getElementById("locId").value = id || "";
+  document.getElementById("locationFormTitle").textContent = id ? "Edit Location" : "Add Location";
+  document.getElementById("locCategory").value = l ? l.categoryId : (state.categories[0] ? state.categories[0].id : "");
+  document.getElementById("locName").value = l ? l.name : "";
+  document.getElementById("locDesc").value = l ? l.description : "";
+  document.getElementById("locContactName").value = l ? l.contactName : "";
+  document.getElementById("locContactInfo").value = l ? l.contactInfo : "";
+  document.getElementById("locSchedule").value = l ? l.schedule : "";
+  document.getElementById("locAddress").value = l ? l.address : "";
+  document.getElementById("locGeoSearch").value = "";
+  document.getElementById("geoResults").classList.add("hidden");
+
+  const startLat = l ? l.lat : NAIROBI.lat;
+  const startLng = l ? l.lng : NAIROBI.lng;
+  state.pickedLatLng = {lat:startLat, lng:startLng};
+  updateCoordReadout();
+
+  document.getElementById("locationSheetBackdrop").classList.remove("hidden");
+  document.getElementById("locationSheet").classList.remove("hidden");
+
+  setTimeout(()=>{
+    if(state.pickMapObj){ state.pickMapObj.remove(); state.pickMapObj=null; }
+    state.pickMapObj = L.map("pickMap").setView([startLat,startLng], l ? 15 : 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {attribution:'&copy; OpenStreetMap contributors'}).addTo(state.pickMapObj);
+    state.pickMarker = L.marker([startLat,startLng], {draggable:true}).addTo(state.pickMapObj);
+    state.pickMarker.on("dragend", e=>{
+      const p = e.target.getLatLng();
+      state.pickedLatLng = {lat:p.lat, lng:p.lng};
+      updateCoordReadout();
+    });
+    state.pickMapObj.on("click", e=>{
+      state.pickMarker.setLatLng(e.latlng);
+      state.pickedLatLng = {lat:e.latlng.lat, lng:e.latlng.lng};
+      updateCoordReadout();
+    });
+  }, 60);
+}
+function updateCoordReadout(){
+  const p = state.pickedLatLng;
+  document.getElementById("pickCoordReadout").textContent = p ? `Pin set at ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : "Tap the map to set a location.";
+}
+function useMyLocationForPin(){
+  if(!navigator.geolocation){ toast("Geolocation not supported."); return; }
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const ll = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+    state.pickedLatLng = ll;
+    state.pickMapObj.setView([ll.lat,ll.lng], 16);
+    state.pickMarker.setLatLng(ll);
+    updateCoordReadout();
+  }, ()=> toast("Couldn't get your location."));
+}
+function closeLocationForm(){
+  document.getElementById("locationSheetBackdrop").classList.add("hidden");
+  document.getElementById("locationSheet").classList.add("hidden");
+}
+async function saveLocation(){
+  const id = document.getElementById("locId").value || ("loc_" + Date.now());
+  const categoryId = document.getElementById("locCategory").value;
+  const name = document.getElementById("locName").value.trim();
+  if(!name){ toast("Location needs a name."); return; }
+  if(!state.pickedLatLng){ toast("Set the location on the map first."); return; }
+  const payload = {
+    id, categoryId, name,
+    description: document.getElementById("locDesc").value.trim(),
+    contactName: document.getElementById("locContactName").value.trim(),
+    contactInfo: document.getElementById("locContactInfo").value.trim(),
+    schedule: document.getElementById("locSchedule").value.trim(),
+    address: document.getElementById("locAddress").value.trim(),
+    lat: state.pickedLatLng.lat, lng: state.pickedLatLng.lng,
+    active: true
+  };
+  const existingIdx = state.locations.findIndex(l=>l.id===id);
+  if(existingIdx>-1) state.locations[existingIdx] = payload; else state.locations.push(payload);
+  await api("upsertLocation", payload);
+  closeLocationForm();
+  renderAdminLocations();
+  renderLocationList();
+  renderRecommended();
+  toast("Location saved & published.");
+}
+function confirmDeactivateLocation(id){
+  const l = locById(id);
+  openConfirm(`Deactivate "${l.name}"?`, "It will stop showing to members. This can be reversed from your Sheet.", async ()=>{
+    state.locations = state.locations.filter(x=>x.id!==id);
+    await api("deactivateLocation", {id});
+    renderAdminLocations(); renderLocationList();
+    toast("Location deactivated.");
+  });
+}
+
+/* ================================================================
+   Nominatim (OpenStreetMap) search — for admin to jump the map
+   Free, no API key. Please keep usage light (attribution required).
+   ================================================================ */
+let geoSearchTimer = null;
+function debouncedGeoSearch(){
+  clearTimeout(geoSearchTimer);
+  geoSearchTimer = setTimeout(runGeoSearch, 500);
+}
+async function runGeoSearch(){
+  const q = document.getElementById("locGeoSearch").value.trim();
+  const resultsBox = document.getElementById("geoResults");
+  if(q.length < 3){ resultsBox.classList.add("hidden"); return; }
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if(!data.length){ resultsBox.innerHTML = `<div>No matches.</div>`; resultsBox.classList.remove("hidden"); return; }
+    resultsBox.innerHTML = data.map(d => `<div onclick='jumpToGeoResult(${d.lat},${d.lon},"${escapeHtml(d.display_name).replace(/"/g,'&quot;')}")'>${escapeHtml(d.display_name)}</div>`).join("");
+    resultsBox.classList.remove("hidden");
+  }catch(e){
+    resultsBox.classList.add("hidden");
+  }
+}
+function jumpToGeoResult(lat,lng,label){
+  state.pickedLatLng = {lat:parseFloat(lat), lng:parseFloat(lng)};
+  state.pickMapObj.setView([lat,lng], 16);
+  state.pickMarker.setLatLng([lat,lng]);
+  updateCoordReadout();
+  document.getElementById("geoResults").classList.add("hidden");
+  document.getElementById("locGeoSearch").value = label;
+}
+
+/* ================================================================
+   Generic confirm modal
+   ================================================================ */
+function openConfirm(title, text, onYes){
+  document.getElementById("confirmTitle").textContent = title;
+  document.getElementById("confirmText").textContent = text;
+  const btn = document.getElementById("confirmYesBtn");
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener("click", ()=>{ closeConfirm(); onYes(); });
+  document.getElementById("confirmModal").classList.remove("hidden");
+}
+function closeConfirm(){ document.getElementById("confirmModal").classList.add("hidden"); }
+
+/* ---------------- misc ---------------- */
+function escapeHtml(s){
+  return String(s||"").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+}
+
+/* ---------------- init ---------------- */
+loadAll();
+</script>
+</body>
+</html>

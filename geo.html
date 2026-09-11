@@ -49,7 +49,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ══ TOP BAR ══════════════════════════════════════════════ */
     #topbar {
       position: fixed;
       top: 0; left: 0; right: 0;
@@ -80,7 +79,6 @@
     }
     .tb-spacer { flex: 1; }
 
-    /* ══ SCROLL AREA ══════════════════════════════════════════ */
     #scroll-area {
       position: fixed;
       top: var(--bar-h); left: 0; right: 0; bottom: 0;
@@ -89,20 +87,14 @@
       padding-bottom: 90px;
     }
 
-    .geo-intro {
-      padding: 16px 16px 4px;
-    }
+    .geo-intro { padding: 16px 16px 4px; }
     .geo-intro h1 {
       font-family: var(--font-head);
       font-size: 1.6rem;
       letter-spacing: 0.04em;
       color: var(--ink);
     }
-    .geo-intro p {
-      font-size: 0.82rem;
-      color: var(--lead);
-      margin-top: 2px;
-    }
+    .geo-intro p { font-size: 0.82rem; color: var(--lead); margin-top: 2px; }
 
     .loc-permission-row {
       margin: 10px 16px 0;
@@ -119,7 +111,6 @@
     }
     .loc-permission-row i { color: var(--accent2); }
 
-    /* ══ EVENT CARDS ══════════════════════════════════════════ */
     #events-list { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 12px; }
 
     .event-card {
@@ -128,14 +119,8 @@
       border-radius: 14px;
       padding: 14px;
     }
-    .event-card-top {
-      display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
-    }
-    .event-title {
-      font-weight: 700;
-      font-size: 1rem;
-      color: var(--ink);
-    }
+    .event-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+    .event-title { font-weight: 700; font-size: 1rem; color: var(--ink); }
     .event-distance {
       flex-shrink: 0;
       font-family: var(--font-mono);
@@ -148,19 +133,9 @@
     }
     .event-distance.unknown { color: var(--steel); background: rgba(100,116,139,0.12); }
 
-    .event-desc {
-      margin-top: 6px;
-      font-size: 0.85rem;
-      line-height: 1.5;
-      color: var(--lead);
-      white-space: pre-wrap;
-    }
+    .event-desc { margin-top: 6px; font-size: 0.85rem; line-height: 1.5; color: var(--lead); white-space: pre-wrap; }
 
-    .event-actions {
-      margin-top: 12px;
-      display: flex;
-      gap: 8px;
-    }
+    .event-actions { margin-top: 12px; display: flex; gap: 8px; }
     .event-btn {
       flex: 1;
       display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -189,7 +164,6 @@
     }
     .list-error-inline { color: var(--danger); }
 
-    /* ══ FAB (admin only) ═════════════════════════════════════ */
     #fab-add {
       position: fixed;
       right: 18px;
@@ -209,7 +183,6 @@
     #fab-add.visible { display: flex; }
     #fab-add:active { transform: scale(0.94); }
 
-    /* ══ MODAL ════════════════════════════════════════════════ */
     #modal-backdrop {
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.55);
@@ -231,37 +204,13 @@
     }
     @keyframes sheetUp { from { transform: translateY(24px); opacity:0; } to { transform: translateY(0); opacity:1; } }
 
-    .modal-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--wire);
-      flex-shrink: 0;
-    }
-    .modal-header h2 {
-      font-family: var(--font-head);
-      font-size: 1.2rem;
-      letter-spacing: 0.05em;
-      color: var(--ink);
-    }
-    .modal-close {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      background: var(--lift);
-      border: none;
-      color: var(--lead);
-      cursor: pointer;
-    }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--wire); flex-shrink: 0; }
+    .modal-header h2 { font-family: var(--font-head); font-size: 1.2rem; letter-spacing: 0.05em; color: var(--ink); }
+    .modal-close { width: 30px; height: 30px; border-radius: 50%; background: var(--lift); border: none; color: var(--lead); cursor: pointer; }
 
     .modal-body { padding: 16px; overflow-y: auto; }
     .field { margin-bottom: 14px; }
-    .field label {
-      display: block;
-      font-size: 0.72rem;
-      font-family: var(--font-mono);
-      letter-spacing: 0.06em;
-      color: var(--steel);
-      margin-bottom: 6px;
-    }
+    .field label { display: block; font-size: 0.72rem; font-family: var(--font-mono); letter-spacing: 0.06em; color: var(--steel); margin-bottom: 6px; }
     .field input, .field textarea {
       width: 100%;
       background: var(--lift);
@@ -273,51 +222,21 @@
       font-family: var(--font-body);
       resize: vertical;
     }
-    .field input:focus, .field textarea:focus {
-      outline: none;
-      border-color: var(--accent2);
-    }
-    .field-hint {
-      font-size: 0.7rem;
-      color: var(--steel);
-      margin-top: 4px;
-    }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent2); }
+    .field-hint { font-size: 0.7rem; color: var(--steel); margin-top: 4px; }
     .latlng-row { display: flex; gap: 8px; }
     .latlng-row .field { flex: 1; margin-bottom: 0; }
-    .latlng-status {
-      margin-top: 8px;
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      padding: 6px 10px;
-      border-radius: 7px;
-      display: none;
-    }
+    .latlng-status { margin-top: 8px; font-family: var(--font-mono); font-size: 0.7rem; padding: 6px 10px; border-radius: 7px; display: none; }
     .latlng-status.show { display: block; }
     .latlng-status.ok { background: rgba(16,185,129,0.12); color: var(--green); }
     .latlng-status.err { background: rgba(239,68,68,0.12); color: var(--danger); }
 
-    .modal-footer {
-      padding: 12px 16px 20px;
-      border-top: 1px solid var(--wire);
-      display: flex;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-    .modal-btn {
-      flex: 1;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.88rem;
-      border: none;
-      cursor: pointer;
-      font-family: var(--font-body);
-    }
+    .modal-footer { padding: 12px 16px 20px; border-top: 1px solid var(--wire); display: flex; gap: 10px; flex-shrink: 0; }
+    .modal-btn { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.88rem; border: none; cursor: pointer; font-family: var(--font-body); }
     .modal-btn.save { background: var(--accent); color: #fff; }
     .modal-btn.save:disabled { opacity: 0.5; }
     .modal-btn.delete { background: rgba(239,68,68,0.12); color: var(--danger); }
 
-    /* ══ TOAST ════════════════════════════════════════════════ */
     #toast-area {
       position: fixed; top: calc(var(--bar-h) + 10px); left: 50%;
       transform: translateX(-50%); z-index: 9999;
@@ -369,7 +288,6 @@
   <i class="fas fa-plus"></i>
 </button>
 
-<!-- ══ MODAL ══ -->
 <div id="modal-backdrop">
   <div id="modal-sheet">
     <div class="modal-header">
@@ -414,22 +332,34 @@
 <script>
 'use strict';
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1deb9Ny8Rtan2fF1egD3_ECMbmWeDuUQMnYTST3e8rRwQyEOOIhoMVTzzM5wp54tW/exec';
-const DASHBOARD_URL = SCRIPT_URL;
+/* ── TWO BACKENDS ─────────────────────────────────────────────────
+   EVENTS_SCRIPT_URL: your new, separate Apps Script/Sheet that only
+   stores event rows (title, description, mapLink, lat, lng...).
+   It does NOT know about users, so it is never used for status/role
+   checks — only for getEvents / createEvent / updateEvent.
+
+   USER_SCRIPT_URL: the SAME backend your index.html already uses
+   for login/status/roles. geo.html calls this one for getUserStatus
+   so "who is Admin" always comes from your one source of truth for
+   users, no matter which script the events live in. */
+const EVENTS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw1deb9Ny8Rtan2fF1egD3_ECMbmWeDuUQMnYTST3e8rRwQyEOOIhoMVTzzM5wp54tW/exec';
+const USER_SCRIPT_URL   = 'https://script.google.com/macros/s/AKfycbwNncKZQpVBgKJV8MXq7J1nyTJT5Nh9LVzzJQTuJ89vjtzwroQ9iLE5vBqejTvmGiia/exec';
 
 const userName = localStorage.getItem('userName') || '';
 if (!userName) { window.location.href = 'login.html'; }
 
 /* ── ADMIN DETECTION ──────────────────────────────────────────────
-   Assumption: your backend/localStorage exposes the user's role.
-   Adjust the field name(s) below to match how your app already
-   marks a user as Admin (e.g. the response from getUserStatus). */
+   Reuses the exact same call your index.html already makes
+   (operation=getUserStatus) against the ORIGINAL script, so role
+   detection here matches the rest of the app automatically.
+   Adjust the field name(s) below only if index.html reads the role
+   from a different key than isAdmin/userRole/role. */
 let isAdmin = (localStorage.getItem('userRole') || '').toLowerCase() === 'admin'
            || localStorage.getItem('isAdmin') === 'true';
 
 async function confirmAdminFromBackend() {
   try {
-    const res = await fetch(`${DASHBOARD_URL}?operation=getUserStatus&name=${encodeURIComponent(userName)}`);
+    const res = await fetch(`${USER_SCRIPT_URL}?operation=getUserStatus&name=${encodeURIComponent(userName)}`);
     const data = await res.json();
     if (data && (data.isAdmin === true || (data.userRole || data.role || '').toString().toLowerCase() === 'admin')) {
       isAdmin = true;
@@ -457,14 +387,13 @@ function esc(s) {
   return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* Extract lat/lng from common Google Maps URL formats */
 function extractLatLng(url) {
   if (!url) return null;
   const patterns = [
-    /@(-?\d+\.\d+),(-?\d+\.\d+)/,          // .../@37.4219,-122.084,17z
-    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,      // place URLs embed exact pin coords
-    /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,     // ?q=37.4219,-122.084
-    /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/     // ?ll=37.4219,-122.084
+    /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+    /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+    /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/
   ];
   for (const re of patterns) {
     const m = url.match(re);
@@ -485,7 +414,6 @@ function fmtDistance(km) {
   return `${km.toFixed(1)} km away`;
 }
 
-/* ── LOCATION PERMISSION ──────────────────────────────────────── */
 const locRow = document.getElementById('loc-permission-row');
 const locText = document.getElementById('loc-permission-text');
 
@@ -508,9 +436,8 @@ function requestLocation() {
   );
 }
 locRow.addEventListener('click', requestLocation);
-requestLocation(); // try immediately; silently falls back if denied
+requestLocation();
 
-/* ── RENDER ───────────────────────────────────────────────────── */
 function renderEvents() {
   const list = document.getElementById('events-list');
   if (!events.length) {
@@ -551,11 +478,10 @@ function renderEvents() {
   }
 }
 
-/* ── LOAD EVENTS ──────────────────────────────────────────────── */
 async function loadEvents() {
   const list = document.getElementById('events-list');
   try {
-    const res = await fetch(`${SCRIPT_URL}?operation=getEvents`);
+    const res = await fetch(`${EVENTS_SCRIPT_URL}?operation=getEvents`);
     const data = await res.json();
     events = (data.events || []).filter(e => e.active !== false && e.active !== 'FALSE');
     renderEvents();
@@ -565,7 +491,6 @@ async function loadEvents() {
   }
 }
 
-/* ── MODAL (admin create/edit) ───────────────────────────────── */
 const backdrop = document.getElementById('modal-backdrop');
 const modalTitle = document.getElementById('modal-title');
 const fTitle = document.getElementById('f-title');
@@ -602,21 +527,53 @@ document.getElementById('fab-add').addEventListener('click', () => openModal(nul
 document.getElementById('modal-close').addEventListener('click', closeModal);
 backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
 
+let resolveTimer = null;
+
 fMapLink.addEventListener('input', () => {
-  const coords = extractLatLng(fMapLink.value.trim());
+  const val = fMapLink.value.trim();
+  clearTimeout(resolveTimer);
+
+  const coords = extractLatLng(val);
   if (coords) {
     fLat.value = coords.lat;
     fLng.value = coords.lng;
     latlngStatus.textContent = `✓ Coordinates found: ${coords.lat}, ${coords.lng}`;
     latlngStatus.className = 'latlng-status show ok';
-  } else if (fMapLink.value.trim()) {
-    latlngStatus.textContent = 'Couldn\'t auto-detect coordinates — fill Latitude/Longitude manually (open the link, right-click the pin → "What\'s here?" to get numbers).';
-    latlngStatus.className = 'latlng-status show err';
-  } else {
-    latlngStatus.classList.remove('show');
+    return;
   }
+
+  if (!val) {
+    latlngStatus.classList.remove('show');
+    return;
+  }
+
+  // Short links (maps.app.goo.gl, goo.gl/maps) have no coords in the
+  // URL itself — ask the backend to resolve the redirect.
+  latlngStatus.textContent = 'Resolving link…';
+  latlngStatus.className = 'latlng-status show';
+  resolveTimer = setTimeout(() => resolveShortLink(val), 500);
 });
 
+async function resolveShortLink(url) {
+  try {
+    const res = await fetch(`${EVENTS_SCRIPT_URL}?operation=resolveMapLink&url=${encodeURIComponent(url)}`);
+    const data = await res.json();
+    if (data.success && fMapLink.value.trim() === url) {
+      fLat.value = data.lat;
+      fLng.value = data.lng;
+      latlngStatus.textContent = `✓ Coordinates found: ${data.lat}, ${data.lng}`;
+      latlngStatus.className = 'latlng-status show ok';
+    } else if (fMapLink.value.trim() === url) {
+      latlngStatus.textContent = 'Couldn\'t auto-detect coordinates — fill Latitude/Longitude manually (open the link, right-click the pin → "What\'s here?" to get numbers).';
+      latlngStatus.className = 'latlng-status show err';
+    }
+  } catch {
+    if (fMapLink.value.trim() === url) {
+      latlngStatus.textContent = 'Couldn\'t auto-detect coordinates — fill manually.';
+      latlngStatus.className = 'latlng-status show err';
+    }
+  }
+}
 document.getElementById('modal-save').addEventListener('click', async () => {
   const title = fTitle.value.trim();
   const description = fDesc.value.trim();
@@ -638,7 +595,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
       ? { operation: 'updateEvent', id: editingId, title, description, mapLink, lat, lng }
       : { operation: 'createEvent', title, description, mapLink, lat, lng, createdBy: userName };
 
-    const res = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
+    const res = await fetch(EVENTS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(body) });
     const data = await res.json();
 
     if (data.success === false) throw new Error(data.error || 'Save failed');
@@ -659,7 +616,7 @@ deleteBtn.addEventListener('click', async () => {
   if (!editingId) return;
   if (!confirm('Remove this event? It will no longer be visible to members.')) return;
   try {
-    const res = await fetch(SCRIPT_URL, {
+    const res = await fetch(EVENTS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify({ operation: 'updateEvent', id: editingId, active: false })
     });
@@ -674,7 +631,6 @@ deleteBtn.addEventListener('click', async () => {
   }
 });
 
-/* ── REFRESH ──────────────────────────────────────────────────── */
 let isRefreshing = false;
 async function refreshAll() {
   if (isRefreshing) return;
@@ -683,7 +639,7 @@ async function refreshAll() {
   btn.classList.add('spinning');
   btn.disabled = true;
   try {
-    await loadEvents();
+    await Promise.all([loadEvents(), confirmAdminFromBackend()]);
     toast('Refreshed', 'ok', 1500);
   } finally {
     btn.classList.remove('spinning');
@@ -693,7 +649,6 @@ async function refreshAll() {
 }
 document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
-/* ── INIT ─────────────────────────────────────────────────────── */
 loadEvents();
 confirmAdminFromBackend();
 </script>

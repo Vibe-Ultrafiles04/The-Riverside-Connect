@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vet Connect — Dashboard</title>
+<meta name="theme-color" content="#1F4D3A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --color-primary:#1F4D3A;
+    --color-primary-light:#2E6B50;
+    --color-primary-dark:#12352A;
+    --color-sage:#7C9A82;
+    --color-bg:#FBFAF6;
+    --color-surface:#FFFFFF;
+    --color-border:#E4E0D4;
+    --color-text:#16241C;
+    --color-text-muted:#5B6B60;
+    --color-gold:#B8912E;
+    --color-gold-bg:#F7EFDC;
+    --color-error:#B3261E;
+    --color-error-bg:#FBEAE9;
+    --color-ok:#2E6B50;
+    --color-ok-bg:#E7F0EA;
+    --font-display:'Fraunces', Georgia, serif;
+    --font-body:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius-lg:22px;
+    --radius-md:14px;
+    --radius-sm:10px;
+    --shadow-card: 0 10px 30px rgba(18,53,42,0.08);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --tabbar-h: 64px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body);
+    background:var(--color-bg);
+    color:var(--color-text);
+    min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+  }
+  button, input{font-family:inherit;}
+
+  /* ===== App shell ===== */
+  #app{min-height:100dvh;display:flex;flex-direction:column;}
+
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:calc(14px + var(--safe-top)) 20px 14px;
+    background:var(--color-bg);
+    border-bottom:1px solid var(--color-border);
+  }
+  .topbar-brand{display:flex;align-items:center;gap:9px;}
+  .topbar-brand svg{width:26px;height:26px;flex:0 0 auto;}
+  .topbar-brand span{font-family:var(--font-display);font-weight:600;font-size:1.05rem;color:var(--color-primary-dark);}
+  .topbar-avatar-btn{
+    width:38px;height:38px;border-radius:50%;border:1.5px solid var(--color-border);
+    background:var(--color-surface);overflow:hidden;padding:0;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .topbar-avatar-btn img{width:100%;height:100%;object-fit:cover;display:none;}
+  .topbar-avatar-btn svg{width:19px;height:19px;color:var(--color-sage);}
+
+  main.view{
+    flex:1;
+    width:100%;max-width:520px;margin:0 auto;
+    padding:20px 20px calc(var(--tabbar-h) + 28px + var(--safe-bottom));
+  }
+  .view-panel{display:none;animation:fadeUp .28s ease both;}
+  .view-panel.active{display:block;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ===== Bottom tab bar ===== */
+  .tabbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    height:calc(var(--tabbar-h) + var(--safe-bottom));
+    padding-bottom:var(--safe-bottom);
+    background:var(--color-surface);
+    border-top:1px solid var(--color-border);
+    display:flex;
+    max-width:520px;margin:0 auto;
+  }
+  .tab-btn{
+    flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:none;border:none;cursor:pointer;color:var(--color-text-muted);
+    font-size:.7rem;font-weight:600;padding:6px 0;-webkit-tap-highlight-color:transparent;
+  }
+  .tab-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;}
+  .tab-btn.active{color:var(--color-primary);}
+  .tab-btn .dot{
+    position:absolute;transform:translate(11px,-13px);
+    width:7px;height:7px;border-radius:50%;background:var(--color-gold);display:none;
+  }
+  .tab-btn.has-badge .dot{display:block;}
+
+  /* ===== Shared card / text styles ===== */
+  .card{
+    background:var(--color-surface);
+    border:1px solid var(--color-border);
+    border-radius:var(--radius-lg);
+    padding:22px;
+    box-shadow:var(--shadow-card);
+  }
+  h1.page-title{
+    font-family:var(--font-display);font-weight:600;font-size:1.5rem;
+    margin:2px 0 2px;color:var(--color-primary-dark);
+  }
+  p.page-sub{margin:0 0 20px;color:var(--color-text-muted);font-size:.92rem;}
+
+  .banner{
+    display:none;
+    border-radius:var(--radius-sm);
+    padding:11px 14px;font-size:.83rem;line-height:1.45;margin-bottom:16px;
+  }
+  .banner.show{display:block;}
+  .banner-info{background:var(--color-gold-bg);color:#7A5E1E;}
+  .banner-error{background:var(--color-error-bg);color:var(--color-error);}
+
+  /* Stat row */
+  .stat-row{display:flex;gap:12px;margin-bottom:22px;}
+  .stat-card{
+    flex:1;background:var(--color-surface);border:1px solid var(--color-border);
+    border-radius:var(--radius-md);padding:16px;
+  }
+  .stat-num{font-family:var(--font-display);font-weight:600;font-size:1.7rem;color:var(--color-primary-dark);line-height:1;}
+  .stat-label{font-size:.78rem;color:var(--color-text-muted);margin-top:6px;}
+
+  .section-heading{
+    font-family:var(--font-display);font-weight:600;font-size:1.1rem;
+    color:var(--color-primary-dark);margin:0 0 12px;
+  }
+
+  /* Appointment card */
+  .appt-list{display:flex;flex-direction:column;gap:10px;}
+  .appt-card{
+    display:flex;gap:14px;align-items:flex-start;
+    background:var(--color-surface);border:1px solid var(--color-border);
+    border-radius:var(--radius-md);padding:14px 16px;
+  }
+  .appt-time{
+    font-family:var(--font-display);font-weight:600;font-size:.95rem;
+    color:var(--color-primary-dark);min-width:64px;
+  }
+  .appt-body{flex:1;min-width:0;}
+  .appt-pet{font-weight:600;font-size:.95rem;}
+  .appt-meta{font-size:.83rem;color:var(--color-text-muted);margin-top:2px;}
+  .appt-reason{font-size:.83rem;color:var(--color-text-muted);margin-top:4px;}
+  .status-pill{
+    display:inline-block;font-size:.72rem;font-weight:600;padding:3px 10px;border-radius:999px;margin-top:8px;
+  }
+  .status-confirmed{background:var(--color-ok-bg);color:var(--color-ok);}
+  .status-pending{background:var(--color-gold-bg);color:#7A5E1E;}
+  .status-done{background:var(--color-border);color:var(--color-text-muted);}
+
+  /* Segmented control */
+  .segmented{
+    display:flex;background:var(--color-border);border-radius:999px;padding:3px;margin-bottom:18px;
+  }
+  .segmented button{
+    flex:1;border:none;background:none;padding:9px 0;border-radius:999px;
+    font-size:.85rem;font-weight:600;color:var(--color-text-muted);cursor:pointer;
+  }
+  .segmented button.active{background:var(--color-surface);color:var(--color-primary-dark);box-shadow:0 1px 3px rgba(0,0,0,0.08);}
+
+  /* Search */
+  .search-wrap{position:relative;margin-bottom:18px;}
+  .search-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--color-text-muted);}
+  .search-wrap input{
+    width:100%;padding:13px 14px 13px 40px;font-size:.95rem;border:1.5px solid var(--color-border);
+    border-radius:999px;background:var(--color-surface);outline:none;
+  }
+  .search-wrap input:focus{border-color:var(--color-primary);}
+
+  /* Patient card */
+  .patient-list{display:flex;flex-direction:column;gap:10px;}
+  .patient-card{
+    display:flex;gap:13px;align-items:center;
+    background:var(--color-surface);border:1px solid var(--color-border);
+    border-radius:var(--radius-md);padding:12px 14px;cursor:pointer;
+  }
+  .patient-avatar{
+    width:44px;height:44px;border-radius:50%;background:var(--color-bg);
+    border:1.5px solid var(--color-border);flex:0 0 auto;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .patient-avatar img{width:100%;height:100%;object-fit:cover;}
+  .patient-avatar svg{width:20px;height:20px;color:var(--color-sage);}
+  .patient-body{flex:1;min-width:0;}
+  .patient-name{font-weight:600;font-size:.92rem;}
+  .patient-meta{font-size:.8rem;color:var(--color-text-muted);margin-top:2px;}
+  .patient-chevron{width:16px;height:16px;color:var(--color-text-muted);flex:0 0 auto;}
+
+  /* Empty state */
+  .empty-state{
+    text-align:center;padding:36px 16px;color:var(--color-text-muted);
+  }
+  .empty-state svg{width:44px;height:44px;color:var(--color-sage);margin-bottom:10px;}
+  .empty-state p{margin:0;font-size:.9rem;}
+
+  /* Profile view */
+  .profile-header{display:flex;flex-direction:column;align-items:center;margin-bottom:26px;}
+  .profile-avatar{
+    width:88px;height:88px;border-radius:50%;background:var(--color-surface);
+    border:2px solid var(--color-border);overflow:hidden;
+    display:flex;align-items:center;justify-content:center;margin-bottom:12px;
+  }
+  .profile-avatar img{width:100%;height:100%;object-fit:cover;display:none;}
+  .profile-avatar svg{width:38px;height:38px;color:var(--color-sage);}
+  .profile-name{font-family:var(--font-display);font-weight:600;font-size:1.2rem;color:var(--color-primary-dark);}
+  .profile-email{font-size:.85rem;color:var(--color-text-muted);margin-top:2px;}
+
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:.82rem;font-weight:600;margin-bottom:6px;}
+  .field input{
+    width:100%;padding:13px 15px;font-size:.95rem;border:1.5px solid var(--color-border);
+    border-radius:var(--radius-sm);background:var(--color-bg);outline:none;
+  }
+  .field input:focus{border-color:var(--color-primary);}
+  .field input:disabled{color:var(--color-text-muted);}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    padding:14px 18px;font-size:.95rem;font-weight:600;border-radius:999px;border:none;
+    cursor:pointer;transition:transform .1s ease, background .15s ease, opacity .15s ease;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+  .btn-primary{background:var(--color-primary);color:#fff;}
+  .btn-primary:not(:disabled):hover{background:var(--color-primary-light);}
+  .btn-danger-outline{background:transparent;color:var(--color-error);border:1.5px solid var(--color-error-bg);margin-top:10px;}
+
+  .spinner{
+    width:30px;height:30px;border-radius:50%;
+    border:3px solid var(--color-border);border-top-color:var(--color-primary);
+    animation:spin .8s linear infinite;margin:40px auto;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  #toast{
+    position:fixed;left:50%;bottom:calc(var(--tabbar-h) + 16px + var(--safe-bottom));transform:translateX(-50%) translateY(20px);
+    background:var(--color-primary-dark);color:#fff;padding:12px 18px;border-radius:999px;font-size:.87rem;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);opacity:0;pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;max-width:90vw;text-align:center;z-index:50;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  #boot-screen{
+    min-height:100dvh;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  }
+</style>
+</head>
+<body>
+
+<!-- Boot / auth-guard screen -->
+<div id="boot-screen">
+  <div class="spinner"></div>
+</div>
+
+<div id="app" style="display:none;">
+
+  <div class="topbar">
+    <div class="topbar-brand">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="24" cy="24" r="24" fill="#1F4D3A"/>
+        <path d="M16 20c-2.5 0-4.5-2.5-4.5-6s2-6 4.5-6 4.5 2.5 4.5 6-2 6-4.5 6zm16 0c2.5 0 4.5-2.5 4.5-6s-2-6-4.5-6-4.5 2.5-4.5 6 2 6 4.5 6zM12 32c0-4.5 3.5-8 7-8h10c3.5 0 7 3.5 7 8s-4 6-12 6-12-1.5-12-6z" fill="#F4C542"/>
+      </svg>
+      <span>Vet Connect</span>
+    </div>
+    <button class="topbar-avatar-btn" id="btn-go-profile" aria-label="Open profile">
+      <img id="topbar-avatar-img" alt="">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="topbar-avatar-icon"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg>
+    </button>
+  </div>
+
+  <main class="view">
+
+    <!-- HOME -->
+    <section class="view-panel active" id="view-home">
+      <div class="banner banner-info" data-role="home-demo-banner">Demo mode — connect <code>GAS_API_URL</code> and add a <code>getDashboard</code> action to your backend to show live data.</div>
+      <div class="banner banner-error" data-role="home-error"></div>
+
+      <h1 class="page-title" data-role="home-greeting">Good morning</h1>
+      <p class="page-sub" data-role="home-date"></p>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-num" data-role="stat-today">–</div>
+          <div class="stat-label">Appointments today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" data-role="stat-pending">–</div>
+          <div class="stat-label">Pending requests</div>
+        </div>
+      </div>
+
+      <h2 class="section-heading">Today's schedule</h2>
+      <div class="appt-list" data-role="home-appt-list"></div>
+      <div class="empty-state" data-role="home-empty" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        <p>Nothing on the books for today.</p>
+      </div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section class="view-panel" id="view-schedule">
+      <h1 class="page-title">Schedule</h1>
+      <p class="page-sub">Your appointments, past and upcoming.</p>
+
+      <div class="segmented" data-role="schedule-segmented">
+        <button data-range="today" class="active">Today</button>
+        <button data-range="upcoming">Upcoming</button>
+        <button data-range="past">Past</button>
+      </div>
+
+      <div class="appt-list" data-role="schedule-appt-list"></div>
+      <div class="empty-state" data-role="schedule-empty" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+        <p>No appointments in this range.</p>
+      </div>
+    </section>
+
+    <!-- PATIENTS -->
+    <section class="view-panel" id="view-patients">
+      <h1 class="page-title">Patients</h1>
+      <p class="page-sub">Search clients and their animals.</p>
+
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" id="input-patient-search" placeholder="Search by pet or owner name">
+      </div>
+
+      <div class="patient-list" data-role="patient-list"></div>
+      <div class="empty-state" data-role="patient-empty" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <p>No patients found.</p>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="view-panel" id="view-profile">
+      <div class="banner banner-error" data-role="profile-error"></div>
+
+      <div class="profile-header">
+        <div class="profile-avatar">
+          <img id="profile-avatar-img" alt="">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="profile-avatar-icon"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg>
+        </div>
+        <div class="profile-name" data-role="profile-name">—</div>
+        <div class="profile-email" data-role="profile-email">—</div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="field">
+          <label for="input-profile-name">Full name</label>
+          <input type="text" id="input-profile-name">
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label for="input-profile-phone">Phone number</label>
+          <input type="tel" id="input-profile-phone" inputmode="tel">
+        </div>
+      </div>
+
+      <button class="btn btn-primary" id="btn-save-profile">Save Changes</button>
+      <button class="btn btn-danger-outline" id="btn-sign-out">Sign Out</button>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="home">
+      <svg viewBox="0 0 24 24"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9a1 1 0 0 0 1 1h4v-6h2v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      Home
+    </button>
+    <button class="tab-btn" data-view="schedule">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+      Schedule
+    </button>
+    <button class="tab-btn" data-view="patients">
+      <svg viewBox="0 0 24 24"><path d="M16 20c-2.5 0-4.5-2.5-4.5-6s2-6 4.5-6 4.5 2.5 4.5 6-2 6-4.5 6zm-8 0c2.5 0 4.5-2.5 4.5-6s-2-6-4.5-6-4.5 2.5-4.5 6 2 6 4.5 6z"/></svg>
+      Patients
+    </button>
+    <button class="tab-btn" data-view="profile">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg>
+      Profile
+    </button>
+  </nav>
+
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ====================================================
+     CONFIG — must match the value used in your sign-in page.
+     ==================================================== */
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz24folb_oMz2FjR3zxSjWQFoRrL_t0tYbcMlFVSRTv5p_WH2B0TftwcIXSUXWDn5oKJw/exec";
+  const SESSION_KEY = "vetconnect_session";
+  const SIGNIN_PAGE = "vtest.html";
+
+  /* Backend actions this page expects (add these to your Apps Script doPost):
+     - validateSession({ veterinarianId, token })              -> { valid: bool }
+     - getDashboard({ veterinarianId, token })                  -> { veterinarian, todayAppointments, upcomingAppointments, pastAppointments, stats: { todayCount, pendingCount } }
+     - searchPatients({ veterinarianId, token, query })         -> { patients: [{ id, petName, species, ownerName, lastVisit, photoUrl }] }
+     - updateVeterinarianProfile({ veterinarianId, token, fullName, phone }) -> { success: true }
+  */
+
+  const state = {
+    session: null,
+    dashboard: null,
+    demoMode: false,
+    patientsCache: null
+  };
+
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $all = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+  function toast(message){
+    const el = $("#toast");
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove("show"), 3200);
+  }
+
+  function setBanner(sel, msg, cls){
+    const el = $(sel);
+    if (!el) return;
+    if (!msg){ el.classList.remove("show"); return; }
+    el.textContent = msg;
+    el.classList.remove("banner-error","banner-info");
+    el.classList.add(cls || "banner-error", "show");
+  }
+
+  function initials(name){
+    if (!name) return "";
+    return name.trim().split(/\s+/).slice(0,2).map(w => w[0]).join("").toUpperCase();
+  }
+
+  /* ==================================================== Session guard ==================================================== */
+  function loadSession(){
+    let raw;
+    try{ raw = localStorage.getItem(SESSION_KEY); } catch(e){ raw = null; }
+    if (!raw) return null;
+    try{
+      const s = JSON.parse(raw);
+      if (!s || !s.token || !s.veterinarianId) return null;
+      return s;
+    }catch(e){ return null; }
+  }
+  function clearSession(){
+    try{ localStorage.removeItem(SESSION_KEY); } catch(e){}
+  }
+
+  /* ==================================================== API layer ==================================================== */
+  async function callApi(payload){
+    if (!GAS_API_URL || GAS_API_URL.indexOf("PASTE_YOUR") === 0){
+      throw new Error("CONFIG_MISSING");
+    }
+    let response;
+    try{
+      response = await fetch(GAS_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+    }catch(e){ throw new Error("NETWORK"); }
+    if (!response.ok) throw new Error("NETWORK");
+    let data;
+    try{ data = await response.json(); } catch(e){ throw new Error("NETWORK"); }
+    if (data && data.success === false){
+      const err = new Error(data.errorCode || "UNKNOWN");
+      err.userMessage = data.message;
+      throw err;
+    }
+    return data;
+  }
+
+  function friendlyError(err, fallback){
+    if (err && err.message === "NETWORK") return "We could not connect to Vet Connect. Please try again.";
+    if (err && err.userMessage) return err.userMessage;
+    return fallback || "Something went wrong. Please try again.";
+  }
+
+  /* ==================================================== Boot ==================================================== */
+  async function boot(){
+    const session = loadSession();
+    if (!session){
+      window.location.href = SIGNIN_PAGE;
+      return;
+    }
+    state.session = session;
+
+    try{
+      const data = await callApi({ action: "validateSession", veterinarianId: session.veterinarianId, token: session.token });
+      if (!data || !data.valid){
+        clearSession();
+        window.location.href = SIGNIN_PAGE;
+        return;
+      }
+    }catch(err){
+      if (err && err.message === "CONFIG_MISSING"){
+        state.demoMode = true;
+      } else {
+        // A real, configured backend rejected/couldn't validate — sign out safely.
+        clearSession();
+        window.location.href = SIGNIN_PAGE;
+        return;
+      }
+    }
+
+    $("#boot-screen").style.display = "none";
+    $("#app").style.display = "flex";
+    initTabs();
+    await loadDashboard();
+  }
+
+  /* ==================================================== Dashboard data ==================================================== */
+  function demoDashboard(){
+    const today = new Date();
+    return {
+      veterinarian: {
+        fullName: "Dr. Amara Njeri",
+        email: state.session.email || "amara.njeri@example.com",
+        phone: "+254 700 123 456",
+        profilePictureUrl: ""
+      },
+      todayAppointments: [
+        { id:"1", time:"9:00 AM", petName:"Milo", species:"Dog · Beagle", ownerName:"Grace Wanjiru", reason:"Annual vaccination", status:"confirmed" },
+        { id:"2", time:"11:30 AM", petName:"Coco", species:"Cat · Domestic Shorthair", ownerName:"Peter Otieno", reason:"Skin irritation check", status:"pending" },
+        { id:"3", time:"2:15 PM", petName:"Rex", species:"Dog · German Shepherd", ownerName:"Linet Achieng", reason:"Post-surgery follow-up", status:"confirmed" }
+      ],
+      upcomingAppointments: [
+        { id:"4", time:"Tomorrow, 10:00 AM", petName:"Bella", species:"Rabbit", ownerName:"Samuel Kiptoo", reason:"Routine check-up", status:"confirmed" }
+      ],
+      pastAppointments: [
+        { id:"5", time:"Yesterday, 3:30 PM", petName:"Whiskers", species:"Cat · Siamese", ownerName:"Faith Mutua", reason:"Dental cleaning", status:"done" }
+      ],
+      stats: { todayCount: 3, pendingCount: 1 }
+    };
+  }
+
+  async function loadDashboard(){
+    setBanner("[data-role='home-error']", "");
+    if (state.demoMode){
+      $("[data-role='home-demo-banner']").classList.add("show");
+      state.dashboard = demoDashboard();
+      renderDashboard();
+      return;
+    }
+    try{
+      const data = await callApi({ action: "getDashboard", veterinarianId: state.session.veterinarianId, token: state.session.token });
+      state.dashboard = data;
+      renderDashboard();
+    }catch(err){
+      setBanner("[data-role='home-error']", friendlyError(err, "We couldn't load your dashboard."));
+    }
+  }
+
+  function renderDashboard(){
+    const d = state.dashboard;
+    if (!d) return;
+    const vet = d.veterinarian || {};
+    const firstName = (vet.fullName || "").split(" ")[0];
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    $("[data-role='home-greeting']").textContent = firstName ? `${greeting}, Dr. ${firstName}` : greeting;
+    $("[data-role='home-date']").textContent = new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+
+    $("[data-role='stat-today']").textContent = (d.stats && d.stats.todayCount != null) ? d.stats.todayCount : (d.todayAppointments||[]).length;
+    $("[data-role='stat-pending']").textContent = (d.stats && d.stats.pendingCount != null) ? d.stats.pendingCount : 0;
+
+    renderApptList("[data-role='home-appt-list']", "[data-role='home-empty']", d.todayAppointments || []);
+    renderScheduleRange("today");
+
+    renderProfile(vet);
+    setAvatarImages(vet.profilePictureUrl, vet.fullName);
+  }
+
+  function statusLabel(status){
+    if (status === "confirmed") return { text:"Confirmed", cls:"status-confirmed" };
+    if (status === "pending") return { text:"Pending", cls:"status-pending" };
+    return { text:"Completed", cls:"status-done" };
+  }
+
+  function renderApptList(listSel, emptySel, appts){
+    const list = $(listSel);
+    list.innerHTML = "";
+    if (!appts || appts.length === 0){
+      $(emptySel).style.display = "block";
+      return;
+    }
+    $(emptySel).style.display = "none";
+    appts.forEach(a => {
+      const st = statusLabel(a.status);
+      const card = document.createElement("div");
+      card.className = "appt-card";
+      card.innerHTML = `
+        <div class="appt-time">${escapeHtml(a.time || "")}</div>
+        <div class="appt-body">
+          <div class="appt-pet">${escapeHtml(a.petName || "")}${a.species ? " · " + escapeHtml(a.species) : ""}</div>
+          <div class="appt-meta">${escapeHtml(a.ownerName || "")}</div>
+          ${a.reason ? `<div class="appt-reason">${escapeHtml(a.reason)}</div>` : ""}
+          <span class="status-pill ${st.cls}">${st.text}</span>
+        </div>`;
+      list.appendChild(card);
+    });
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
+  function setAvatarImages(url, name){
+    const targets = [
+      { img: $("#topbar-avatar-img"), icon: $("#topbar-avatar-icon") },
+      { img: $("#profile-avatar-img"), icon: $("#profile-avatar-icon") }
+    ];
+    targets.forEach(t => {
+      if (url){
+        t.img.src = url;
+        t.img.style.display = "block";
+        t.icon.style.display = "none";
+      } else {
+        t.img.style.display = "none";
+        t.icon.style.display = "block";
+      }
+    });
+  }
+
+  /* ==================================================== Tabs ==================================================== */
+  function initTabs(){
+    $all(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => switchView(btn.dataset.view));
+    });
+    $("#btn-go-profile").addEventListener("click", () => switchView("profile"));
+  }
+
+  function switchView(view){
+    $all(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+    $all(".view-panel").forEach(p => p.classList.remove("active"));
+    $("#view-" + view).classList.add("active");
+    if (view === "patients" && !state.patientsCache){
+      searchPatients("");
+    }
+  }
+
+  /* ==================================================== Schedule tab ==================================================== */
+  $all("[data-role='schedule-segmented'] button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      $all("[data-role='schedule-segmented'] button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      renderScheduleRange(btn.dataset.range);
+    });
+  });
+
+  function renderScheduleRange(range){
+    const d = state.dashboard;
+    if (!d) return;
+    const map = {
+      today: d.todayAppointments || [],
+      upcoming: d.upcomingAppointments || [],
+      past: d.pastAppointments || []
+    };
+    renderApptList("[data-role='schedule-appt-list']", "[data-role='schedule-empty']", map[range] || []);
+  }
+
+  /* ==================================================== Patients tab ==================================================== */
+  let patientSearchTimer = null;
+  $("#input-patient-search").addEventListener("input", function(){
+    clearTimeout(patientSearchTimer);
+    const q = this.value.trim();
+    patientSearchTimer = setTimeout(() => searchPatients(q), 280);
+  });
+
+  function demoPatients(query){
+    const all = [
+      { id:"p1", petName:"Milo", species:"Dog · Beagle", ownerName:"Grace Wanjiru", lastVisit:"Sep 8, 2026" },
+      { id:"p2", petName:"Coco", species:"Cat · Domestic Shorthair", ownerName:"Peter Otieno", lastVisit:"Sep 8, 2026" },
+      { id:"p3", petName:"Rex", species:"Dog · German Shepherd", ownerName:"Linet Achieng", lastVisit:"Aug 30, 2026" },
+      { id:"p4", petName:"Bella", species:"Rabbit", ownerName:"Samuel Kiptoo", lastVisit:"Aug 12, 2026" },
+      { id:"p5", petName:"Whiskers", species:"Cat · Siamese", ownerName:"Faith Mutua", lastVisit:"Jul 29, 2026" }
+    ];
+    if (!query) return all;
+    const q = query.toLowerCase();
+    return all.filter(p => p.petName.toLowerCase().includes(q) || p.ownerName.toLowerCase().includes(q));
+  }
+
+  async function searchPatients(query){
+    const list = $("[data-role='patient-list']");
+    const empty = $("[data-role='patient-empty']");
+    let patients;
+    if (state.demoMode){
+      patients = demoPatients(query);
+    } else {
+      try{
+        const data = await callApi({ action: "searchPatients", veterinarianId: state.session.veterinarianId, token: state.session.token, query });
+        patients = data.patients || [];
+      }catch(err){
+        toast(friendlyError(err, "Couldn't load patients."));
+        patients = [];
+      }
+    }
+    state.patientsCache = patients;
+    list.innerHTML = "";
+    if (patients.length === 0){
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+    patients.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "patient-card";
+      card.innerHTML = `
+        <div class="patient-avatar">
+          ${p.photoUrl ? `<img src="${escapeHtml(p.photoUrl)}" alt="">` : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M16 20c-2.5 0-4.5-2.5-4.5-6s2-6 4.5-6 4.5 2.5 4.5 6-2 6-4.5 6zm-8 0c2.5 0 4.5-2.5 4.5-6s-2-6-4.5-6-4.5 2.5-4.5 6 2 6 4.5 6z"/></svg>`}
+        </div>
+        <div class="patient-body">
+          <div class="patient-name">${escapeHtml(p.petName || "")}${p.species ? " · " + escapeHtml(p.species) : ""}</div>
+          <div class="patient-meta">${escapeHtml(p.ownerName || "")}${p.lastVisit ? " · Last visit " + escapeHtml(p.lastVisit) : ""}</div>
+        </div>
+        <svg class="patient-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>`;
+      list.appendChild(card);
+    });
+  }
+
+  /* ==================================================== Profile tab ==================================================== */
+  function renderProfile(vet){
+    $("[data-role='profile-name']").textContent = vet.fullName || "—";
+    $("[data-role='profile-email']").textContent = vet.email || "—";
+    $("#input-profile-name").value = vet.fullName || "";
+    $("#input-profile-phone").value = vet.phone || "";
+  }
+
+  $("#btn-save-profile").addEventListener("click", async function(){
+    const fullName = $("#input-profile-name").value.trim();
+    const phone = $("#input-profile-phone").value.trim();
+    setBanner("[data-role='profile-error']", "");
+
+    if (!fullName){
+      setBanner("[data-role='profile-error']", "Please enter your full name.");
+      return;
+    }
+    if (!phone){
+      setBanner("[data-role='profile-error']", "Please enter your phone number.");
+      return;
+    }
+
+    const btn = this;
+    btn.disabled = true;
+    try{
+      if (state.demoMode){
+        await new Promise(r => setTimeout(r, 400));
+      } else {
+        await callApi({
+          action: "updateVeterinarianProfile",
+          veterinarianId: state.session.veterinarianId,
+          token: state.session.token,
+          fullName, phone
+        });
+      }
+      state.dashboard.veterinarian.fullName = fullName;
+      state.dashboard.veterinarian.phone = phone;
+      renderProfile(state.dashboard.veterinarian);
+      $("[data-role='home-greeting']").textContent = renderGreetingFor(fullName);
+      toast("Profile updated.");
+    }catch(err){
+      setBanner("[data-role='profile-error']", friendlyError(err, "We couldn't save your changes."));
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  function renderGreetingFor(fullName){
+    const firstName = (fullName || "").split(" ")[0];
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    return firstName ? `${greeting}, Dr. ${firstName}` : greeting;
+  }
+
+  $("#btn-sign-out").addEventListener("click", function(){
+    clearSession();
+    window.location.href = SIGNIN_PAGE;
+  });
+
+  boot();
+
+})();
+</script>
+</body>
+</html>

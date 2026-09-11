@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vet Connect — Veterinarian Sign In</title>
+<meta name="theme-color" content="#1F4D3A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --color-primary:#1F4D3A;
+    --color-primary-light:#2E6B50;
+    --color-primary-dark:#12352A;
+    --color-sage:#7C9A82;
+    --color-bg:#FBFAF6;
+    --color-surface:#FFFFFF;
+    --color-border:#E4E0D4;
+    --color-text:#16241C;
+    --color-text-muted:#5B6B60;
+    --color-gold:#B8912E;
+    --color-error:#B3261E;
+    --color-error-bg:#FBEAE9;
+    --font-display:'Fraunces', Georgia, serif;
+    --font-body:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --radius-lg:22px;
+    --radius-md:14px;
+    --radius-sm:10px;
+    --shadow-card: 0 10px 30px rgba(18,53,42,0.10);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font-body);
+    background:var(--color-bg);
+    color:var(--color-text);
+    min-height:100dvh;
+    -webkit-font-smoothing:antialiased;
+  }
+  #app{
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:calc(28px + var(--safe-top)) 20px calc(28px + var(--safe-bottom));
+  }
+  .screen{display:none;width:100%;max-width:440px;margin:0 auto;animation:fadeUp .32s ease both;}
+  .screen.active{display:block;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  .brand{display:flex;align-items:center;gap:10px;margin-bottom:34px;justify-content:center;}
+  .brand-mark{width:38px;height:38px;flex:0 0 auto;}
+  .brand-name{font-family:var(--font-display);font-weight:600;font-size:1.28rem;color:var(--color-primary-dark);letter-spacing:-0.01em;}
+
+  .card{
+    background:var(--color-surface);
+    border:1px solid var(--color-border);
+    border-radius:var(--radius-lg);
+    padding:32px 26px;
+    box-shadow:var(--shadow-card);
+  }
+  h1.title{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:1.55rem;
+    line-height:1.25;
+    margin:0 0 8px;
+    color:var(--color-primary-dark);
+  }
+  p.subtitle{
+    margin:0 0 26px;
+    color:var(--color-text-muted);
+    font-size:.96rem;
+    line-height:1.5;
+  }
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;
+    font-size:.82rem;
+    font-weight:600;
+    color:var(--color-text);
+    margin-bottom:6px;
+  }
+  .field input[type="text"],
+  .field input[type="email"],
+  .field input[type="tel"]{
+    width:100%;
+    padding:14px 15px;
+    font-size:1rem;
+    font-family:var(--font-body);
+    border:1.5px solid var(--color-border);
+    border-radius:var(--radius-sm);
+    background:var(--color-bg);
+    color:var(--color-text);
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .field input:focus{border-color:var(--color-primary);}
+  .field .hint{font-size:.78rem;color:var(--color-text-muted);margin-top:6px;}
+
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:9px;
+    width:100%;
+    padding:15px 18px;
+    font-family:var(--font-body);
+    font-size:1rem;
+    font-weight:600;
+    border-radius:999px;
+    border:none;
+    cursor:pointer;
+    transition:transform .1s ease, opacity .15s ease, background .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+  .btn-primary{background:var(--color-primary);color:#fff;}
+  .btn-primary:not(:disabled):hover{background:var(--color-primary-light);}
+  .btn-outline{background:transparent;color:var(--color-primary-dark);border:1.5px solid var(--color-border);}
+  .btn-outline:not(:disabled):hover{border-color:var(--color-primary);}
+  .btn-text{background:none;color:var(--color-primary);padding:10px;font-weight:600;font-size:.92rem;}
+  .btn-google{background:#fff;color:#3c4043;border:1.5px solid var(--color-border);}
+  .btn-google svg{width:18px;height:18px;}
+  .btn-row{display:flex;gap:10px;margin-top:8px;}
+  .btn-row .btn{flex:1;}
+  .stack{display:flex;flex-direction:column;gap:10px;margin-top:22px;}
+
+  .divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--color-text-muted);font-size:.8rem;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--color-border);}
+
+  .error-banner{
+    display:none;
+    background:var(--color-error-bg);
+    color:var(--color-error);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    font-size:.87rem;
+    margin-bottom:16px;
+    line-height:1.45;
+  }
+  .error-banner.show{display:block;}
+
+  .center-col{display:flex;flex-direction:column;align-items:center;text-align:center;}
+  .spinner{
+    width:34px;height:34px;
+    border-radius:50%;
+    border:3px solid var(--color-border);
+    border-top-color:var(--color-primary);
+    animation:spin .8s linear infinite;
+    margin-bottom:18px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-text{color:var(--color-text-muted);font-size:.94rem;}
+
+  .email-pill{
+    background:var(--color-bg);
+    border:1px solid var(--color-border);
+    border-radius:999px;
+    padding:9px 16px;
+    font-size:.9rem;
+    font-weight:500;
+    display:inline-block;
+    margin-bottom:22px;
+    word-break:break-all;
+  }
+
+  /* OTP */
+  .otp-row{display:flex;gap:8px;justify-content:space-between;margin-bottom:8px;}
+  .otp-row input{
+    width:100%;
+    aspect-ratio:1;
+    text-align:center;
+    font-size:1.35rem;
+    font-weight:600;
+    border:1.5px solid var(--color-border);
+    border-radius:var(--radius-sm);
+    background:var(--color-bg);
+    outline:none;
+    font-family:var(--font-body);
+  }
+  .otp-row input:focus{border-color:var(--color-primary);}
+  .otp-links{display:flex;justify-content:space-between;align-items:center;margin-top:18px;font-size:.86rem;}
+
+  /* Profile picture */
+  .avatar-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:26px;}
+  .avatar-circle{
+    width:104px;height:104px;
+    border-radius:50%;
+    background:var(--color-bg);
+    border:2px solid var(--color-border);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+    position:relative;
+    margin-bottom:12px;
+  }
+  .avatar-circle img{width:100%;height:100%;object-fit:cover;display:none;}
+  .avatar-circle svg{width:46px;height:46px;color:var(--color-sage);}
+  .avatar-actions{display:flex;gap:14px;}
+  .avatar-actions button{
+    background:none;border:none;color:var(--color-primary);
+    font-size:.86rem;font-weight:600;cursor:pointer;padding:4px;
+    font-family:var(--font-body);
+  }
+  .avatar-actions button.remove{color:var(--color-error);display:none;}
+
+  footer.legal{text-align:center;margin-top:22px;color:var(--color-text-muted);font-size:.78rem;line-height:1.5;}
+
+  /* Toast */
+  #toast{
+    position:fixed;left:50%;bottom:calc(24px + var(--safe-bottom));transform:translateX(-50%) translateY(20px);
+    background:var(--color-primary-dark);color:#fff;
+    padding:12px 18px;border-radius:999px;font-size:.88rem;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
+    opacity:0;pointer-events:none;transition:opacity .2s ease, transform .2s ease;
+    max-width:90vw;text-align:center;z-index:50;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="24" fill="#1F4D3A"/>
+      <path d="M16 20c-2.5 0-4.5-2.5-4.5-6s2-6 4.5-6 4.5 2.5 4.5 6-2 6-4.5 6zm16 0c2.5 0 4.5-2.5 4.5-6s-2-6-4.5-6-4.5 2.5-4.5 6 2 6 4.5 6zM12 32c0-4.5 3.5-8 7-8h10c3.5 0 7 3.5 7 8s-4 6-12 6-12-1.5-12-6z" fill="#F4C542"/>
+    </svg>
+    <span class="brand-name">Vet Connect</span>
+  </div>
+
+  <!-- SCREEN 1: Session check -->
+  <section id="screen-session" class="screen active">
+    <div class="card center-col">
+      <div class="spinner"></div>
+      <div class="loading-text" data-role="session-status">Checking your session…</div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: Welcome / sign-in -->
+  <section id="screen-welcome" class="screen">
+    <div class="card">
+      <div class="error-banner" data-role="welcome-error"></div>
+      <h1 class="title">Welcome to Vet Connect</h1>
+      <p class="subtitle">Choose the email address you would like to use for your veterinarian account.</p>
+
+      <button class="btn btn-google" id="btn-google-signin">
+        <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.2 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.7 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.2 29.5 4 24 4c-7.6 0-14.1 4.3-17.5 10.7z"/><path fill="#4CAF50" d="M24 44c5.4 0 10.3-2.1 14-5.5l-6.5-5.5C29.5 34.7 26.9 35.7 24 35.7c-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.8 39.6 16.4 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.5 5.5C41.4 36 44 30.6 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
+        Continue with Google
+      </button>
+
+      <button class="btn btn-text" id="btn-use-other-email" style="margin-top:12px;">Use Another Email</button>
+
+      <div id="other-email-wrap" style="display:none;margin-top:6px;">
+        <div class="divider">or</div>
+        <div class="field">
+          <label for="input-email">Email address</label>
+          <input type="email" id="input-email" placeholder="you@example.com" autocomplete="email" inputmode="email">
+        </div>
+        <button class="btn btn-primary" id="btn-continue-email">Continue</button>
+      </div>
+    </div>
+    <footer class="legal">By continuing you agree to be contacted by clients through Vet Connect using this email.</footer>
+  </section>
+
+  <!-- SCREEN 3: Checking account -->
+  <section id="screen-checking" class="screen">
+    <div class="card center-col">
+      <div class="spinner"></div>
+      <div class="loading-text">Checking your account…</div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: Email verification intro (new account) -->
+  <section id="screen-verify-intro" class="screen">
+    <div class="card">
+      <div class="error-banner" data-role="verify-intro-error"></div>
+      <h1 class="title">Let's verify your email</h1>
+      <p class="subtitle">We'll send a verification code to confirm that this email belongs to you.</p>
+      <div class="email-pill" data-role="verify-email-display"></div>
+      <button class="btn btn-primary" id="btn-send-code">Send Verification Code</button>
+      <button class="btn btn-text" id="btn-verify-intro-change" style="margin-top:6px;">Change Email</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 5: OTP -->
+  <section id="screen-otp" class="screen">
+    <div class="card">
+      <div class="error-banner" data-role="otp-error"></div>
+      <h1 class="title">Check Your Email</h1>
+      <p class="subtitle">We sent a six-digit verification code to <span data-role="otp-masked-email" style="font-weight:600;color:var(--color-text);"></span></p>
+
+      <div class="otp-row" id="otp-row">
+        <input type="text" inputmode="numeric" maxlength="1" data-otp-index="0">
+        <input type="text" inputmode="numeric" maxlength="1" data-otp-index="1">
+        <input type="text" inputmode="numeric" maxlength="1" data-otp-index="2">
+        <input type="text" inputmode="numeric" maxlength="1" data-otp-index="3">
+        <input type="text" inputmode="numeric" maxlength="1" data-otp-index="4">
+        <input type="text" inputmode="numeric" maxlength="1" data-otp-index="5">
+      </div>
+
+      <button class="btn btn-primary" id="btn-verify-otp" style="margin-top:18px;">Verify Code</button>
+
+      <div class="otp-links">
+        <button class="btn-text" id="btn-resend-otp" style="padding:6px 0;">Resend Code</button>
+        <button class="btn-text" id="btn-change-email-otp" style="padding:6px 0;">Change Email</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 6: Profile setup (new account only) -->
+  <section id="screen-profile" class="screen">
+    <div class="card">
+      <div class="error-banner" data-role="profile-error"></div>
+      <h1 class="title">Complete Your Profile</h1>
+      <p class="subtitle">Your email has been verified. Add your details to complete your Vet Connect account.</p>
+      <div class="email-pill" data-role="profile-email-display"></div>
+
+      <div class="avatar-wrap">
+        <div class="avatar-circle" id="avatar-circle">
+          <img id="avatar-preview" alt="Profile preview">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="avatar-default-icon"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5"/></svg>
+        </div>
+        <div class="avatar-actions">
+          <button type="button" id="btn-add-photo">Add Profile Picture</button>
+          <button type="button" id="btn-remove-photo" class="remove">Remove</button>
+        </div>
+        <input type="file" accept="image/*" id="input-photo" class="visually-hidden">
+      </div>
+
+      <div class="field">
+        <label for="input-fullname">Full name</label>
+        <input type="text" id="input-fullname" placeholder="Enter your full name" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="input-phone">Phone number</label>
+        <input type="tel" id="input-phone" placeholder="Enter your phone number" autocomplete="tel" inputmode="tel">
+      </div>
+
+      <button class="btn btn-primary" id="btn-create-account" style="margin-top:8px;">Create My Account</button>
+    </div>
+  </section>
+
+  <!-- SCREEN 7: Working (create account / uploading) -->
+  <section id="screen-working" class="screen">
+    <div class="card center-col">
+      <div class="spinner"></div>
+      <div class="loading-text" data-role="working-status">Creating your account…</div>
+    </div>
+  </section>
+
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ====================================================
+     CONFIG — placement guidance:
+     Replace these two values only. Do not put the Drive
+     folder ID or any secret here — that lives in Apps Script.
+     ==================================================== */
+  const GAS_API_URL = "https://script.google.com/macros/s/AKfycbz24folb_oMz2FjR3zxSjWQFoRrL_t0tYbcMlFVSRTv5p_WH2B0TftwcIXSUXWDn5oKJw/exec";
+  const GOOGLE_CLIENT_ID = "PASTE_YOUR_GOOGLE_OAUTH_CLIENT_ID_HERE.apps.googleusercontent.com";
+
+  const SESSION_KEY = "vetconnect_session";
+  const MAIN_PAGE = "main.html";
+  const AVATAR_MAX_DIM = 400;
+  const AVATAR_TARGET_MAX_BYTES = 150 * 1024; // ~150KB ceiling before we stop lowering quality
+
+  /* ==================================================== State ==================================================== */
+  const state = {
+    email: "",
+    isNewAccount: false,
+    otpVerified: false,
+    processedPhotoBlob: null,   // Blob, already square/resized/compressed
+    processedPhotoMime: "image/jpeg"
+  };
+
+  /* ==================================================== Utilities ==================================================== */
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $all = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+  function showScreen(id){
+    $all(".screen").forEach(s => s.classList.remove("active"));
+    const el = document.getElementById(id);
+    if (el) el.classList.add("active");
+  }
+
+  function setError(scopeSelector, message){
+    const el = $(scopeSelector);
+    if (!el) return;
+    if (!message){ el.classList.remove("show"); el.textContent = ""; return; }
+    el.textContent = message;
+    el.classList.add("show");
+  }
+
+  let toastTimer = null;
+  function toast(message){
+    const el = $("#toast");
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 3200);
+  }
+
+  function maskEmail(email){
+    const [name, domain] = email.split("@");
+    if (!name || !domain) return email;
+    const visible = name.slice(0, 2);
+    return `${visible}${"*".repeat(Math.max(name.length - 2, 3))}@${domain}`;
+  }
+
+  function isValidEmail(email){
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function setWorking(text){
+    $("[data-role='working-status']").textContent = text;
+    showScreen("screen-working");
+  }
+
+  /* ==================================================== API layer ====================================================
+     NOTE: sent as text/plain to avoid a CORS preflight against
+     the Apps Script web app (doPost should JSON.parse(e.postData.contents)).
+  */
+  async function callApi(payload){
+    if (!GAS_API_URL || GAS_API_URL.indexOf("PASTE_YOUR") === 0){
+      throw new Error("CONFIG_MISSING");
+    }
+    let response;
+    try{
+      response = await fetch(GAS_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+    }catch(networkErr){
+      throw new Error("NETWORK");
+    }
+    if (!response.ok) throw new Error("NETWORK");
+    let data;
+    try{ data = await response.json(); }
+    catch(parseErr){ throw new Error("NETWORK"); }
+    if (data && data.success === false){
+      const err = new Error(data.errorCode || "UNKNOWN");
+      err.userMessage = data.message;
+      throw err;
+    }
+    return data;
+  }
+
+  function friendlyError(err, fallback){
+    if (err && err.message === "CONFIG_MISSING") return "Vet Connect isn't fully set up yet. Please contact support.";
+    if (err && err.message === "NETWORK") return "We could not connect to Vet Connect. Please try again.";
+    if (err && err.userMessage) return err.userMessage;
+    return fallback || "Something went wrong. Please try again.";
+  }
+
+  /* ==================================================== SCREEN 1: Session check ==================================================== */
+  async function initSession(){
+    let raw;
+    try{ raw = localStorage.getItem(SESSION_KEY); } catch(e){ raw = null; }
+    if (!raw){ showScreen("screen-welcome"); return; }
+
+    let session;
+    try{ session = JSON.parse(raw); } catch(e){ session = null; }
+    if (!session || !session.token || !session.veterinarianId){
+      clearSession();
+      showScreen("screen-welcome");
+      return;
+    }
+
+    try{
+      const data = await callApi({ action: "validateSession", veterinarianId: session.veterinarianId, token: session.token });
+      if (data && data.valid){
+        window.location.href = MAIN_PAGE;
+        return;
+      }
+      clearSession();
+      showScreen("screen-welcome");
+    }catch(err){
+      // Do not trust a locally stored session on a network error either —
+      // fail safe to sign-in, but degrade silently (no error banner on first load).
+      clearSession();
+      showScreen("screen-welcome");
+    }
+  }
+
+  function saveSession(session){
+    try{ localStorage.setItem(SESSION_KEY, JSON.stringify(session)); } catch(e){ /* storage unavailable — degrade silently */ }
+  }
+  function clearSession(){
+    try{ localStorage.removeItem(SESSION_KEY); } catch(e){}
+  }
+
+  /* ==================================================== SCREEN 2: Welcome / email selection ==================================================== */
+  function initGoogleSignIn(){
+    if (!window.google || !google.accounts || !google.accounts.id) return;
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID.indexOf("PASTE_YOUR") === 0) return;
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+      auto_select: false
+    });
+  }
+
+  function decodeJwtPayload(jwt){
+    const base64Url = jwt.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(atob(base64).split("").map(c =>
+      "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)
+    ).join(""));
+    return JSON.parse(json);
+  }
+
+  function handleGoogleCredential(response){
+    try{
+      const payload = decodeJwtPayload(response.credential);
+      if (!payload.email){ throw new Error("no email"); }
+      beginEmailCheck(payload.email);
+    }catch(e){
+      setError("[data-role='welcome-error']", "We couldn't read that Google account. Please try again or use another email.");
+    }
+  }
+
+  $("#btn-google-signin").addEventListener("click", function(){
+    setError("[data-role='welcome-error']", "");
+    if (window.google && google.accounts && google.accounts.id && GOOGLE_CLIENT_ID.indexOf("PASTE_YOUR") !== 0){
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()){
+          // Account chooser unavailable on this device/browser — fall back to manual email.
+          $("#other-email-wrap").style.display = "block";
+          toast("Account chooser unavailable — please enter your email.");
+        }
+      });
+    } else {
+      $("#other-email-wrap").style.display = "block";
+    }
+  });
+
+  $("#btn-use-other-email").addEventListener("click", function(){
+    $("#other-email-wrap").style.display = "block";
+    $("#input-email").focus();
+  });
+
+  $("#btn-continue-email").addEventListener("click", function(){
+    const email = $("#input-email").value.trim();
+    setError("[data-role='welcome-error']", "");
+    if (!isValidEmail(email)){
+      setError("[data-role='welcome-error']", "Please select or enter a valid email address.");
+      return;
+    }
+    beginEmailCheck(email);
+  });
+
+  /* ==================================================== SCREEN 3: Checking account ==================================================== */
+  async function beginEmailCheck(email){
+    state.email = email;
+    showScreen("screen-checking");
+    try{
+      const data = await callApi({ action: "checkEmail", email });
+      state.isNewAccount = !data.exists;
+      if (state.isNewAccount){
+        $("[data-role='verify-email-display']").textContent = email;
+        setError("[data-role='verify-intro-error']", "");
+        showScreen("screen-verify-intro");
+      } else {
+        // Existing account: send OTP immediately, no name/phone/photo re-collection.
+        await sendOtp();
+      }
+    }catch(err){
+      showScreen("screen-welcome");
+      setError("[data-role='welcome-error']", friendlyError(err));
+    }
+  }
+
+  /* ==================================================== SCREEN 4: New account — send code ==================================================== */
+  $("#btn-send-code").addEventListener("click", sendOtp);
+  $("#btn-verify-intro-change").addEventListener("click", backToWelcome);
+
+  async function sendOtp(){
+    const btn = $("#btn-send-code");
+    if (btn) btn.disabled = true;
+    setError("[data-role='verify-intro-error']", "");
+    try{
+      await callApi({ action: "sendOTP", email: state.email });
+      $("[data-role='otp-masked-email']").textContent = maskEmail(state.email);
+      $all("#otp-row input").forEach(i => i.value = "");
+      setError("[data-role='otp-error']", "");
+      showScreen("screen-otp");
+      setTimeout(() => $("#otp-row input[data-otp-index='0']").focus(), 50);
+    }catch(err){
+      setError("[data-role='verify-intro-error']", friendlyError(err, "We could not send a verification code. Please try again."));
+    }finally{
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  /* ==================================================== SCREEN 5: OTP ==================================================== */
+  const otpInputs = $all("#otp-row input");
+  otpInputs.forEach((input, idx) => {
+    input.addEventListener("input", () => {
+      input.value = input.value.replace(/[^0-9]/g, "").slice(0, 1);
+      if (input.value && idx < otpInputs.length - 1) otpInputs[idx + 1].focus();
+    });
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Backspace" && !input.value && idx > 0) otpInputs[idx - 1].focus();
+    });
+    input.addEventListener("paste", (e) => {
+      const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[^0-9]/g, "");
+      if (!text) return;
+      e.preventDefault();
+      text.slice(0, 6).split("").forEach((ch, i) => { if (otpInputs[i]) otpInputs[i].value = ch; });
+      const nextEmpty = otpInputs.findIndex(i => !i.value);
+      (otpInputs[nextEmpty === -1 ? otpInputs.length - 1 : nextEmpty]).focus();
+    });
+  });
+
+  function currentOtp(){ return otpInputs.map(i => i.value).join(""); }
+
+  $("#btn-verify-otp").addEventListener("click", async function(){
+    const otp = currentOtp();
+    setError("[data-role='otp-error']", "");
+    if (otp.length !== 6){
+      setError("[data-role='otp-error']", "Please enter the six-digit code.");
+      return;
+    }
+    const btn = this;
+    btn.disabled = true;
+    try{
+      const data = await callApi({ action: "verifyOTP", email: state.email, otp });
+      state.otpVerified = true;
+      if (state.isNewAccount){
+        $("[data-role='profile-email-display']").textContent = state.email;
+        resetProfileForm();
+        showScreen("screen-profile");
+      } else {
+        saveSession({
+          veterinarianId: data.veterinarianId,
+          token: data.token,
+          expiresAt: data.expiresAt
+        });
+        window.location.href = MAIN_PAGE;
+      }
+    }catch(err){
+      setError("[data-role='otp-error']", friendlyError(err, "The verification code is incorrect."));
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  $("#btn-resend-otp").addEventListener("click", async function(){
+    this.disabled = true;
+    try{
+      await callApi({ action: "sendOTP", email: state.email });
+      toast("A new code has been sent.");
+    }catch(err){
+      setError("[data-role='otp-error']", friendlyError(err, "Please request a new verification code."));
+    }finally{
+      this.disabled = false;
+    }
+  });
+
+  $("#btn-change-email-otp").addEventListener("click", backToWelcome);
+
+  function backToWelcome(){
+    state.email = "";
+    state.isNewAccount = false;
+    state.otpVerified = false;
+    $("#input-email").value = "";
+    setError("[data-role='welcome-error']", "");
+    showScreen("screen-welcome");
+  }
+
+  /* ==================================================== SCREEN 6: Profile setup ==================================================== */
+  function resetProfileForm(){
+    state.processedPhotoBlob = null;
+    $("#avatar-preview").style.display = "none";
+    $("#avatar-preview").src = "";
+    $("#avatar-default-icon").style.display = "block";
+    $("#btn-remove-photo").style.display = "none";
+    $("#input-fullname").value = "";
+    $("#input-phone").value = "";
+    setError("[data-role='profile-error']", "");
+  }
+
+  $("#btn-add-photo").addEventListener("click", () => $("#input-photo").click());
+
+  $("#input-photo").addEventListener("change", async function(){
+    const file = this.files && this.files[0];
+    this.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    if (!file.type || file.type.indexOf("image/") !== 0){
+      setError("[data-role='profile-error']", "Please select a valid image.");
+      return;
+    }
+    setError("[data-role='profile-error']", "");
+
+    try{
+      const { blob, mime } = await processProfileImage(file);
+      state.processedPhotoBlob = blob;
+      state.processedPhotoMime = mime;
+      const url = URL.createObjectURL(blob);
+      const img = $("#avatar-preview");
+      img.src = url;
+      img.style.display = "block";
+      $("#avatar-default-icon").style.display = "none";
+      $("#btn-remove-photo").style.display = "inline-block";
+    }catch(e){
+      setError("[data-role='profile-error']", "Please select a valid image.");
+    }
+  });
+
+  $("#btn-remove-photo").addEventListener("click", function(){
+    state.processedPhotoBlob = null;
+    $("#avatar-preview").style.display = "none";
+    $("#avatar-preview").src = "";
+    $("#avatar-default-icon").style.display = "block";
+    this.style.display = "none";
+  });
+
+  /* Crop to centered square, resize to AVATAR_MAX_DIM, compress under a byte ceiling. */
+  function processProfileImage(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("read failed"));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error("decode failed"));
+        img.onload = () => {
+          try{
+            const side = Math.min(img.width, img.height);
+            const sx = (img.width - side) / 2;
+            const sy = (img.height - side) / 2;
+            const outSize = Math.min(AVATAR_MAX_DIM, side);
+
+            const canvas = document.createElement("canvas");
+            canvas.width = outSize;
+            canvas.height = outSize;
+            const ctx = canvas.getContext("2d");
+            ctx.imageSmoothingQuality = "high";
+            ctx.drawImage(img, sx, sy, side, side, 0, 0, outSize, outSize);
+
+            compressCanvas(canvas).then(resolve).catch(reject);
+          }catch(err){ reject(err); }
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function canvasToBlob(canvas, type, quality){
+    return new Promise((resolve) => canvas.toBlob(resolve, type, quality));
+  }
+
+  async function compressCanvas(canvas){
+    // Prefer WebP; fall back to JPEG if the browser can't encode WebP.
+    let mime = "image/webp";
+    let blob = await canvasToBlob(canvas, mime, 0.85);
+    if (!blob || blob.size === 0){
+      mime = "image/jpeg";
+      blob = await canvasToBlob(canvas, mime, 0.85);
+    }
+    let quality = 0.85;
+    while (blob && blob.size > AVATAR_TARGET_MAX_BYTES && quality > 0.4){
+      quality -= 0.15;
+      blob = await canvasToBlob(canvas, mime, quality);
+    }
+    return { blob, mime };
+  }
+
+  function blobToBase64(blob){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("read failed"));
+      reader.onload = () => resolve(String(reader.result).split(",")[1]);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  $("#btn-create-account").addEventListener("click", async function(){
+    const fullName = $("#input-fullname").value.trim();
+    const phone = $("#input-phone").value.trim();
+    setError("[data-role='profile-error']", "");
+
+    if (!fullName){
+      setError("[data-role='profile-error']", "Please enter your full name.");
+      return;
+    }
+    if (!phone){
+      setError("[data-role='profile-error']", "Please enter your phone number.");
+      return;
+    }
+    if (!state.otpVerified){
+      setError("[data-role='profile-error']", "Please verify your email first.");
+      showScreen("screen-otp");
+      return;
+    }
+
+    const btn = this;
+    btn.disabled = true;
+
+    const payload = {
+      action: "createVeterinarian",
+      email: state.email,
+      fullName,
+      phone
+    };
+
+    try{
+      if (state.processedPhotoBlob){
+        setWorking("Processing your profile picture…");
+        const base64 = await blobToBase64(state.processedPhotoBlob);
+        payload.profilePicture = {
+          fileName: "profile." + (state.processedPhotoMime === "image/webp" ? "webp" : "jpg"),
+          mimeType: state.processedPhotoMime,
+          data: base64
+        };
+        setWorking("Uploading profile picture…");
+      } else {
+        setWorking("Creating your account…");
+      }
+
+      setWorking("Saving your profile…");
+      const data = await callApi(payload);
+
+      saveSession({
+        veterinarianId: data.veterinarianId,
+        token: data.token,
+        expiresAt: data.expiresAt
+      });
+      window.location.href = MAIN_PAGE;
+    }catch(err){
+      showScreen("screen-profile");
+      const msg = (err && err.message === "PHOTO_UPLOAD_FAILED")
+        ? "We couldn't upload your profile picture. Please try again."
+        : friendlyError(err, "We couldn't create your account. Please try again.");
+      setError("[data-role='profile-error']", msg);
+    }finally{
+      btn.disabled = false;
+    }
+  });
+
+  /* ==================================================== Boot ==================================================== */
+  initGoogleSignIn();
+  initSession();
+
+})();
+</script>
+</body>
+</html>

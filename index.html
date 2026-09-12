@@ -392,6 +392,16 @@
     @media (prefers-reduced-motion: reduce) {
       .list-empty, .list-error-inline { animation: none; }
     }
+
+    .row-map-thumb {
+  width: 64px;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid var(--wire);
+  background: var(--lift);
+}
   </style>
 </head>
 <body>
@@ -426,6 +436,22 @@
 
 <!-- ══ CHAT LIST — STATIC SHELL, RENDERS INSTANTLY, NO NETWORK NEEDED ══ -->
 <div id="chat-list">
+
+
+  <a href="geo.html" class="chat-row">
+   <img class="row-map-thumb" src="RM.png" onerror="this.src='https://ui-avatars.com/api/?name=Mapping&background=1e293b&color=60a5fa&size=88'" alt="">
+    <div class="row-content">
+      <div class="row-title-line">
+        <span class="row-title">Riverside Mapping</span>
+        <span class="row-time"></span>
+      </div>
+      <div class="row-sub-line">
+        <span class="row-subtitle">Find fellowships &amp; locations near you</span>
+        <span class="row-badge"></span>
+      </div>
+    </div>
+  </a>
+
 
   <!-- Home -->
   <a href="home.html" class="chat-row">
@@ -556,20 +582,7 @@
     </div>
   </a>
 
-    <a href="geo.html" class="chat-row">
-    <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Mapping&background=1e293b&color=60a5fa&size=88'" alt="">
-    <div class="row-content">
-      <div class="row-title-line">
-        <span class="row-title">Riverside Mapping</span>
-        <span class="row-time"></span>
-      </div>
-      <div class="row-sub-line">
-        <span class="row-subtitle">Find fellowships &amp; locations near you</span>
-        <span class="row-badge"></span>
-      </div>
-    </div>
-  </a>
-
+    
   <button class="chat-row" id="notif-row">
     <img class="row-avatar" src="maskable_icon_x192.png" onerror="this.src='https://ui-avatars.com/api/?name=Notifs&background=1e293b&color=60a5fa&size=88'" alt="">
     <div class="row-content">

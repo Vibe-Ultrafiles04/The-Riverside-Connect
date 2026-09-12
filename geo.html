@@ -111,6 +111,47 @@
     }
     .loc-permission-row i { color: var(--accent2); }
 
+    /* ── SEARCH BAR ─────────────────────────────────────────────── */
+    .search-row {
+      margin: 12px 16px 0;
+      position: relative;
+    }
+    .search-row i.fa-magnifying-glass {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--steel);
+      font-size: 0.85rem;
+      pointer-events: none;
+    }
+    #event-search {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--wire);
+      border-radius: 10px;
+      padding: 10px 36px;
+      color: var(--ink);
+      font-size: 0.85rem;
+      font-family: var(--font-body);
+    }
+    #event-search:focus { outline: none; border-color: var(--accent2); }
+    .search-clear-btn {
+      position: absolute;
+      right: 6px; top: 50%;
+      transform: translateY(-50%);
+      width: 26px; height: 26px;
+      border: none;
+      background: var(--lift);
+      color: var(--lead);
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+    .search-clear-btn.show { display: flex; }
+
     #events-list { padding: 12px 16px 0; display: flex; flex-direction: column; gap: 12px; }
 
     .event-card {
@@ -231,6 +272,43 @@
     .latlng-status.ok { background: rgba(16,185,129,0.12); color: var(--green); }
     .latlng-status.err { background: rgba(239,68,68,0.12); color: var(--danger); }
 
+    /* ── USE MY LOCATION BUTTON ───────────────────────────────────── */
+    .use-location-btn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 10px;
+      border-radius: 9px;
+      border: 1px dashed var(--wire);
+      background: rgba(59,130,246,0.08);
+      color: var(--accent2);
+      font-size: 0.82rem;
+      font-weight: 700;
+      font-family: var(--font-body);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .use-location-btn:active { transform: scale(0.98); }
+    .use-location-btn:disabled { opacity: 0.5; }
+    .field-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0;
+      color: var(--steel);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+    }
+    .field-divider::before, .field-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--wire);
+    }
+
     .modal-footer { padding: 12px 16px 20px; border-top: 1px solid var(--wire); display: flex; gap: 10px; flex-shrink: 0; }
     .modal-btn { flex: 1; padding: 12px; border-radius: 10px; font-weight: 700; font-size: 0.88rem; border: none; cursor: pointer; font-family: var(--font-body); }
     .modal-btn.save { background: var(--accent); color: #fff; }
@@ -279,6 +357,12 @@
     <span id="loc-permission-text">Tap to enable your location and see distances</span>
   </div>
 
+  <div class="search-row">
+    <i class="fas fa-magnifying-glass"></i>
+    <input type="text" id="event-search" placeholder="Search events…" autocomplete="off">
+    <button class="search-clear-btn" id="search-clear-btn" title="Clear"><i class="fas fa-xmark"></i></button>
+  </div>
+
   <div id="events-list">
     <div class="list-empty">Loading events…</div>
   </div>
@@ -303,6 +387,13 @@
         <label>Description</label>
         <textarea id="f-desc" rows="4" placeholder="What's happening, time, what to bring…"></textarea>
       </div>
+
+      <button type="button" class="use-location-btn" id="use-location-btn">
+        <i class="fas fa-location-crosshairs"></i> Use My Current Location
+      </button>
+
+      <div class="field-divider">OR PASTE A LINK</div>
+
       <div class="field">
         <label>Google Maps Link</label>
         <input type="text" id="f-maplink" placeholder="Paste a Google Maps share link">
@@ -373,6 +464,7 @@ async function confirmAdminFromBackend() {
 let events = [];
 let userCoords = null; // { lat, lng }
 let editingId = null;
+let searchQuery = '';
 
 /* ── HELPERS ──────────────────────────────────────────────────── */
 function toast(msg, type = 'inf', dur = 3000) {
@@ -390,8 +482,8 @@ function esc(s) {
 function extractLatLng(url) {
   if (!url) return null;
   const patterns = [
-    /@(-?\d+\.\d+),(-?\d+\.\d+)/,
     /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+    /@(-?\d+\.\d+),(-?\d+\.\d+)/,
     /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
     /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/
   ];
@@ -438,14 +530,47 @@ function requestLocation() {
 locRow.addEventListener('click', requestLocation);
 requestLocation();
 
+/* ── SEARCH ───────────────────────────────────────────────────── */
+const searchInput = document.getElementById('event-search');
+const searchClearBtn = document.getElementById('search-clear-btn');
+
+function getFilteredEvents() {
+  if (!searchQuery) return events;
+  const q = searchQuery.toLowerCase();
+  return events.filter(ev =>
+    (ev.title || '').toLowerCase().includes(q) ||
+    (ev.description || '').toLowerCase().includes(q)
+  );
+}
+
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value.trim();
+  searchClearBtn.classList.toggle('show', searchQuery.length > 0);
+  renderEvents();
+});
+searchClearBtn.addEventListener('click', () => {
+  searchInput.value = '';
+  searchQuery = '';
+  searchClearBtn.classList.remove('show');
+  renderEvents();
+  searchInput.focus();
+});
+
 function renderEvents() {
   const list = document.getElementById('events-list');
+  const filtered = getFilteredEvents();
+
   if (!events.length) {
     list.innerHTML = `<div class="list-empty">No events posted yet</div>`;
     return;
   }
+  if (!filtered.length) {
+    list.innerHTML = `<div class="list-empty">No events match "${esc(searchQuery)}"</div>`;
+    return;
+  }
+
   list.innerHTML = '';
-  events.forEach(ev => {
+  filtered.forEach(ev => {
     const card = document.createElement('div');
     card.className = 'event-card';
 
@@ -500,6 +625,7 @@ const fLat = document.getElementById('f-lat');
 const fLng = document.getElementById('f-lng');
 const latlngStatus = document.getElementById('latlng-status');
 const deleteBtn = document.getElementById('modal-delete');
+const useLocationBtn = document.getElementById('use-location-btn');
 
 function openModal(id) {
   editingId = id || null;
@@ -519,6 +645,7 @@ function openModal(id) {
     deleteBtn.style.display = 'none';
     latlngStatus.classList.remove('show');
   }
+  resetUseLocationBtn();
   backdrop.classList.add('show');
 }
 function closeModal() { backdrop.classList.remove('show'); }
@@ -526,6 +653,44 @@ function closeModal() { backdrop.classList.remove('show'); }
 document.getElementById('fab-add').addEventListener('click', () => openModal(null));
 document.getElementById('modal-close').addEventListener('click', closeModal);
 backdrop.addEventListener('click', e => { if (e.target === backdrop) closeModal(); });
+
+/* ── USE MY CURRENT LOCATION ──────────────────────────────────────
+   Lets the admin standing at the venue auto-fill lat/lng straight
+   from the device GPS — no map link needed at all. We still write
+   a plain https://www.google.com/maps?q=lat,lng into f-maplink so
+   the "Open Map" button and existing save/validation logic (which
+   requires a mapLink) keep working unchanged. */
+function resetUseLocationBtn() {
+  useLocationBtn.disabled = false;
+  useLocationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> Use My Current Location';
+}
+
+useLocationBtn.addEventListener('click', () => {
+  if (!('geolocation' in navigator)) {
+    toast('Location not supported on this device', 'err');
+    return;
+  }
+  useLocationBtn.disabled = true;
+  useLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Locating…';
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      fLat.value = lat;
+      fLng.value = lng;
+      fMapLink.value = `https://www.google.com/maps?q=${lat},${lng}`;
+      latlngStatus.textContent = `✓ Using current location: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+      latlngStatus.className = 'latlng-status show ok';
+      resetUseLocationBtn();
+    },
+    err => {
+      toast('Could not get your location — check location permission', 'err');
+      resetUseLocationBtn();
+    },
+    { enableHighAccuracy: true, timeout: 10000 }
+  );
+});
 
 let resolveTimer = null;
 
@@ -582,7 +747,7 @@ document.getElementById('modal-save').addEventListener('click', async () => {
   const lng = fLng.value.trim();
 
   if (!title || !mapLink) {
-    toast('Title and Google Maps link are required', 'err');
+    toast('Title and a location (paste a link or use current location) are required', 'err');
     return;
   }
 

@@ -30,6 +30,7 @@
       --gold:      #facc15;
       --danger:    #ef4444;
       --green:     #10b981;
+      --trail-color: #f8fafc;
 
       --font-head: 'Bebas Neue', sans-serif;
       --font-body: 'DM Sans', sans-serif;
@@ -385,9 +386,14 @@
       filter: drop-shadow(0 0 6px rgba(250,204,21,0.35)); }
     .rm-nav-line.arrived { stroke: var(--green); filter: drop-shadow(0 0 6px rgba(16,185,129,0.45)); }
 
-    .rm-trail-bg { fill: none; stroke: var(--paper); stroke-width: 6; stroke-linecap: round; }
-    .rm-trail     { fill: none; stroke: var(--accent2); stroke-width: 2.6; stroke-linecap: round; opacity: .85; }
-    .rm-trail.past { stroke: var(--steel); stroke-width: 2; opacity: .35; stroke-dasharray: 1 5; }
+    .rm-trail-bg { fill: none; stroke: var(--paper); stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+    .rm-trail     { fill: none; stroke: var(--accent2); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: .85; }
+
+    /* saved past-walk trails: one uniform colour, solid (no dashes/dots),
+       drawn as an exact polyline so every real corner is preserved */
+    .rm-trail-past { fill: none; stroke: var(--trail-color); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
+    .rm-trail-past.rm-trail-focused { stroke-width: 4; opacity: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,0.55)); }
+    .rm-trail-arrow { fill: var(--trail-color); opacity: .95; }
 
     .rm-dist-bg { fill: var(--surface); stroke: var(--gold); stroke-width: 1; }
     .rm-dist-txt { font-family: var(--font-mono); font-size: 11px; fill: var(--gold); font-weight: 700;
@@ -525,14 +531,25 @@
     .rm-trail-row {
       display: flex; align-items: center; gap: 8px;
       padding: 7px 8px; background: var(--lift); border-radius: 8px; margin-bottom: 6px;
+      cursor: pointer; transition: opacity .15s;
     }
-    .rm-trail-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .rm-trail-row:active { transform: scale(.99); }
+    .rm-trail-row.rm-trail-hidden { opacity: .4; }
+    .rm-trail-icon { color: var(--trail-color); font-size: .8rem; flex-shrink: 0; width: 18px; text-align: center; }
     .rm-trail-meta { flex: 1; font-family: var(--font-mono); font-size: .72rem; color: var(--lead); }
-    .rm-trail-del {
+    .rm-trail-eye, .rm-trail-del {
       width: 26px; height: 26px; border-radius: 7px; border: none;
-      background: rgba(239,68,68,0.12); color: var(--danger); cursor: pointer; font-size: .72rem; flex-shrink: 0;
+      cursor: pointer; font-size: .72rem; flex-shrink: 0;
     }
-    .rm-trail-del:active { transform: scale(.9); }
+    .rm-trail-eye { background: rgba(59,130,246,0.12); color: var(--accent2); }
+    .rm-trail-del { background: rgba(239,68,68,0.12); color: var(--danger); }
+    .rm-trail-eye:active, .rm-trail-del:active { transform: scale(.9); }
+
+    .rm-following-badge {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      font-family: var(--font-mono); font-size: .7rem; color: var(--green);
+      background: rgba(16,185,129,0.12); padding: 7px 10px; border-radius: 8px; margin: 6px 0;
+    }
 
     #rm-empty {
       padding: 26px 10px; text-align: center; color: var(--steel);
@@ -675,6 +692,7 @@
     </div>
 
     <div id="rm-controls">
+      <button class="rm-ctl-btn" id="rm-center-route-btn" title="Center on route"><i class="fas fa-compress"></i></button>
       <button class="rm-ctl-btn" id="rm-zoom-in"><i class="fas fa-plus"></i></button>
       <button class="rm-ctl-btn" id="rm-zoom-out"><i class="fas fa-minus"></i></button>
     </div>
@@ -1144,7 +1162,13 @@ const RM = {
   lastTrailPoint: null,
   sheetMode: 'list',        // 'list' | 'detail' | 'nav'
   ARRIVE_M: 25,              // meters within which we call it "arrived"
-  TRAIL_MIN_MOVE_M: 4,       // only log a trail point after moving this far (filters GPS jitter)
+  TRAIL_MIN_MOVE_M: 1.5,     // only log a trail point after moving this far — tight, to catch every corner
+  hiddenTrails: new Set(),   // run ids currently hidden from the map (per-session)
+  focusedRunId: null,        // run id temporarily highlighted after "center on trail"
+  followingRunId: null,      // run id of a saved trail currently being followed live
+  followIndex: 0,            // how far along that run's points we've matched to
+  FOLLOW_SNAP_M: 12,         // how close you need to walk to a saved trail to latch onto it
+  FOLLOW_LOSE_M: 25,         // how far off it before we drop the guide and go freehand again
 };
 
 const RM_VB_W = 1000, RM_VB_H = 620;
@@ -1215,19 +1239,31 @@ function rmCurveMid(a, b) {
   const bow = Math.min(dist*0.14, 40), nx=-dy/dist, ny=dx/dist;
   return { x: mx+nx*bow*0.5, y: my+ny*bow*0.5 };
 }
-// smooths an arbitrary walked trail into a flowing curve (quadratic
-// through consecutive midpoints) — no external charting/curve lib.
-function rmSmoothPath(pts) {
-  if (pts.length < 2) return '';
-  if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+// draws the walked trail as an exact polyline through every recorded
+// point — no smoothing, no corner-cutting. stroke-linejoin:round on the
+// CSS side rounds the joints visually without moving a single coordinate.
+function rmExactPath(pts) {
+  if (!pts.length) return '';
+  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
   let d = `M ${pts[0].x} ${pts[0].y}`;
-  for (let i = 1; i < pts.length - 1; i++) {
-    const mx = (pts[i].x + pts[i+1].x) / 2, my = (pts[i].y + pts[i+1].y) / 2;
-    d += ` Q ${pts[i].x} ${pts[i].y}, ${mx} ${my}`;
-  }
-  const last = pts[pts.length - 1];
-  d += ` L ${last.x} ${last.y}`;
+  for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x} ${pts[i].y}`;
   return d;
+}
+// picks a handful of evenly-spaced segments along a recorded trail
+// (in lat/lng) to place direction arrows on — always includes one near
+// the end, so the arrival direction is clear even on a short trail.
+function rmTrailArrowSegments(latLngPts, count = 4) {
+  if (latLngPts.length < 2) return [];
+  const step = Math.max(1, Math.floor(latLngPts.length / (count + 1)));
+  const segs = [];
+  for (let i = step; i < latLngPts.length; i += step) {
+    segs.push({ a: latLngPts[i - 1], b: latLngPts[i] });
+  }
+  const lastIdx = latLngPts.length - 1;
+  if (!segs.length || segs[segs.length - 1].b !== latLngPts[lastIdx]) {
+    segs.push({ a: latLngPts[Math.max(0, lastIdx - 1)], b: latLngPts[lastIdx] });
+  }
+  return segs;
 }
 function rmRotatedTriangle(cx, cy, angleDeg, size) {
   const rad = angleDeg * Math.PI / 180;
@@ -1238,15 +1274,10 @@ function rmRotatedTriangle(cx, cy, angleDeg, size) {
 }
 
 /* ---- per-destination local trail storage (localStorage only, for now) ----
-   Each run now carries its own id (rmGenId) so it can be individually
-   coloured (rmColorForRun) and deleted (rmDeleteRun) from the UI. */
-const RM_TRAIL_COLORS = ['#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa','#fb923c','#22d3ee','#f87171'];
+   Each run carries its own id (rmGenId) so it can be shown/hidden and
+   deleted (rmDeleteRun) individually from the UI. All runs render in the
+   same single trail colour (--trail-color) — see rmRenderMap. */
 function rmGenId() { return 'run_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-function rmColorForRun(id) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  return RM_TRAIL_COLORS[hash % RM_TRAIL_COLORS.length];
-}
 function rmTrailKey(id) { return 'rm_trail_' + id; }
 function rmLoadPastRuns(id) {
   let runs;
@@ -1272,7 +1303,16 @@ function rmSaveRun(id, points) {
 function rmDeleteRun(pointId, runId) {
   const runs = rmLoadPastRuns(pointId).filter(r => r.id !== runId);
   try { localStorage.setItem(rmTrailKey(pointId), JSON.stringify(runs)); } catch (e) { console.warn('Trail delete skipped:', e); }
+  RM.hiddenTrails.delete(runId);
+  if (RM.focusedRunId === runId) RM.focusedRunId = null;
+  if (RM.followingRunId === runId) { RM.followingRunId = null; RM.followIndex = 0; }
   toast('Trail deleted', 'ok', 1500);
+}
+function rmToggleTrailVisibility(runId) {
+  if (RM.hiddenTrails.has(runId)) RM.hiddenTrails.delete(runId);
+  else RM.hiddenTrails.add(runId);
+  rmRenderSheet();
+  rmRenderMap();
 }
 /* FUTURE, NOT WIRED UP: once you're ready to make trails shared /
    server-side, this is exactly where a finished run would be POSTed
@@ -1356,9 +1396,52 @@ function rmHandleNavTick() {
     RM.navTrail.push({ lat: RM.me.lat, lng: RM.me.lng, t: Date.now() });
     RM.lastTrailPoint = { lat: RM.me.lat, lng: RM.me.lng };
   }
+  rmTryFollowTrail(target.id);
   if (distM <= RM.ARRIVE_M) {
     toast(`You've arrived — ${target.name}`, 'ok', 4000);
     RM.stopNavigation('arrived');
+  }
+}
+
+/* ---- follow-an-existing-trail: if the walk crosses close to a trail
+   you've saved for this destination before, latch onto it and guide
+   waypoint-by-waypoint along it instead of just straight-lining to the
+   destination. Once you pass its last recorded point (or wander far
+   enough off it), it lets go and guidance goes back to plain direct
+   bearing — the fresh trail keeps recording throughout either way. ---- */
+function rmTryFollowTrail(destId) {
+  if (!RM.me) return;
+  const runs = rmLoadPastRuns(destId).filter(r => !RM.hiddenTrails.has(r.id));
+
+  if (RM.followingRunId) {
+    const run = runs.find(r => r.id === RM.followingRunId);
+    if (!run) { RM.followingRunId = null; RM.followIndex = 0; return; }
+    let bestIdx = RM.followIndex, bestDist = Infinity;
+    const searchEnd = Math.min(run.points.length - 1, RM.followIndex + 6);
+    for (let i = RM.followIndex; i <= searchEnd; i++) {
+      const d = haversineKm(RM.me.lat, RM.me.lng, run.points[i].lat, run.points[i].lng) * 1000;
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    if (bestDist > RM.FOLLOW_LOSE_M) { RM.followingRunId = null; RM.followIndex = 0; return; }
+    RM.followIndex = bestIdx;
+    if (RM.followIndex >= run.points.length - 1) {
+      toast('Known trail ends here — continuing ahead', 'inf', 2500);
+      RM.followingRunId = null; RM.followIndex = 0;
+    }
+    return;
+  }
+
+  let best = null, bestDist = RM.FOLLOW_SNAP_M, bestIdx = 0;
+  runs.forEach(run => {
+    run.points.forEach((pt, i) => {
+      const d = haversineKm(RM.me.lat, RM.me.lng, pt.lat, pt.lng) * 1000;
+      if (d < bestDist) { bestDist = d; best = run; bestIdx = i; }
+    });
+  });
+  if (best) {
+    RM.followingRunId = best.id;
+    RM.followIndex = bestIdx;
+    toast("On a trail you've walked before — following it", 'ok', 2500);
   }
 }
 
@@ -1371,7 +1454,12 @@ function rmCurrentHeading() {
 }
 function rmInstructionFor(target) {
   if (!RM.me) return { text: 'Waiting for GPS…', angle: 0 };
-  const bTo = rmBearingDeg(RM.me, target);
+  let aim = target;
+  if (RM.followingRunId) {
+    const run = rmLoadPastRuns(RM.navTarget).find(r => r.id === RM.followingRunId);
+    if (run && run.points[RM.followIndex + 1]) aim = run.points[RM.followIndex + 1];
+  }
+  const bTo = rmBearingDeg(RM.me, aim);
   const heading = rmCurrentHeading();
   if (heading == null) return { text: `Head ${rmCompassLabel(bTo)} — walk a little so I can find your direction`, angle: bTo };
   const diff = ((bTo - heading + 540) % 360) - 180; // -180..180, positive = turn right
@@ -1417,22 +1505,41 @@ function rmRenderMap() {
     RM.points.forEach(p => spokesLayer.appendChild(rmEl('path', { class:'rm-spoke', d: rmCurvePath(meXY, coordsById[p.id]) })));
   }
 
-  // trails (past local runs, each in its own colour, + the live one) for whichever place is focused
+  // trails (past local runs, uniform colour, exact path) + the live one, for whichever place is focused
   const focusId = RM.navTarget || RM.selected;
   if (focusId) {
     rmLoadPastRuns(focusId).forEach(run => {
+      if (RM.hiddenTrails.has(run.id)) return; // hidden trails are skipped entirely
       const pts = run.points.map(pt => RM.projection.toXY(pt.lat, pt.lng));
-      const color = rmColorForRun(run.id);
-      trailLayer.appendChild(rmEl('path', { class:'rm-trail-bg', d: rmSmoothPath(pts) }));
+      const isHighlighted = run.id === RM.focusedRunId || run.id === RM.followingRunId;
+      trailLayer.appendChild(rmEl('path', { class:'rm-trail-bg', d: rmExactPath(pts) }));
       trailLayer.appendChild(rmEl('path', {
-        d: rmSmoothPath(pts), fill: 'none', stroke: color, 'stroke-width': 2.2,
-        'stroke-linecap': 'round', 'stroke-dasharray': '1 5', opacity: 0.8
+        class: 'rm-trail-past' + (isHighlighted ? ' rm-trail-focused' : ''),
+        d: rmExactPath(pts)
       }));
+      rmTrailArrowSegments(run.points).forEach(seg => {
+        const bearing = rmBearingDeg(seg.a, seg.b);
+        const midLat = (seg.a.lat + seg.b.lat) / 2, midLng = (seg.a.lng + seg.b.lng) / 2;
+        const midXY = RM.projection.toXY(midLat, midLng);
+        trailLayer.appendChild(rmEl('polygon', {
+          class: 'rm-trail-arrow',
+          points: rmRotatedTriangle(midXY.x, midXY.y, bearing, isHighlighted ? 8 : 6.5)
+        }));
+      });
     });
     if (RM.navTrail.length > 1) {
       const pts = RM.navTrail.map(pt => RM.projection.toXY(pt.lat, pt.lng));
-      trailLayer.appendChild(rmEl('path', { class:'rm-trail-bg', d: rmSmoothPath(pts) }));
-      trailLayer.appendChild(rmEl('path', { class:'rm-trail', d: rmSmoothPath(pts) }));
+      trailLayer.appendChild(rmEl('path', { class:'rm-trail-bg', d: rmExactPath(pts) }));
+      trailLayer.appendChild(rmEl('path', { class:'rm-trail', d: rmExactPath(pts) }));
+      rmTrailArrowSegments(RM.navTrail).forEach(seg => {
+        const bearing = rmBearingDeg(seg.a, seg.b);
+        const midLat = (seg.a.lat + seg.b.lat) / 2, midLng = (seg.a.lng + seg.b.lng) / 2;
+        const midXY = RM.projection.toXY(midLat, midLng);
+        trailLayer.appendChild(rmEl('polygon', {
+          points: rmRotatedTriangle(midXY.x, midXY.y, bearing, 6.5),
+          fill: '#60a5fa', opacity: 0.9
+        }));
+      });
     }
   }
 
@@ -1498,6 +1605,7 @@ function rmRenderSheet() {
     const needsPerm = rmNeedsCompassPermission() && !RM.compassEnabled;
     body.innerHTML = `
       <div class="rm-sheet-title">${esc(target.name)}</div>
+      ${RM.followingRunId ? `<div class="rm-following-badge"><i class="fas fa-route"></i> Following a trail you've walked before</div>` : ''}
       <div id="rm-hud-arrow-wrap"><i class="fas fa-location-arrow" id="rm-hud-arrow" style="transform:rotate(${instr.angle}deg)"></i></div>
       <div id="rm-hud-dist">${distKm != null ? rmFmtKm(distKm) : '—'}</div>
       <div id="rm-hud-instruction">${esc(instr.text)}</div>
@@ -1533,15 +1641,18 @@ function rmRenderSheet() {
         <div style="text-align:right;"><div style="font-size:.68rem;color:var(--steel);font-family:var(--font-mono);">BEARING</div><div class="rm-point-name">${bearingTxt}</div></div>
       </div>
       ${pastRuns.length ? `
-        <div class="field-hint" style="margin:6px 2px 4px;">Walked here ${pastRuns.length} time${pastRuns.length > 1 ? 's' : ''} on this device:</div>
+        <div class="field-hint" style="margin:6px 2px 4px;">Walked here ${pastRuns.length} time${pastRuns.length > 1 ? 's' : ''} on this device — tap a trail to view it on the map:</div>
         <div id="rm-trail-list">
-          ${pastRuns.map(run => `
-            <div class="rm-trail-row" data-trail="${esc(run.id)}">
-              <span class="rm-trail-swatch" style="background:${rmColorForRun(run.id)}"></span>
-              <span class="rm-trail-meta">${new Date(run.date).toLocaleDateString()} · ${rmFmtKm(run.km)}</span>
+          ${pastRuns.map(run => {
+            const hidden = RM.hiddenTrails.has(run.id);
+            return `
+            <div class="rm-trail-row${hidden ? ' rm-trail-hidden' : ''}" data-trail-center="${esc(run.id)}">
+              <i class="fas fa-route rm-trail-icon"></i>
+              <span class="rm-trail-meta">${new Date(run.date).toLocaleDateString()} · ${rmFmtKm(run.km)}${hidden ? ' · hidden' : ''}</span>
+              <button class="rm-trail-eye" data-trail-toggle="${esc(run.id)}" title="${hidden ? 'Show' : 'Hide'} this trail"><i class="fas ${hidden ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
               <button class="rm-trail-del" data-trail-del="${esc(run.id)}" title="Delete this trail"><i class="fas fa-trash"></i></button>
             </div>
-          `).join('')}
+          `;}).join('')}
         </div>
       ` : ''}
       <div class="rm-detail-actions">
@@ -1561,6 +1672,15 @@ function rmRenderSheet() {
         rmRenderSheet();
         rmRenderMap();
       });
+    });
+    body.querySelectorAll('[data-trail-toggle]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        rmToggleTrailVisibility(btn.dataset.trailToggle);
+      });
+    });
+    body.querySelectorAll('[data-trail-center]').forEach(row => {
+      row.addEventListener('click', () => RM.centerOnRun(p.id, row.dataset.trailCenter));
     });
     return;
   }
@@ -1612,7 +1732,42 @@ function rmApplyTransform() {
 function rmExpandSheet() { document.getElementById('rm-sheet').classList.remove('collapsed'); document.getElementById('rm-places-pill').classList.remove('show'); }
 function rmCollapseSheet() { document.getElementById('rm-sheet').classList.add('collapsed'); document.getElementById('rm-places-pill').classList.add('show'); }
 
+/* ---- fit the current pan/zoom to a set of already-projected XY points,
+   centered in the viewBox with generous padding ---- */
+function rmFitViewToXYBounds(ptsXY, paddingFrac = 0.28) {
+  if (!ptsXY.length) return;
+  const minX = Math.min(...ptsXY.map(p => p.x)), maxX = Math.max(...ptsXY.map(p => p.x));
+  const minY = Math.min(...ptsXY.map(p => p.y)), maxY = Math.max(...ptsXY.map(p => p.y));
+  const w = Math.max(maxX - minX, 24), h = Math.max(maxY - minY, 24);
+  const usableW = RM_VB_W * (1 - paddingFrac * 2), usableH = RM_VB_H * (1 - paddingFrac * 2);
+  let scale = Math.min(usableW / w, usableH / h);
+  scale = Math.max(RM_MIN_SCALE, Math.min(RM_MAX_SCALE, scale));
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  RM.view.scale = scale;
+  RM.view.x = RM_VB_W / 2 - cx * scale;
+  RM.view.y = RM_VB_H / 2 - cy * scale;
+  rmApplyTransform();
+}
+
 /* ---- public actions ---- */
+RM.centerOnRun = function (pointId, runId) {
+  const run = rmLoadPastRuns(pointId).find(r => r.id === runId);
+  if (!run || !RM.projection) return;
+  RM.focusedRunId = runId;
+  rmFitViewToXYBounds(run.points.map(pt => RM.projection.toXY(pt.lat, pt.lng)));
+  rmRenderMap();
+  clearTimeout(RM._focusTimer);
+  RM._focusTimer = setTimeout(() => { RM.focusedRunId = null; rmRenderMap(); }, 4000);
+};
+RM.centerOnRoute = function () {
+  if (!RM.projection) { toast('Still finding your location…', 'inf'); return; }
+  const target = RM.points.find(p => p.id === (RM.navTarget || RM.selected));
+  const pts = [];
+  if (RM.me) pts.push(RM.projection.toXY(RM.me.lat, RM.me.lng));
+  if (target) pts.push(RM.projection.toXY(target.lat, target.lng));
+  if (!pts.length) { toast('Pick a place first', 'inf'); return; }
+  rmFitViewToXYBounds(pts, 0.32);
+};
 RM.openView = function () {
   rmSyncPoints();
   document.getElementById('rm-view').classList.add('show');
@@ -1646,6 +1801,8 @@ RM.startNavigation = function (id) {
   RM.navTarget = id;
   RM.navTrail = [];
   RM.lastTrailPoint = null;
+  RM.followingRunId = null;
+  RM.followIndex = 0;
   RM.sheetMode = 'nav';
   rmStatusDot.className = 'tracking';
   rmExpandSheet();
@@ -1656,6 +1813,8 @@ RM.startNavigation = function (id) {
 RM.stopNavigation = function (reason) {
   const id = RM.navTarget;
   if (id && RM.navTrail.length > 1) rmSaveRun(id, RM.navTrail);
+  RM.followingRunId = null;
+  RM.followIndex = 0;
   RM.navTarget = null;
   RM.sheetMode = RM.selected ? 'detail' : 'list';
   rmRenderSheet();
@@ -1672,6 +1831,7 @@ document.getElementById('rm-sheet-handle').addEventListener('click', () => {
 document.getElementById('rm-sheet-collapse-btn').addEventListener('click', rmCollapseSheet);
 document.getElementById('rm-places-pill').addEventListener('click', rmExpandSheet);
 document.getElementById('rm-fit-btn').addEventListener('click', () => { RM.view = { x:0, y:0, scale:1 }; rmApplyTransform(); });
+document.getElementById('rm-center-route-btn').addEventListener('click', () => RM.centerOnRoute());
 document.getElementById('rm-recenter-btn').addEventListener('click', () => {
   if (!RM.me || !RM.projection) { toast('Still finding your location…', 'inf'); return; }
   const meXY = RM.projection.toXY(RM.me.lat, RM.me.lng);

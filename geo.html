@@ -465,6 +465,14 @@
       width: 40px; height: 4px; background: var(--wire); border-radius: 100px;
       margin: 8px auto 2px; cursor: pointer; flex-shrink: 0;
     }
+    #rm-sheet-collapse-btn {
+      position: absolute; top: 6px; right: 8px;
+      width: 28px; height: 28px; border-radius: 8px;
+      background: var(--lift); border: none; color: var(--lead);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: .78rem; z-index: 2;
+    }
+    #rm-sheet-collapse-btn:active { transform: scale(.93); }
     #rm-sheet-body { overflow-y: auto; padding: 8px 14px calc(14px + env(safe-area-inset-bottom,0px)); }
 
     .rm-sheet-title { font-family: var(--font-head); letter-spacing: .04em; font-size: 1.05rem; color: var(--ink); padding: 4px 2px 8px; }
@@ -513,6 +521,19 @@
       display: flex; align-items: center; justify-content: center; gap: 6px;
     }
 
+    /* ── colored trail run rows (detail sheet) ─────────────────── */
+    .rm-trail-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 8px; background: var(--lift); border-radius: 8px; margin-bottom: 6px;
+    }
+    .rm-trail-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .rm-trail-meta { flex: 1; font-family: var(--font-mono); font-size: .72rem; color: var(--lead); }
+    .rm-trail-del {
+      width: 26px; height: 26px; border-radius: 7px; border: none;
+      background: rgba(239,68,68,0.12); color: var(--danger); cursor: pointer; font-size: .72rem; flex-shrink: 0;
+    }
+    .rm-trail-del:active { transform: scale(.9); }
+
     #rm-empty {
       padding: 26px 10px; text-align: center; color: var(--steel);
       font-family: var(--font-mono); font-size: .72rem; letter-spacing: .05em;
@@ -530,8 +551,8 @@
   <button class="tb-icon-btn" id="refresh-btn" title="Refresh">
     <i class="fas fa-rotate"></i>
   </button>
-  <button class="tb-icon-btn" id="rm-open-btn" title="Open RiversideMap">
-    <i class="fas fa-diagram-project"></i>
+  <button class="tb-icon-btn" id="rm-open-btn" title="Back to Map">
+    <i class="fas fa-map-location-dot"></i>
   </button>
 </header>
 
@@ -613,7 +634,7 @@
 ════════════════════════════════════════════════════════════ -->
 <div id="rm-view">
   <div id="rm-bar">
-    <button class="tb-icon-btn" id="rm-back-btn" title="Back"><i class="fas fa-arrow-left"></i></button>
+    <button class="tb-icon-btn" id="rm-back-btn" title="Events Menu"><i class="fas fa-bars"></i></button>
     <span id="rm-nav-status-dot" title="Location status"></span>
     <div class="tb-title" id="rm-title">RIVERSIDEMAP</div>
     <div class="tb-spacer"></div>
@@ -662,6 +683,7 @@
 
     <div id="rm-sheet">
       <div id="rm-sheet-handle"></div>
+      <button id="rm-sheet-collapse-btn" title="Hide"><i class="fas fa-chevron-down"></i></button>
       <div id="rm-sheet-body"></div>
     </div>
   </div>
@@ -867,6 +889,7 @@ async function loadEvents() {
     const data = await res.json();
     events = (data.events || []).filter(e => e.active !== false && e.active !== 'FALSE');
     renderEvents();
+    if (typeof RM !== 'undefined' && RM.open) { rmSyncPoints(); rmRenderMap(); rmRenderSheet(); }
   } catch (err) {
     console.error('Events load error:', err);
     list.innerHTML = `<div class="list-error-inline">Couldn't load events — tap refresh</div>`;
@@ -1096,7 +1119,9 @@ confirmAdminFromBackend();
         line direction, which is stated plainly in the UI
      4. records the walked path as a trail, smooths it into a curve,
         and saves it to localStorage per destination — so "you've
-        walked here 3 times" persists on that device across visits
+        walked here 3 times" persists on that device across visits.
+        Each saved run gets its own id and a stable colour, and can
+        be deleted individually from the place's detail sheet.
      5. leaves a clearly-marked, currently-unused stub for syncing
         a finished trail to a backend later — see
         rmSaveTrailToBackendStub() below. Not wired up yet, on
@@ -1123,6 +1148,7 @@ const RM = {
 };
 
 const RM_VB_W = 1000, RM_VB_H = 620;
+const RM_MIN_SCALE = 0.25, RM_MAX_SCALE = 48; // generous zoom range so you can get in extremely close
 
 /* ---- geometry helpers (bearing + compass label; haversineKm/esc/toast already exist above) ---- */
 function rmBearingDeg(a, b) {
@@ -1211,10 +1237,25 @@ function rmRotatedTriangle(cx, cy, angleDeg, size) {
   }).join(' ');
 }
 
-/* ---- per-destination local trail storage (localStorage only, for now) ---- */
+/* ---- per-destination local trail storage (localStorage only, for now) ----
+   Each run now carries its own id (rmGenId) so it can be individually
+   coloured (rmColorForRun) and deleted (rmDeleteRun) from the UI. */
+const RM_TRAIL_COLORS = ['#60a5fa','#f472b6','#34d399','#fbbf24','#a78bfa','#fb923c','#22d3ee','#f87171'];
+function rmGenId() { return 'run_' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+function rmColorForRun(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return RM_TRAIL_COLORS[hash % RM_TRAIL_COLORS.length];
+}
 function rmTrailKey(id) { return 'rm_trail_' + id; }
 function rmLoadPastRuns(id) {
-  try { return JSON.parse(localStorage.getItem(rmTrailKey(id)) || '[]'); } catch { return []; }
+  let runs;
+  try { runs = JSON.parse(localStorage.getItem(rmTrailKey(id)) || '[]'); } catch { return []; }
+  // back-compat: give any pre-existing run (saved before ids existed) a stable id
+  let changed = false;
+  runs.forEach(r => { if (!r.id) { r.id = rmGenId(); changed = true; } });
+  if (changed) { try { localStorage.setItem(rmTrailKey(id), JSON.stringify(runs)); } catch {} }
+  return runs;
 }
 function rmTrailLengthKm(points) {
   let total = 0;
@@ -1224,9 +1265,14 @@ function rmTrailLengthKm(points) {
 function rmSaveRun(id, points) {
   if (!points || points.length < 2) return;
   const runs = rmLoadPastRuns(id);
-  runs.push({ date: new Date().toISOString(), points: points.map(p => ({ lat:p.lat, lng:p.lng })), km: rmTrailLengthKm(points) });
-  while (runs.length > 3) runs.shift(); // keep local storage small — last 3 walks per place
+  runs.push({ id: rmGenId(), date: new Date().toISOString(), points: points.map(p => ({ lat:p.lat, lng:p.lng })), km: rmTrailLengthKm(points) });
+  while (runs.length > 5) runs.shift(); // keep local storage small — last 5 walks per place
   try { localStorage.setItem(rmTrailKey(id), JSON.stringify(runs)); } catch (e) { console.warn('Trail save skipped:', e); }
+}
+function rmDeleteRun(pointId, runId) {
+  const runs = rmLoadPastRuns(pointId).filter(r => r.id !== runId);
+  try { localStorage.setItem(rmTrailKey(pointId), JSON.stringify(runs)); } catch (e) { console.warn('Trail delete skipped:', e); }
+  toast('Trail deleted', 'ok', 1500);
 }
 /* FUTURE, NOT WIRED UP: once you're ready to make trails shared /
    server-side, this is exactly where a finished run would be POSTed
@@ -1371,12 +1417,17 @@ function rmRenderMap() {
     RM.points.forEach(p => spokesLayer.appendChild(rmEl('path', { class:'rm-spoke', d: rmCurvePath(meXY, coordsById[p.id]) })));
   }
 
-  // trails (past local runs faded + the live one) for whichever place is focused
+  // trails (past local runs, each in its own colour, + the live one) for whichever place is focused
   const focusId = RM.navTarget || RM.selected;
   if (focusId) {
     rmLoadPastRuns(focusId).forEach(run => {
       const pts = run.points.map(pt => RM.projection.toXY(pt.lat, pt.lng));
-      trailLayer.appendChild(rmEl('path', { class:'rm-trail past', d: rmSmoothPath(pts) }));
+      const color = rmColorForRun(run.id);
+      trailLayer.appendChild(rmEl('path', { class:'rm-trail-bg', d: rmSmoothPath(pts) }));
+      trailLayer.appendChild(rmEl('path', {
+        d: rmSmoothPath(pts), fill: 'none', stroke: color, 'stroke-width': 2.2,
+        'stroke-linecap': 'round', 'stroke-dasharray': '1 5', opacity: 0.8
+      }));
     });
     if (RM.navTrail.length > 1) {
       const pts = RM.navTrail.map(pt => RM.projection.toXY(pt.lat, pt.lng));
@@ -1481,7 +1532,18 @@ function rmRenderSheet() {
         <div><div style="font-size:.68rem;color:var(--steel);font-family:var(--font-mono);">DISTANCE</div><div class="rm-point-name">${distKm != null ? rmFmtKm(distKm) : 'Enable location'}</div></div>
         <div style="text-align:right;"><div style="font-size:.68rem;color:var(--steel);font-family:var(--font-mono);">BEARING</div><div class="rm-point-name">${bearingTxt}</div></div>
       </div>
-      ${pastRuns.length ? `<div class="field-hint" style="margin:6px 2px;">You've walked here ${pastRuns.length} time${pastRuns.length > 1 ? 's' : ''} on this device.</div>` : ''}
+      ${pastRuns.length ? `
+        <div class="field-hint" style="margin:6px 2px 4px;">Walked here ${pastRuns.length} time${pastRuns.length > 1 ? 's' : ''} on this device:</div>
+        <div id="rm-trail-list">
+          ${pastRuns.map(run => `
+            <div class="rm-trail-row" data-trail="${esc(run.id)}">
+              <span class="rm-trail-swatch" style="background:${rmColorForRun(run.id)}"></span>
+              <span class="rm-trail-meta">${new Date(run.date).toLocaleDateString()} · ${rmFmtKm(run.km)}</span>
+              <button class="rm-trail-del" data-trail-del="${esc(run.id)}" title="Delete this trail"><i class="fas fa-trash"></i></button>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
       <div class="rm-detail-actions">
         <button class="rm-btn gold" id="rm-start-nav-btn"><i class="fas fa-location-arrow"></i> Start Navigation</button>
       </div>
@@ -1492,6 +1554,14 @@ function rmRenderSheet() {
     `;
     document.getElementById('rm-start-nav-btn').addEventListener('click', () => RM.startNavigation(p.id));
     document.getElementById('rm-back-to-list-btn').addEventListener('click', () => { RM.selected = null; RM.sheetMode = 'list'; rmRenderSheet(); rmRenderMap(); });
+    body.querySelectorAll('[data-trail-del]').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        rmDeleteRun(p.id, btn.dataset.trailDel);
+        rmRenderSheet();
+        rmRenderMap();
+      });
+    });
     return;
   }
 
@@ -1521,7 +1591,7 @@ function rmRenderSheet() {
 /* ---- scale bar: always a real, current km value at whatever zoom ---- */
 function rmUpdateScaleBar() {
   if (!RM.projection) return;
-  const targets = [0.05,0.1,0.25,0.5,1,2,5,10,20,50,100,200];
+  const targets = [0.005,0.01,0.025,0.05,0.1,0.25,0.5,1,2,5,10,20,50,100,200];
   const effectiveKmPerPx = RM.projection.kmPerPx / RM.view.scale;
   let best = targets[0], bestPx = 60;
   for (const km of targets) {
@@ -1537,7 +1607,8 @@ function rmApplyTransform() {
   rmUpdateScaleBar();
 }
 
-/* ---- sheet expand/collapse ---- */
+/* ---- sheet expand/collapse (handle drag, pill tap, or the explicit
+   hide button — the sheet is always dismissable) ---- */
 function rmExpandSheet() { document.getElementById('rm-sheet').classList.remove('collapsed'); document.getElementById('rm-places-pill').classList.remove('show'); }
 function rmCollapseSheet() { document.getElementById('rm-sheet').classList.add('collapsed'); document.getElementById('rm-places-pill').classList.add('show'); }
 
@@ -1598,6 +1669,7 @@ document.getElementById('rm-back-btn').addEventListener('click', () => RM.closeV
 document.getElementById('rm-sheet-handle').addEventListener('click', () => {
   document.getElementById('rm-sheet').classList.contains('collapsed') ? rmExpandSheet() : rmCollapseSheet();
 });
+document.getElementById('rm-sheet-collapse-btn').addEventListener('click', rmCollapseSheet);
 document.getElementById('rm-places-pill').addEventListener('click', rmExpandSheet);
 document.getElementById('rm-fit-btn').addEventListener('click', () => { RM.view = { x:0, y:0, scale:1 }; rmApplyTransform(); });
 document.getElementById('rm-recenter-btn').addEventListener('click', () => {
@@ -1607,52 +1679,93 @@ document.getElementById('rm-recenter-btn').addEventListener('click', () => {
   RM.view.y = RM_VB_H/2 - meXY.y * RM.view.scale;
   rmApplyTransform();
 });
-function rmZoomAt(factor, clientX, clientY) {
+
+/* ---- client(px) -> svg viewBox-space coords, accounting for the
+   letterboxing that preserveAspectRatio="xMidYMid meet" introduces
+   whenever the container's aspect ratio isn't exactly 1000:620.
+   This is what previously made zoom drift/"glitch" away from the
+   actual finger/cursor position on non-matching screen sizes. ---- */
+function rmClientToViewBox(clientX, clientY) {
   const wrap = document.getElementById('rm-wrap');
   const rect = wrap.getBoundingClientRect();
-  const cx = clientX != null ? (clientX - rect.left) * (RM_VB_W / rect.width) : RM_VB_W / 2;
-  const cy = clientY != null ? (clientY - rect.top) * (RM_VB_W / rect.width) : RM_VB_H / 2;
-  const newScale = Math.max(0.4, Math.min(6, RM.view.scale * factor));
+  const fitScale = Math.min(rect.width / RM_VB_W, rect.height / RM_VB_H);
+  const offsetX = (rect.width - RM_VB_W * fitScale) / 2;
+  const offsetY = (rect.height - RM_VB_H * fitScale) / 2;
+  return {
+    x: (clientX - rect.left - offsetX) / fitScale,
+    y: (clientY - rect.top - offsetY) / fitScale
+  };
+}
+
+function rmZoomAt(factor, clientX, clientY) {
+  let cx, cy;
+  if (clientX != null && clientY != null) {
+    const p = rmClientToViewBox(clientX, clientY);
+    cx = p.x; cy = p.y;
+  } else {
+    cx = RM_VB_W / 2; cy = RM_VB_H / 2;
+  }
+  const newScale = Math.max(RM_MIN_SCALE, Math.min(RM_MAX_SCALE, RM.view.scale * factor));
   const realFactor = newScale / RM.view.scale;
   RM.view.x = cx - (cx - RM.view.x) * realFactor;
   RM.view.y = cy - (cy - RM.view.y) * realFactor;
   RM.view.scale = newScale;
   rmApplyTransform();
 }
-document.getElementById('rm-zoom-in').addEventListener('click', () => rmZoomAt(1.25));
-document.getElementById('rm-zoom-out').addEventListener('click', () => rmZoomAt(0.8));
+document.getElementById('rm-zoom-in').addEventListener('click', () => rmZoomAt(1.35));
+document.getElementById('rm-zoom-out').addEventListener('click', () => rmZoomAt(0.74));
 
 /* ---- pan (drag) + zoom (wheel) + pinch, on the map canvas ---- */
 (function bindRmPanZoom() {
   const wrap = document.getElementById('rm-wrap');
   let dragging = false, lastPt = null;
-  wrap.addEventListener('pointerdown', e => { dragging = true; lastPt = { x:e.clientX, y:e.clientY }; wrap.classList.add('grabbing'); wrap.setPointerCapture(e.pointerId); });
+  wrap.addEventListener('pointerdown', e => {
+    // Don't start a map-drag (and don't grab pointer capture) for taps
+    // that land on the sheet, the collapsed pill, or the on-map controls —
+    // capturing the pointer on `wrap` here was swallowing the click that
+    // should reach those buttons (Start Navigation, hide sheet, trail
+    // delete, zoom, etc.), especially on iOS Safari.
+    if (e.target.closest('#rm-sheet, #rm-places-pill, #rm-controls, #rm-compass')) return;
+    dragging = true; lastPt = { x:e.clientX, y:e.clientY }; wrap.classList.add('grabbing'); wrap.setPointerCapture(e.pointerId);
+  });
   wrap.addEventListener('pointermove', e => {
     if (!dragging) return;
     const dx = e.clientX - lastPt.x, dy = e.clientY - lastPt.y;
     lastPt = { x:e.clientX, y:e.clientY };
-    const rect = wrap.getBoundingClientRect(), k = RM_VB_W / rect.width;
-    RM.view.x += dx * k; RM.view.y += dy * k;
+    const rect = wrap.getBoundingClientRect();
+    const fitScale = Math.min(rect.width / RM_VB_W, rect.height / RM_VB_H) || 1;
+    RM.view.x += dx / fitScale; RM.view.y += dy / fitScale;
     rmApplyTransform();
   });
   ['pointerup','pointerleave','pointercancel'].forEach(evt => wrap.addEventListener(evt, () => { dragging = false; wrap.classList.remove('grabbing'); }));
   wrap.addEventListener('wheel', e => { e.preventDefault(); rmZoomAt(e.deltaY > 0 ? 0.9 : 1.1, e.clientX, e.clientY); }, { passive:false });
 
-  let pinchStartDist = null, pinchStartScale = 1;
+  // Pinch-zoom: re-anchor on the pinch midpoint every move (not just the
+  // gesture's start), using the same rmZoomAt used for wheel/buttons, so
+  // the point between your fingers stays put instead of the map drifting.
+  let pinchLastDist = null;
   wrap.addEventListener('touchstart', e => {
     if (e.touches.length === 2) {
-      pinchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      pinchStartScale = RM.view.scale;
+      pinchLastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
     }
   }, { passive:true });
   wrap.addEventListener('touchmove', e => {
-    if (e.touches.length === 2 && pinchStartDist) {
+    if (e.touches.length === 2 && pinchLastDist) {
       const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      RM.view.scale = Math.max(0.4, Math.min(6, pinchStartScale * (d / pinchStartDist)));
-      rmApplyTransform();
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      if (pinchLastDist > 0) rmZoomAt(d / pinchLastDist, midX, midY);
+      pinchLastDist = d;
     }
   }, { passive:true });
+  wrap.addEventListener('touchend', e => { if (e.touches.length < 2) pinchLastDist = null; });
+  wrap.addEventListener('touchcancel', () => { pinchLastDist = null; });
 })();
+
+/* ---- default view: open straight to the live map. The events list
+   (search, add/edit, etc.) now lives behind the menu (☰) button in
+   the map's top bar — RM.closeView() reveals it underneath. ---- */
+RM.openView();
 </script>
 </body>
 </html>

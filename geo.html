@@ -393,7 +393,6 @@
        drawn as an exact polyline so every real corner is preserved */
     .rm-trail-past { fill: none; stroke: var(--trail-color); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
     .rm-trail-past.rm-trail-focused { stroke-width: 4; opacity: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,0.55)); }
-    .rm-trail-arrow { fill: var(--trail-color); opacity: .95; }
 
     .rm-dist-bg { fill: var(--surface); stroke: var(--gold); stroke-width: 1; }
     .rm-dist-txt { font-family: var(--font-mono); font-size: 11px; fill: var(--gold); font-weight: 700;
@@ -1249,22 +1248,6 @@ function rmExactPath(pts) {
   for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x} ${pts[i].y}`;
   return d;
 }
-// picks a handful of evenly-spaced segments along a recorded trail
-// (in lat/lng) to place direction arrows on — always includes one near
-// the end, so the arrival direction is clear even on a short trail.
-function rmTrailArrowSegments(latLngPts, count = 4) {
-  if (latLngPts.length < 2) return [];
-  const step = Math.max(1, Math.floor(latLngPts.length / (count + 1)));
-  const segs = [];
-  for (let i = step; i < latLngPts.length; i += step) {
-    segs.push({ a: latLngPts[i - 1], b: latLngPts[i] });
-  }
-  const lastIdx = latLngPts.length - 1;
-  if (!segs.length || segs[segs.length - 1].b !== latLngPts[lastIdx]) {
-    segs.push({ a: latLngPts[Math.max(0, lastIdx - 1)], b: latLngPts[lastIdx] });
-  }
-  return segs;
-}
 function rmRotatedTriangle(cx, cy, angleDeg, size) {
   const rad = angleDeg * Math.PI / 180;
   return [[0,-size],[size*0.4,size*0.35],[-size*0.4,size*0.35]].map(([x,y]) => {
@@ -1517,29 +1500,11 @@ function rmRenderMap() {
         class: 'rm-trail-past' + (isHighlighted ? ' rm-trail-focused' : ''),
         d: rmExactPath(pts)
       }));
-      rmTrailArrowSegments(run.points).forEach(seg => {
-        const bearing = rmBearingDeg(seg.a, seg.b);
-        const midLat = (seg.a.lat + seg.b.lat) / 2, midLng = (seg.a.lng + seg.b.lng) / 2;
-        const midXY = RM.projection.toXY(midLat, midLng);
-        trailLayer.appendChild(rmEl('polygon', {
-          class: 'rm-trail-arrow',
-          points: rmRotatedTriangle(midXY.x, midXY.y, bearing, isHighlighted ? 8 : 6.5)
-        }));
-      });
     });
     if (RM.navTrail.length > 1) {
       const pts = RM.navTrail.map(pt => RM.projection.toXY(pt.lat, pt.lng));
       trailLayer.appendChild(rmEl('path', { class:'rm-trail-bg', d: rmExactPath(pts) }));
       trailLayer.appendChild(rmEl('path', { class:'rm-trail', d: rmExactPath(pts) }));
-      rmTrailArrowSegments(RM.navTrail).forEach(seg => {
-        const bearing = rmBearingDeg(seg.a, seg.b);
-        const midLat = (seg.a.lat + seg.b.lat) / 2, midLng = (seg.a.lng + seg.b.lng) / 2;
-        const midXY = RM.projection.toXY(midLat, midLng);
-        trailLayer.appendChild(rmEl('polygon', {
-          points: rmRotatedTriangle(midXY.x, midXY.y, bearing, 6.5),
-          fill: '#60a5fa', opacity: 0.9
-        }));
-      });
     }
   }
 
